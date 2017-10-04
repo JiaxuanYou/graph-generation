@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" autoUpload="Always" serverName="ssh://jiaxuan@hyperion.stanford.edu:22/lfs/hyperion/0/jiaxuany/anaconda3/bin/python" autoUploadExternalChanges="true">
+    <serverData>
+      <paths name="ssh://jiaxuan@hyperion.stanford.edu:22/lfs/hyperion/0/jiaxuany/anaconda3/bin/python">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/lfs/hyperion/0/jiaxuany/pycharm" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+    </serverData>
+    <option name="myAutoUpload" value="ALWAYS" />
+  </component>
+</project>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="ssh://jiaxuan@hyperion.stanford.edu:22/lfs/hyperion/0/jiaxuany/anaconda3/bin/python" name="ssh://jiaxuan@hyperion.stanford.edu:22/lfs/hyperion/0/jiaxuany/anaconda3/bin/python" url="http://172.24.75.223">
+        <fileTransfer host="hyperion.stanford.edu" port="22" accessType="SFTP">
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
