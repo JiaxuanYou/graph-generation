@@ -10,22 +10,26 @@ import torch.nn as nn
 from torch.autograd import Variable
 from torch import optim
 import torch.nn.functional as F
+import torch.nn.init as init
 
 USE_CUDA = torch.cuda.is_available()
 
 
 class DecoderRNN_step(nn.Module):
-    def __init__(self, input_size, hidden_size, embedding_size = 1000, n_layers=1, is_bidirection = True):
+    def __init__(self, input_size, hidden_size, embedding_size, n_layers=1, is_bidirection = True):
         super(DecoderRNN_step, self).__init__()
         self.n_layers = n_layers
         self.hidden_size = hidden_size
+        self.embedding_size = embedding_size
         self.is_bidirection = is_bidirection
 
         self.gru = nn.GRU(input_size, hidden_size, bidirectional=self.is_bidirection, batch_first=True)
+        # init.xavier_uniform(self.gru.weight)
         self.linear = nn.Linear(hidden_size,hidden_size)
         self.softmax = torch.nn.Softmax()
 
         self.embedding = nn.Embedding(embedding_size, hidden_size)
+        self.embedding.weight.data = init.uniform(torch.Tensor(embedding_size, hidden_size))
     def forward(self, input, hidden, modify_input = True):
         # run one time step at a time
         # input = F.relu(input) # maybe a trick, need to try
