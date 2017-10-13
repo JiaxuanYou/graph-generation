@@ -18,7 +18,7 @@ NODE_token = 3
 
 class GraphDataset(torch.utils.data.Dataset):
     """Graph Dataset"""
-    def __init__(self, G, shuffle_neighbour = False):
+    def __init__(self, G, shuffle_neighbour = True):
         self.G = G
         self.shuffle_neighbour = shuffle_neighbour
     def __len__(self):

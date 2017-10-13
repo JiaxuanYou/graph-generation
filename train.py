@@ -1,27 +1,54 @@
 from model import *
 from data import *
 import numpy as np
+import copy
 
-def train(dataset, decoder, optimizer, epoch_num, lr, weight_decay = 1e-5, batch_size=1, shuffle=True, num_workers = 1, run = 0):
+def train(dataset, decoder, optimizer, epoch_num, lr, weight_decay = 1e-5, batch_size=1, shuffle=True, num_workers = 1, run = 0, multi_target = False):
     # define dataloader
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
     softmax = nn.Softmax()
-    loss_f = nn.BCELoss()
-    # loss_f = nn.MSELoss()
+    tanh = nn.Tanh()
+    # loss_f = nn.BCELoss()
+    loss_f = nn.MSELoss()
+    # loss_f = nn.KLDivLoss()
+
+    # filter parameters
+    params = []
+    for param in decoder.state_dict():
+        if param!='hidden':
+            params.append(decoder.state_dict()[param])
 
     # define optimizer
     if optimizer == "adam":
-        optimizer = torch.optim.Adam(decoder.parameters(), lr=lr, weight_decay=weight_decay)
+        optimizer = torch.optim.Adam([
+            {'params':decoder.hidden, 'lr': lr*10},
+            {'params':decoder.gru.parameters()},
+            {'params': decoder.linear.parameters()},
+            {'params': decoder.embedding.parameters()},
+        ], lr=lr, weight_decay=weight_decay)
     else:
         optimizer = torch.optim.SGD(decoder.parameters(), lr=lr, weight_decay=weight_decay)
+    # for param in decoder.parameters():
+    #     print(param.size())
+    # print(decoder.state_dict())
+    # for param in decoder.state_dict():
+    #     print(param, type(param))
+    #     print(decoder.state_dict()[param])
 
+    hidden_first = decoder.hidden
+    print('hidden requires grad', hidden_first.requires_grad)
     # train
     for epoch in range(epoch_num):
         loss_summary = 0
         count = 0
+        if epoch==80:
+            lr /= 10
         for idx, nodes in enumerate(dataloader):
+            # if idx>0:
+            #     continue
             # sample an input
             input = Variable(nodes['nodes']).cuda()
+            # print('input', input, 'idx', idx)
             input_embedding = decoder.embedding(input)
             # input_embedding don't need grad
             input_embedding = Variable(input_embedding.data).cuda()
@@ -30,54 +57,133 @@ def train(dataset, decoder, optimizer, epoch_num, lr, weight_decay = 1e-5, batch
 
             # Now input_embedding is [SOS, node, node's neighbour, EOS]
             # first hidden is the node itself's embedding, id = 1
-            hidden_first = Variable(input_embedding[:, 1, :].data, requires_grad = True).cuda()
-            # preprocessing (do softmax first)
-            hidden = softmax(hidden_first).view(1, hidden_first.size(0), hidden_first.size(1))
-            hidden = torch.cat((hidden, hidden), dim=0)
-            assert hidden.requires_grad
+            # hidden_first = Variable(input_embedding[:, 1, :].data, requires_grad = True).cuda()
+
+            # # uncomment if want bi-directional net
+            # # preprocessing (do softmax first)
+            # hidden_first = hidden_first.view(1, hidden_first.size(0), hidden_first.size(1))
+            # hidden = torch.cat((hidden, hidden), dim=0)
+            # assert hidden.requires_grad
 
             # Calculate loss
             loss_total = 0
             # first input is SOS_token, just name it "output"
-            input_first = softmax(input_embedding[:, 0, :])
+            input_first = input_embedding[:, 1, :]
             for i in range(seq_len - 2):
                 if i==0:
-                    output, hidden = decoder(input_first, hidden)
+                    output, hidden = decoder(input_first, hidden_first)
                 else:
                     output, hidden = decoder(output.cuda(), hidden.cuda())
                 # fist prediction should be the node's first neighbour, id = 2
+                target_all = []
                 if i < seq_len-3:
                     # target = input_embedding[:, i + 2, :].detach()
-                    target = softmax(input_embedding[:, i + 2, :])
+                    if multi_target:
+                        # try multiple targets
+                        for j in range(i, seq_len-3):
+                            target = input_embedding[:, j + 2, :]
+                            target_all.append(target)
+                    else:
+                        target = input_embedding[:, i + 2, :]
+                        target_all.append(target)
+
                 elif i == seq_len-3:
                     # target = input_embedding[:, -1, :].detach()
-                    target = softmax(input_embedding[:, -1, :])
+                    target = input_embedding[:, -1, :]
+                    target_all.append(target)
                 assert target.requires_grad == False
-                loss = loss_f(output, target)
-                loss_total += loss
 
-                # do evaluation
-                # print(str(i)+'output', output.cpu().data, 'target', target.cpu().data, 'diff',
-                #       output.cpu().data - target.cpu().data)
-                # # print('embedding', decoder.embedding(Variable(torch.LongTensor(range(decoder.embedding_size))).cuda()).cpu().data)
-                # print(softmax(input_embedding[0]))
+                loss_temp = []
+                for target in target_all:
+                    loss = loss_f(output, target)
+                    loss_temp.append(loss)
+                # print('loss temp', loss_temp)
+                loss_temp = torch.stack(loss_temp, dim=0)
+                loss_total += torch.min(loss_temp)
+
+                # if epoch % 10 == 0:
+                    # do evaluation
+                    # print(str(i)+'output', output.data, 'target', target.data, 'diff',
+                    #       output.data - target.data, 'loss', loss, 'loss_total', loss_total)
+
+                    # display
+                    # print(str(i) + 'output', output.data, 'target', target.data, 'diff',
+                    #       output.data - target.data, 'loss_total', loss_total)
+
+                    # print('embedding', decoder.embedding(Variable(torch.LongTensor(range(decoder.embedding_size))).cuda()).cpu().data)
+                    # print(softmax(input_embedding[0]))
 
             optimizer.zero_grad()
             loss_total.backward()
+            # print(hidden.requires_grad)
+            # print('hidden_grad', decoder.gru.weight_ih_l0.grad.data)
             optimizer.step()
             # put the optimized hidden_first back
-            input_embedding[:, 1, :].data = hidden_first.data
+            # input_embedding[:, 1, :].data =hidden_first.data
 
             loss_summary += loss_total
             count+=1
         # print('total loss', loss_summary.cpu().data[0]/(idx+1))
         log_value('Loss: lr = '+str(lr)+' hidden = '+str(decoder.hidden_size)+' run = '+str(run), loss_summary.cpu().data[0]/count, epoch)
-        if epoch%10 == 0:
-            print('epoch ', epoch, 'lr', lr, 'total loss', loss_summary.cpu().data[0]/count, 'hidden size', decoder.hidden_size, 'run', run)
+        if epoch%10 == 0 and epoch!=0:
+            print('epoch ', epoch, 'lr', lr, 'total loss', loss_summary.cpu().data[0]/count, 'hidden size', decoder.hidden_size, 'run', run,
+                  'multi-target', multi_target, 'shuffle_neighbor', dataset.shuffle_neighbour, 'hidden_first', decoder.hidden)
             # # do evaluation
             # print('output', output.cpu().data, 'target', target.cpu().data, 'diff', output.cpu().data-target.cpu().data)
             # # print('embedding', decoder.embedding(Variable(torch.LongTensor(range(decoder.embedding_size))).cuda()).cpu().data)
             # print(softmax(input_embedding[0]))
+            print('evaluation')
+            match = 0
+            for idx, nodes in enumerate(dataloader):
+                input = Variable(nodes['nodes']).cuda()
+                # print('input',input.data)
+                input_embedding = decoder.embedding(input)
+                # input_embedding don't need grad
+                input_embedding = Variable(input_embedding.data).cuda()
+                assert input_embedding.requires_grad == False
+                seq_len = input_embedding.size(1)
+
+                # Now input_embedding is [SOS, node, node's neighbour, EOS]
+                # first hidden is the node itself's embedding, id = 1
+                # hidden_first = Variable(input_embedding[:, 1, :].data, requires_grad=True).cuda()
+                hidden_first = decoder.initHidden()
+
+                # first input is SOS_token, just name it "output"
+                input_first = input_embedding[:, 1, :]
+                i = 0
+                max = 30
+                prediction_all = []
+                while(True):
+                    if i == 0:
+                        output, hidden = decoder(input_first, hidden_first)
+                    else:
+                        output, hidden = decoder(output.cuda(), hidden.cuda())
+
+                    input_all = Variable(torch.LongTensor(range(decoder.embedding_size))).cuda()
+                    all_embedding = decoder.embedding(input_all)
+                    diff = all_embedding - output.repeat(decoder.embedding_size,1)
+                    diff_norm = torch.norm(diff,2,1)
+                    min, prediction = torch.min(diff_norm, dim = 0)
+                    # print('prediction', prediction.data[0], 'min', min.data[0])
+                    prediction_all.append(prediction.data[0])
+                    if prediction.data[0] == input.data[0,-1] or i>max:
+                        # print('break')
+                        break
+                    i += 1
+                prediction_all = torch.LongTensor(prediction_all).cuda().view(1, -1)
+                # print('input', input.data, 'prediction', prediction_all)
+                # see if the prediction match input.data[2:]
+                if input.data.size(1)-2 == prediction_all.size(1):
+                    if torch.sum(input.data[0, 2:] - prediction_all[0]) == 0:
+                        match += 1
+                        print('match!')
+            if match == idx+1:
+                print('********************************')
+                print('all match! ', 'epoch = ', epoch)
+                break
+
+
+
     # save
     # save embedding
     np.save('saves/embedding_lr_'+str(lr)+'_hidden_'+str(decoder.hidden_size)+'_run_'+str(run)+'.npy',decoder.embedding(Variable(torch.LongTensor(range(decoder.embedding_size))).cuda()).cpu().data.numpy())

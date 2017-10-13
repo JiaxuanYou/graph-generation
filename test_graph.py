@@ -5,26 +5,32 @@ from sklearn.manifold import TSNE
 import os
 
 # G = nx.karate_club_graph()
-G = nx.LCF_graph(6,[3,-3],3)
+# G = nx.LCF_graph(6,[3,-3],3)
+G = nx.LCF_graph(14,[5,-5],7)
 
-print(G.nodes())
+for edge in G.edges():
+    G[edge[0]][edge[1]]['weight'] = 1
+print(G.edges())
+print(G[0][13])
 
-for i in range(len(G.nodes())):
-    print(list(G.adj[i]))
-
-# clean saving directory
-if not os.path.exists("figures"):
-    os.makedirs("figures")
-
-plt.subplot(1)
-plt.switch_backend('agg')
-nx.draw(G, with_labels=True, font_weight='bold')
-plt.savefig('figures/network_view.png')
-
-# for lr in [0.01]:
+# for i in range(len(G.nodes())):
+#     print(list(G.adj[i]))
+#
+# # clean saving directory
+# if not os.path.exists("figures"):
+#     os.makedirs("figures")
+#
+# # plt.subplot(1)
+# # plt.switch_backend('agg')
+# # nx.draw(G, with_labels=True, font_weight='bold')
+# # plt.savefig('figures/network_view.png')
+#
+#
+#
+# for lr in [0.001]:
 #     for hidden_size in [2]:
-#         for run in range(5):
-#             embedding = np.load('saves/embedding_lr_'+str(lr)+'_hidden_'+str(hidden_size)+'_run_'+str(run)+'.npy')[3:3+6]
+#         for run in range(1):
+#             embedding = np.load('saves/embedding_lr_'+str(lr)+'_hidden_'+str(hidden_size)+'_run_'+str(run)+'.npy')[3:3+14]
 #             print(embedding)
 #             embedded = TSNE(n_components=2).fit_transform(embedding)
 #             print(embedded)

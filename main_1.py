@@ -53,9 +53,9 @@ for lr in [0.01]:
     for hidden_size in [64]:
         for run in range(5):
             decoder = DecoderRNN_step(input_size=input_size, hidden_size=hidden_size, embedding_size=embedding_size,
-                                      n_layers=n_layers, is_bidirection=False, embedding_init_flag=True, embedding_init=embedding, hidden_grad = True).cuda()
-            train(graphdataset, decoder, optimizer='adam', epoch_num=2000, lr=lr, weight_decay=1e-5, batch_size=1, shuffle=True,
-                  num_workers=1, run = run, multi_target= False)
+                                      n_layers=n_layers, is_bidirection=False, embedding_init_flag=True, embedding_init=embedding).cuda()
+            train(graphdataset, decoder, optimizer='adam', epoch_num=2000, lr=lr, weight_decay=1e-5, batch_size=1, shuffle=False,
+                  num_workers=1, run = run, multi_target= True)
         # embedding = np.load('saves/embedding_lr_'+str(lr)+'.npy')
 
 
