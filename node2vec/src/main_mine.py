@@ -1,4 +1,4 @@
-from main import *
+from main_rnn import *
 
 G = nx.karate_club_graph()
 for edge in G.edges():

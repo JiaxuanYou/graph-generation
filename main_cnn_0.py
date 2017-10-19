@@ -12,17 +12,15 @@ class Args():
         self.num_workers = 2
         self.lr = 0.001
         self.momentum = 0.5
-
         self.input_size = 16
-        self.hops = 3
-        self.max_degree = 9
 
-        # for karate_club dataset
-        self.start_idx = 30
-        self.end_idx = 35
         # for self generated dataset
-        self.start_idx = 90
-        self.end_idx = 100
+        self.start_idx = 91
+        self.end_idx = 101
+        self.plot = True
+        self.freeze = False
+        self.milestones = [50, 100, 200, 400]
+
 if __name__ == '__main__':
     # clean logging directory
     if os.path.isdir("logs"):
@@ -32,11 +30,12 @@ if __name__ == '__main__':
     args = Args()
     torch.manual_seed(args.seed)
 
-    # G = nx.karate_club_graph()
+    G = nx.karate_club_graph()
     # G = nx.LCF_graph(14,[5,-5],7)
     # G = nx.LCF_graph(20,[-9,-9],10)
     G, embedding = Graph_synthetic(10)
-    dataset = GraphDataset(G, shuffle_neighbour=args.shuffle_neighbour, hops=args.hops, max_degree=args.max_degree, embedding=embedding)
+    embedding_size = G.number_of_nodes()+1
+    dataset = GraphDataset(G, shuffle_neighbour=args.shuffle_neighbour, hops=3, max_degree=9, vocab_size=embedding_size, embedding_dim=embedding_size)
 
     embedding_size = dataset.embedding.size(1)
     encoder = Encoder(feature_size=embedding_size, input_size=args.input_size, layer_num=3).cuda(CUDA)

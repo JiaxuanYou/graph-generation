@@ -1,4 +1,4 @@
-from train import *
+from train_rnn import *
 import numpy as np
 import copy
 import torch.multiprocessing as mp
