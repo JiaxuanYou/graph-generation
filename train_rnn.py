@@ -1,5 +1,5 @@
 from model import *
-from data import *
+from dataset import *
 import numpy as np
 import copy
 
@@ -57,7 +57,7 @@ def train(dataset, decoder, optimizer, epoch_num, lr, weight_decay = 1e-5, batch
 
             # Now input_embedding is [SOS, node, node's neighbour, EOS]
             # first hidden is the node itself's embedding, id = 1
-            # hidden_first = Variable(input_embedding[:, 1, :].data, requires_grad = True).cuda()
+            # hidden_first = Variable(input_embedding[:, 1, :].dataset, requires_grad = True).cuda()
 
             # # uncomment if want bi-directional net
             # # preprocessing (do softmax first)
@@ -103,40 +103,40 @@ def train(dataset, decoder, optimizer, epoch_num, lr, weight_decay = 1e-5, batch
 
                 # if epoch % 10 == 0:
                     # do evaluation
-                    # print(str(i)+'output', output.data, 'target', target.data, 'diff',
-                    #       output.data - target.data, 'loss', loss, 'loss_total', loss_total)
+                    # print(str(i)+'output', output.dataset, 'target', target.dataset, 'diff',
+                    #       output.dataset - target.dataset, 'loss', loss, 'loss_total', loss_total)
 
                     # display
-                    # print(str(i) + 'output', output.data, 'target', target.data, 'diff',
-                    #       output.data - target.data, 'loss_total', loss_total)
+                    # print(str(i) + 'output', output.dataset, 'target', target.dataset, 'diff',
+                    #       output.dataset - target.dataset, 'loss_total', loss_total)
 
-                    # print('embedding', decoder.embedding(Variable(torch.LongTensor(range(decoder.embedding_size))).cuda()).cpu().data)
+                    # print('embedding', decoder.embedding(Variable(torch.LongTensor(range(decoder.embedding_size))).cuda()).cpu().dataset)
                     # print(softmax(input_embedding[0]))
 
             optimizer.zero_grad()
             loss_total.backward()
             # print(hidden.requires_grad)
-            # print('hidden_grad', decoder.gru.weight_ih_l0.grad.data)
+            # print('hidden_grad', decoder.gru.weight_ih_l0.grad.dataset)
             optimizer.step()
             # put the optimized hidden_first back
-            # input_embedding[:, 1, :].data =hidden_first.data
+            # input_embedding[:, 1, :].dataset =hidden_first.dataset
 
             loss_summary += loss_total
             count+=1
-        # print('total loss', loss_summary.cpu().data[0]/(idx+1))
+        # print('total loss', loss_summary.cpu().dataset[0]/(idx+1))
         log_value('Loss: lr = '+str(lr)+' hidden = '+str(decoder.hidden_size)+' run = '+str(run), loss_summary.cpu().data[0]/count, epoch)
         if epoch%10 == 0 and epoch!=0:
             print('epoch ', epoch, 'lr', lr, 'total loss', loss_summary.cpu().data[0]/count, 'hidden size', decoder.hidden_size, 'run', run,
                   'multi-target', multi_target, 'shuffle_neighbor', dataset.shuffle_neighbour, 'hidden_first', decoder.hidden)
             # # do evaluation
-            # print('output', output.cpu().data, 'target', target.cpu().data, 'diff', output.cpu().data-target.cpu().data)
-            # # print('embedding', decoder.embedding(Variable(torch.LongTensor(range(decoder.embedding_size))).cuda()).cpu().data)
+            # print('output', output.cpu().dataset, 'target', target.cpu().dataset, 'diff', output.cpu().dataset-target.cpu().dataset)
+            # # print('embedding', decoder.embedding(Variable(torch.LongTensor(range(decoder.embedding_size))).cuda()).cpu().dataset)
             # print(softmax(input_embedding[0]))
             print('evaluation')
             match = 0
             for idx, nodes in enumerate(dataloader):
                 input = Variable(nodes['nodes']).cuda()
-                # print('input',input.data)
+                # print('input',input.dataset)
                 input_embedding = decoder.embedding(input)
                 # input_embedding don't need grad
                 input_embedding = Variable(input_embedding.data).cuda()
@@ -145,7 +145,7 @@ def train(dataset, decoder, optimizer, epoch_num, lr, weight_decay = 1e-5, batch
 
                 # Now input_embedding is [SOS, node, node's neighbour, EOS]
                 # first hidden is the node itself's embedding, id = 1
-                # hidden_first = Variable(input_embedding[:, 1, :].data, requires_grad=True).cuda()
+                # hidden_first = Variable(input_embedding[:, 1, :].dataset, requires_grad=True).cuda()
                 hidden_first = decoder.initHidden()
 
                 # first input is SOS_token, just name it "output"
@@ -164,15 +164,15 @@ def train(dataset, decoder, optimizer, epoch_num, lr, weight_decay = 1e-5, batch
                     diff = all_embedding - output.repeat(decoder.embedding_size,1)
                     diff_norm = torch.norm(diff,2,1)
                     min, prediction = torch.min(diff_norm, dim = 0)
-                    # print('prediction', prediction.data[0], 'min', min.data[0])
+                    # print('prediction', prediction.dataset[0], 'min', min.dataset[0])
                     prediction_all.append(prediction.data[0])
                     if prediction.data[0] == input.data[0,-1] or i>max:
                         # print('break')
                         break
                     i += 1
                 prediction_all = torch.LongTensor(prediction_all).cuda().view(1, -1)
-                # print('input', input.data, 'prediction', prediction_all)
-                # see if the prediction match input.data[2:]
+                # print('input', input.dataset, 'prediction', prediction_all)
+                # see if the prediction match input.dataset[2:]
                 if input.data.size(1)-2 == prediction_all.size(1):
                     if torch.sum(input.data[0, 2:] - prediction_all[0]) == 0:
                         match += 1
@@ -208,8 +208,8 @@ def train(dataset, decoder, optimizer, epoch_num, lr, weight_decay = 1e-5, batch
 
 
 
-# # Define data loader
-# dataloader = torch.utils.data.DataLoader(graphdataset, batch_size = 1, shuffle=True, num_workers = 1)
+# # Define dataset loader
+# dataloader = torch.utils.dataset.DataLoader(graphdataset, batch_size = 1, shuffle=True, num_workers = 1)
 #
 # # Initialize Decoder network
 # decoder = DecoderRNN_step(input_size=hidden_size, hidden_size=hidden_size, embedding_size=embedding_size, n_layers=n_layers).cuda()
@@ -248,8 +248,8 @@ def train(dataset, decoder, optimizer, epoch_num, lr, weight_decay = 1e-5, batch
 #         optimizer.zero_grad()
 #         loss_total.backward()
 #         optimizer.step()
-#     print('total loss', loss_total.cpu().data[0])
-#     log_value('Loss', loss_total.cpu().data[0], epoch)
+#     print('total loss', loss_total.cpu().dataset[0])
+#     log_value('Loss', loss_total.cpu().dataset[0], epoch)
 
 
 
@@ -304,4 +304,4 @@ def train(dataset, decoder, optimizer, epoch_num, lr, weight_decay = 1e-5, batch
 #     encoder_optimizer.step()
 #     decoder_optimizer.step()
 #
-#     return loss.data[0], ec, dc
+#     return loss.dataset[0], ec, dc

@@ -17,7 +17,76 @@ import numpy as np
 
 
 USE_CUDA = torch.cuda.is_available()
-CUDA = 0
+CUDA = 3
+
+
+######
+# implementation for Graph completion task
+######
+
+class GraphConv(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super(GraphConv, self).__init__()
+        self.input_dim = input_dim
+        self.output_dim = output_dim
+        self.weight = nn.Parameter(torch.FloatTensor(input_dim, output_dim).cuda(CUDA))
+        # self.relu = nn.ReLU()
+    def forward(self, x, adj):
+        y = torch.matmul(adj, x)
+        y = torch.matmul(y,self.weight)
+        return y
+
+
+
+class GCN_encoder(nn.Module):
+    def __init__(self, args):
+        super(GCN_encoder, self).__init__()
+        self.conv1 = GraphConv(input_dim=args.input_dim, output_dim=args.hidden_dim)
+        self.conv2 = GraphConv(input_dim=args.hidden_dim, output_dim=args.output_dim)
+        # self.bn1 = nn.BatchNorm1d(output_dim)
+        # self.bn2 = nn.BatchNorm1d(output_dim)
+        self.relu = nn.ReLU()
+        for m in self.modules():
+            if isinstance(m, GraphConv):
+                m.weight.data = init.xavier_uniform(m.weight.data, gain=nn.init.calculate_gain('relu'))
+                # init_range = np.sqrt(6.0 / (m.input_dim + m.output_dim))
+                # m.weight.data = torch.rand([m.input_dim, m.output_dim]).cuda(CUDA)*init_range
+                # print('find!')
+            elif isinstance(m, nn.BatchNorm1d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+    def forward(self,x,adj):
+        x = self.conv1(x,adj)
+        # x = x/torch.sum(x, dim=2, keepdim=True)
+        x = self.relu(x)
+        # x = self.bn1(x)
+        x = self.conv2(x,adj)
+        # x = x / torch.sum(x, dim=2, keepdim=True)
+        return x
+
+class GCN_decoder(nn.Module):
+    def __init__(self):
+        super(GCN_decoder, self).__init__()
+        # self.act = nn.Sigmoid()
+    def forward(self,x):
+        # x_t = x.view(-1,x.size(2),x.size(1))
+        x_t = x.permute(0,2,1)
+        # print('x',x)
+        # print('x_t',x_t)
+        y = torch.matmul(x, x_t)
+        return y
+
+
+# #### test code ####
+# A = Variable(torch.rand(10,9,9)).cuda(CUDA)
+# x = Variable(torch.rand(10,9,5)).cuda(CUDA)
+# encoder = GCN_encoder(A, x.size(2), 10)
+# decoder = GCN_decoder()
+# y = encoder(x)
+# print(y)
+# y = decoder(y)
+# print(y)
+
 
 class CNN_decoder(nn.Module):
     def __init__(self, input_size, output_size, stride = 2):
@@ -51,7 +120,7 @@ class CNN_decoder(nn.Module):
         for m in self.modules():
             if isinstance(m, nn.ConvTranspose1d):
                 # n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                # m.weight.data.normal_(0, math.sqrt(2. / n))
+                # m.weight.dataset.normal_(0, math.sqrt(2. / n))
                 m.weight.data = init.xavier_uniform(m.weight.data, gain=nn.init.calculate_gain('relu'))
             elif isinstance(m, nn.BatchNorm1d):
                 m.weight.data.fill_(1)
@@ -143,7 +212,7 @@ class CNN_decoder_share(nn.Module):
         for m in self.modules():
             if isinstance(m, nn.ConvTranspose1d):
                 # n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                # m.weight.data.normal_(0, math.sqrt(2. / n))
+                # m.weight.dataset.normal_(0, math.sqrt(2. / n))
                 m.weight.data = init.xavier_uniform(m.weight.data, gain=nn.init.calculate_gain('relu'))
             elif isinstance(m, nn.BatchNorm1d):
                 m.weight.data.fill_(1)
@@ -215,11 +284,13 @@ class CNN_decoder_attention(nn.Module):
                                              kernel_size=3, stride=1, padding=1)
         self.deconv_attention = nn.ConvTranspose1d(in_channels=int(self.input_size), out_channels=int(self.input_size),
                                              kernel_size=1, stride=1, padding=0)
+        self.bn_attention = nn.BatchNorm1d(int(self.input_size))
+        self.relu_leaky = nn.LeakyReLU(0.2)
 
         for m in self.modules():
             if isinstance(m, nn.ConvTranspose1d):
                 # n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                # m.weight.data.normal_(0, math.sqrt(2. / n))
+                # m.weight.dataset.normal_(0, math.sqrt(2. / n))
                 m.weight.data = init.xavier_uniform(m.weight.data, gain=nn.init.calculate_gain('relu'))
             elif isinstance(m, nn.BatchNorm1d):
                 m.weight.data.fill_(1)
@@ -243,8 +314,13 @@ class CNN_decoder_attention(nn.Module):
 
         x_hop1 = self.deconv_out(x)
         x_hop1_attention = self.deconv_attention(x)
+        # x_hop1_attention = self.bn_attention(x_hop1_attention)
+        x_hop1_attention = self.relu(x_hop1_attention)
         x_hop1_attention = torch.matmul(x_hop1_attention,
                                         x_hop1_attention.view(-1,x_hop1_attention.size(2),x_hop1_attention.size(1)))
+        # x_hop1_attention_sum = torch.norm(x_hop1_attention, 2, dim=1, keepdim=True)
+        # x_hop1_attention = x_hop1_attention/x_hop1_attention_sum
+
 
         # print(x_hop1.size())
 
@@ -259,8 +335,13 @@ class CNN_decoder_attention(nn.Module):
 
         x_hop2 = self.deconv_out(x)
         x_hop2_attention = self.deconv_attention(x)
+        # x_hop2_attention = self.bn_attention(x_hop2_attention)
+        x_hop2_attention = self.relu(x_hop2_attention)
         x_hop2_attention = torch.matmul(x_hop2_attention,
                                         x_hop2_attention.view(-1, x_hop2_attention.size(2), x_hop2_attention.size(1)))
+        # x_hop2_attention_sum = torch.norm(x_hop2_attention, 2, dim=1, keepdim=True)
+        # x_hop2_attention = x_hop2_attention/x_hop2_attention_sum
+
 
         # print(x_hop2.size())
 
@@ -275,8 +356,13 @@ class CNN_decoder_attention(nn.Module):
 
         x_hop3 = self.deconv_out(x)
         x_hop3_attention = self.deconv_attention(x)
+        # x_hop3_attention = self.bn_attention(x_hop3_attention)
+        x_hop3_attention = self.relu(x_hop3_attention)
         x_hop3_attention = torch.matmul(x_hop3_attention,
                                         x_hop3_attention.view(-1, x_hop3_attention.size(2), x_hop3_attention.size(1)))
+        # x_hop3_attention_sum = torch.norm(x_hop3_attention, 2, dim=1, keepdim=True)
+        # x_hop3_attention = x_hop3_attention / x_hop3_attention_sum
+
 
         # print(x_hop3.size())
 

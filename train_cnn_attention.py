@@ -1,5 +1,5 @@
 from model import *
-from data import *
+from dataset import *
 import numpy as np
 import copy
 from torch.optim.lr_scheduler import MultiStepLR
@@ -169,62 +169,6 @@ def train_epoch(epoch, args, encoder, decoder, data_loader, optimizer, scheduler
             print('freeze!')
 
 
-    # # freeze previous layers
-    # if epoch == 20:
-    #     optimizer = torch.optim.Adam([
-    #         {'params': decoder.deconv.parameters()},
-    #         {'params': decoder.deconv_out.parameters()},
-    #         {'params': decoder.bn.parameters()},
-    #
-    #         {'params': encoder.linear_3_0.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.linear_3_1.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.linear_3_2.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.linear_2_0.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.linear_2_1.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.linear_1_0.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.linear_0_0.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.linear.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.linear_projection.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.bn_3_0.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.bn_3_1.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.bn_3_2.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.bn_2_0.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.bn_2_1.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.bn_1_0.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.bn_0_0.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.bn.parameters(), 'lr': args.lr / 10},
-    #     ], lr=args.lr)
-    #
-    #     print('freeze!')
-    #
-    # if epoch == 50:
-    #     optimizer = torch.optim.Adam([
-    #         {'params': decoder.deconv1_1.parameters(), 'lr': args.lr / 10},
-    #         {'params': decoder.bn1_1.parameters(), 'lr': args.lr / 10},
-    #
-    #         {'params': encoder.linear_3_0.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.linear_3_1.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.linear_3_2.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.linear_2_0.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.linear_2_1.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.linear_1_0.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.linear_0_0.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.linear.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.linear_projection.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.bn_3_0.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.bn_3_1.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.bn_3_2.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.bn_2_0.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.bn_2_1.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.bn_1_0.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.bn_0_0.parameters(), 'lr': args.lr / 10},
-    #         {'params': encoder.bn.parameters(), 'lr': args.lr / 10},
-    #     ], lr=args.lr)
-    #
-    #     print('freeze!')
-
-
-
 
 
     for batch_idx, data in enumerate(data_loader):
@@ -242,7 +186,7 @@ def train_epoch(epoch, args, encoder, decoder, data_loader, optimizer, scheduler
         # print(x_real_hop1.size(), x_real_hop2.size(), x_real_hop3.size())
 
         y = encoder(data['node_list'], data['node_count_list'])
-        x_pred_hop1, x_pred_hop2, x_pred_hop3 = decoder(y)
+        x_pred_hop1, x_pred_hop2, x_pred_hop3, x_hop1_attention, x_hop2_attention, x_hop3_attention = decoder(y)
         x_pred_hop1 = x_pred_hop1.view(x_pred_hop1.size(2), x_pred_hop1.size(1))
         x_pred_hop2 = x_pred_hop2.view(x_pred_hop2.size(2), x_pred_hop2.size(1))
         x_pred_hop3 = x_pred_hop3.view(x_pred_hop3.size(2), x_pred_hop3.size(1))
@@ -375,11 +319,19 @@ def test_epoch(epoch, args, encoder, decoder, data_loader):
         x_real_hop3 = Variable(data['node_list_pad'][0]).cuda(CUDA)
         x_real_hop3 = x_real_hop3.view(x_real_hop3.size(1), x_real_hop3.size(2))
 
+        x_real_hop1_attention = Variable(data['node_adj_list'][2]).cuda(CUDA)
+        x_real_hop1_attention = x_real_hop1_attention.view(x_real_hop1.size(1), x_real_hop1.size(2))
+        x_real_hop2_attention = Variable(data['node_adj_list'][1]).cuda(CUDA)
+        x_real_hop2_attention = x_real_hop2_attention.view(x_real_hop2.size(1), x_real_hop2.size(2))
+        x_real_hop3_attention = Variable(data['node_adj_list'][0]).cuda(CUDA)
+        x_real_hop3_attention = x_real_hop3_attention.view(x_real_hop3.size(1), x_real_hop3.size(2))
+
         y = encoder(data['node_list'], data['node_count_list'])
         # if epoch%20 == 0:
         #     print('node_idx', node_idx[0], 'size of embedding', y.size())
         #     print('node_idx', node_idx[0], 'embedding', y.view(1,-1))
-        x_pred_hop1, x_pred_hop2, x_pred_hop3 = decoder(y)
+        x_pred_hop1, x_pred_hop2, x_pred_hop3, x_hop1_attention, x_hop2_attention, x_hop3_attention = decoder(y)
+        print(x_hop1_attention)
         x_pred_hop1 = x_pred_hop1.view(x_pred_hop1.size(2), x_pred_hop1.size(1))
         x_pred_hop2 = x_pred_hop2.view(x_pred_hop2.size(2), x_pred_hop2.size(1))
         x_pred_hop3 = x_pred_hop3.view(x_pred_hop3.size(2), x_pred_hop3.size(1))
