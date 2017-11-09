@@ -14,16 +14,139 @@ import torch.nn.init as init
 from collections import OrderedDict
 import math
 import numpy as np
-
+import time
 
 USE_CUDA = torch.cuda.is_available()
-CUDA = 3
+CUDA = 0
 
 
-######
-# implementation for Graph completion task
-######
 
+# RNN that updates according to graph structure
+class SRNN(nn.Module):
+    def __init__(self, feature_size, input_size, hidden_size, output_size, num_layers):
+        super(SRNN, self).__init__()
+        # model configuration
+        self.feature_size = feature_size # the node feature size
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.output_size = output_size
+        self.num_layers = num_layers
+        # model
+        self.gru = nn.GRU(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, batch_first=True)
+        self.linear_input = nn.Linear(feature_size, input_size) # todo: can use more complex mapping
+        self.linear_output = nn.Linear(hidden_size, output_size)
+        self.relu = nn.ReLU()
+        # use a list to keep all generated hidden vectors
+        self.hidden_all = []
+
+    # only run a single forward step
+    def foward(self, node_feature, connection, teacher_forcing):
+        # node_feature: batch*seq*feature
+        # connection: batch*seq*
+
+        input = self.linear_input(node_feature)
+
+
+
+        # i.e., we know how the coming node connects with previous nodes, model will use ground truth to attend
+        if teacher_forcing:
+            # predict attention
+
+
+
+
+
+            pass
+
+
+        # i.e., the model will use it's own prediction to attend
+        else:
+            pass
+
+
+
+
+
+    pass
+
+
+
+
+
+
+
+
+
+# current baseline model, generating a graph by lstm
+class Graph_generator_LSTM_graph(nn.Module):
+    def __init__(self,feature_size, input_size, hidden_size, output_size, batch_size, num_layers):
+        super(Graph_generator_LSTM_graph, self).__init__()
+        self.batch_size = batch_size
+        self.num_layers = num_layers
+        self.hidden_size = hidden_size
+        self.lstm = nn.LSTM(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, batch_first=True)
+        self.linear_input = nn.Linear(feature_size, input_size)
+        self.linear_output = nn.Linear(hidden_size, output_size)
+        self.relu = nn.ReLU()
+        # initialize
+        self.hidden,self.cell = self.init_hidden()
+        self.lstm.weight_ih_l0.data = init.xavier_uniform(self.lstm.weight_ih_l0.data, gain=nn.init.calculate_gain('sigmoid'))
+        self.lstm.weight_hh_l0.data = init.xavier_uniform(self.lstm.weight_hh_l0.data, gain=nn.init.calculate_gain('sigmoid'))
+        self.lstm.bias_ih_l0.data = torch.ones(self.lstm.bias_ih_l0.data.size(0))*0.25
+        self.lstm.bias_hh_l0.data = torch.ones(self.lstm.bias_hh_l0.data.size(0))*0.25
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                m.weight.data = init.xavier_uniform(m.weight.data,gain=nn.init.calculate_gain('relu'))
+    def init_hidden(self):
+        return (Variable(torch.zeros(self.num_layers,self.batch_size, self.hidden_size)).cuda(CUDA), Variable(torch.zeros(self.num_layers,self.batch_size, self.hidden_size)).cuda(CUDA))
+
+
+    def forward(self, input_raw):
+        input = self.linear_input(input_raw)
+        input = self.relu(input)
+        output_raw, hidden = self.lstm(input, (self.hidden,self.cell))
+        self.hidden = hidden[0]
+        self.cell = hidden[1]
+        output = self.linear_output(output_raw)
+        return output
+
+
+# todo: finish a discriminator to train the generator in a GAN way
+class Graph_discriminator_LSTM_graph(nn.Module):
+    def __init__(self,feature_size, input_size, hidden_size, output_size, batch_size, num_layers):
+        super(Graph_discriminator_LSTM_graph, self).__init__()
+        self.batch_size = batch_size
+        self.num_layers = num_layers
+        self.hidden_size = hidden_size
+        self.lstm = nn.LSTM(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, batch_first=True)
+        self.linear_input = nn.Linear(feature_size, input_size)
+        self.linear_output = nn.Linear(hidden_size, output_size)
+        self.relu = nn.ReLU()
+        # initialize
+        self.hidden = self.init_hidden()
+        self.lstm.weight_ih_l0.data = init.xavier_uniform(self.lstm.weight_ih_l0.data, gain=nn.init.calculate_gain('sigmoid'))
+        self.lstm.weight_hh_l0.data = init.xavier_uniform(self.lstm.weight_hh_l0.data, gain=nn.init.calculate_gain('sigmoid'))
+        self.lstm.bias_ih_l0.data = torch.ones(self.lstm.bias_ih_l0.data.size(0))*0.25
+        self.lstm.bias_hh_l0.data = torch.ones(self.lstm.bias_hh_l0.data.size(0))*0.25
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                m.weight.data = init.xavier_uniform(m.weight.data,gain=nn.init.calculate_gain('relu'))
+    def init_hidden(self):
+        return (Variable(torch.ones(self.num_layers,self.batch_size, self.hidden_size)).cuda(CUDA), Variable(torch.zeros(self.num_layers,self.batch_size, self.hidden_size)).cuda(CUDA))
+
+
+    def forward(self, input_raw):
+        input = self.linear_input(input_raw)
+        input = self.relu(input)
+        output_raw, self.hidden = self.lstm(input, self.hidden)
+        output = self.linear_output(output_raw)
+        return output
+
+
+
+
+
+# GCN basic operation
 class GraphConv(nn.Module):
     def __init__(self, input_dim, output_dim):
         super(GraphConv, self).__init__()
@@ -37,12 +160,12 @@ class GraphConv(nn.Module):
         return y
 
 
-
+# vanilla GCN encoder
 class GCN_encoder(nn.Module):
-    def __init__(self, args):
+    def __init__(self, input_dim, hidden_dim, output_dim):
         super(GCN_encoder, self).__init__()
-        self.conv1 = GraphConv(input_dim=args.input_dim, output_dim=args.hidden_dim)
-        self.conv2 = GraphConv(input_dim=args.hidden_dim, output_dim=args.output_dim)
+        self.conv1 = GraphConv(input_dim=input_dim, output_dim=hidden_dim)
+        self.conv2 = GraphConv(input_dim=hidden_dim, output_dim=output_dim)
         # self.bn1 = nn.BatchNorm1d(output_dim)
         # self.bn2 = nn.BatchNorm1d(output_dim)
         self.relu = nn.ReLU()
@@ -63,7 +186,7 @@ class GCN_encoder(nn.Module):
         x = self.conv2(x,adj)
         # x = x / torch.sum(x, dim=2, keepdim=True)
         return x
-
+# vanilla GCN decoder
 class GCN_decoder(nn.Module):
     def __init__(self):
         super(GCN_decoder, self).__init__()
@@ -77,15 +200,170 @@ class GCN_decoder(nn.Module):
         return y
 
 
+# GCN based graph embedding
+# allowing for arbitrary num of nodes
+class GCN_encoder_graph(nn.Module):
+    def __init__(self,input_dim, hidden_dim, output_dim,num_layers):
+        super(GCN_encoder_graph, self).__init__()
+        self.num_layers = num_layers
+        self.conv_first = GraphConv(input_dim=input_dim, output_dim=hidden_dim)
+        # self.conv_hidden1 = GraphConv(input_dim=hidden_dim, output_dim=hidden_dim)
+        # self.conv_hidden2 = GraphConv(input_dim=hidden_dim, output_dim=hidden_dim)
+        self.conv_block = nn.ModuleList([GraphConv(input_dim=hidden_dim, output_dim=hidden_dim) for i in range(num_layers)])
+        self.conv_last = GraphConv(input_dim=hidden_dim, output_dim=output_dim)
+        self.act = nn.ReLU()
+        for m in self.modules():
+            if isinstance(m, GraphConv):
+                m.weight.data = init.xavier_uniform(m.weight.data, gain=nn.init.calculate_gain('relu'))
+                # init_range = np.sqrt(6.0 / (m.input_dim + m.output_dim))
+                # m.weight.data = torch.rand([m.input_dim, m.output_dim]).cuda(CUDA)*init_range
+                # print('find!')
+    def forward(self,x,adj):
+        x = self.conv_first(x,adj)
+        x = self.act(x)
+        out_all = []
+        out, _ = torch.max(x, dim=1, keepdim=True)
+        out_all.append(out)
+        for i in range(self.num_layers-2):
+            x = self.conv_block[i](x,adj)
+            x = self.act(x)
+            out,_ = torch.max(x, dim=1, keepdim = True)
+            out_all.append(out)
+        x = self.conv_last(x,adj)
+        x = self.act(x)
+        out,_ = torch.max(x, dim=1, keepdim = True)
+        out_all.append(out)
+        output = torch.cat(out_all, dim = 1)
+        output = output.permute(1,0,2)
+        # print(out)
+        return output
+
+# x = Variable(torch.rand(1,8,10)).cuda(CUDA)
+# adj = Variable(torch.rand(1,8,8)).cuda(CUDA)
+# model = GCN_encoder_graph(10,10,10).cuda(CUDA)
+# y = model(x,adj)
+# print(y.size())
+
+
+def preprocess(A):
+    # Get size of the adjacency matrix
+    size = A.size(1)
+    # Get the degrees for each node
+    degrees = torch.sum(A, dim=2)
+
+    # Create diagonal matrix D from the degrees of the nodes
+    D = Variable(torch.zeros(A.size(0),A.size(1),A.size(2))).cuda(CUDA)
+    for i in range(D.size(0)):
+        D[i, :, :] = torch.diag(torch.pow(degrees[i,:], -0.5))
+    # Cholesky decomposition of D
+    # D = np.linalg.cholesky(D)
+    # Inverse of the Cholesky decomposition of D
+    # D = np.linalg.inv(D)
+    # Create an identity matrix of size x size
+    # Create A hat
+    # Return A_hat
+    A_normal = torch.matmul(torch.matmul(D,A), D)
+    # print(A_normal)
+    return A_normal
+
+
+
+# a sequential GCN model, GCN with n layers
+class GCN_generator(nn.Module):
+    def __init__(self, hidden_dim):
+        super(GCN_generator, self).__init__()
+        # todo: add an linear_input module to map the input feature into 'hidden_dim'
+        self.conv = GraphConv(input_dim=hidden_dim, output_dim=hidden_dim)
+        self.act = nn.ReLU()
+        # initialize
+        for m in self.modules():
+            if isinstance(m, GraphConv):
+                m.weight.data = init.xavier_uniform(m.weight.data, gain=nn.init.calculate_gain('relu'))
+
+    def forward(self,x,teacher_force=False,adj_real=None):
+        # x: batch * node_num * feature
+        batch_num = x.size(0)
+        node_num = x.size(1)
+        adj = Variable(torch.eye(node_num).view(1,node_num,node_num).repeat(batch_num,1,1)).cuda(CUDA)
+        adj_output = Variable(torch.eye(node_num).view(1,node_num,node_num).repeat(batch_num,1,1)).cuda(CUDA)
+
+        # do GCN n times
+        # todo: try if residual connections are plausible
+        # todo: add higher order of adj (adj^2, adj^3, ...)
+        # todo: try if norm everytim is plausible
+
+        # first do GCN 1 time to preprocess the raw features
+
+        # x_new = self.conv(x, adj)
+        # x_new = self.act(x_new)
+        # x = x + x_new
+
+        x = self.conv(x, adj)
+        x = self.act(x)
+
+        # x = x / torch.norm(x, p=2, dim=2, keepdim=True)
+        # then do GCN rest n-1 times
+        for i in range(1, node_num):
+            # 1 calc prob of a new edge, output the result in adj_output
+            x_last = x[:,i:i+1,:].clone()
+            x_prev = x[:,0:i,:].clone()
+            x_prev = x_prev
+            x_last = x_last
+            prob = x_prev @ x_last.permute(0,2,1)
+            adj_output[:,i,0:i] = prob.permute(0,2,1).clone()
+            adj_output[:,0:i,i] = prob.clone()
+            # 2 update adj
+            if teacher_force:
+                adj = Variable(torch.eye(node_num).view(1, node_num, node_num).repeat(batch_num, 1, 1)).cuda(CUDA)
+                adj[:,0:i+1,0:i+1] = adj_real[:,0:i+1,0:i+1].clone()
+            else:
+                adj[:, i, 0:i] = prob.permute(0,2,1).clone()
+                adj[:, 0:i, i] = prob.clone()
+            adj = preprocess(adj)
+            # print(adj)
+            # print(adj.min().data[0],adj.max().data[0])
+            # print(x.min().data[0],x.max().data[0])
+            # 3 do graph conv, with residual connection
+            # x_new = self.conv(x, adj)
+            # x_new = self.act(x_new)
+            # x = x + x_new
+
+            x = self.conv(x, adj)
+            x = self.act(x)
+
+            # x = x / torch.norm(x, p=2, dim=2, keepdim=True)
+        # one = Variable(torch.ones(adj_output.size(0), adj_output.size(1), adj_output.size(2)) * 1.00).cuda(CUDA).float()
+        # two = Variable(torch.ones(adj_output.size(0), adj_output.size(1), adj_output.size(2)) * 2.01).cuda(CUDA).float()
+        # adj_output = (adj_output + one) / two
+        # print(adj_output.max().data[0], adj_output.min().data[0])
+        return adj_output
+
+
 # #### test code ####
-# A = Variable(torch.rand(10,9,9)).cuda(CUDA)
-# x = Variable(torch.rand(10,9,5)).cuda(CUDA)
-# encoder = GCN_encoder(A, x.size(2), 10)
-# decoder = GCN_decoder()
-# y = encoder(x)
-# print(y)
-# y = decoder(y)
-# print(y)
+# print('teacher forcing')
+# # print('no teacher forcing')
+#
+# start = time.time()
+# generator = GCN_generator(hidden_dim=4)
+# end = time.time()
+# print('model build time', end-start)
+# for run in range(10):
+#     for i in [500]:
+#         for batch in [1,10,100]:
+#             start = time.time()
+#             torch.manual_seed(123)
+#             x = Variable(torch.rand(batch,i,4)).cuda(CUDA)
+#             adj = Variable(torch.eye(i).view(1,i,i).repeat(batch,1,1)).cuda(CUDA)
+#             # print('x', x)
+#             # print('adj', adj)
+#
+#             # y = generator(x)
+#             y = generator(x,True,adj)
+#             # print('y',y)
+#             end = time.time()
+#             print('node num', i, '  batch size',batch, '  run time', end-start)
+
+
 
 
 class CNN_decoder(nn.Module):
@@ -197,12 +475,12 @@ class CNN_decoder(nn.Module):
 
 
 class CNN_decoder_share(nn.Module):
-    def __init__(self, input_size, output_size, stride = 2):
-
+    def __init__(self, input_size, output_size, stride, hops):
         super(CNN_decoder_share, self).__init__()
 
         self.input_size = input_size
         self.output_size = output_size
+        self.hops = hops
 
         self.relu = nn.ReLU()
         self.deconv = nn.ConvTranspose1d(in_channels=int(self.input_size), out_channels=int(self.input_size), kernel_size=3, stride=stride)
@@ -227,6 +505,7 @@ class CNN_decoder_share(nn.Module):
         x: batch * channel * length
         :return:
         '''
+
         # hop1
         x = self.deconv(x)
         x = self.bn(x)
@@ -380,7 +659,7 @@ class CNN_decoder_attention(nn.Module):
 # decoder = CNN_decoder(256, 16).cuda(CUDA)
 # y = decoder(x)
 
-class Encoder(nn.Module):
+class Graphsage_Encoder(nn.Module):
     def __init__(self, feature_size, input_size, layer_num):
         super(Encoder, self).__init__()
 
@@ -543,395 +822,3 @@ class Encoder(nn.Module):
 
 
 
-
-
-
-class Encoder_share(nn.Module):
-    def __init__(self, feature_size, input_size, layer_num):
-        super(Encoder, self).__init__()
-
-        self.linear_projection = nn.Linear(feature_size, input_size)
-
-        self.input_size = input_size
-
-        # linear for hop 3
-        self.linear = nn.Linear(input_size * 2, input_size)
-
-        self.bn = nn.BatchNorm1d(input_size)
-
-        self.relu = nn.ReLU()
-        for m in self.modules():
-            if isinstance(m, nn.Linear):
-                m.weight.data = init.xavier_uniform(m.weight.data, gain=nn.init.calculate_gain('relu'))
-            elif isinstance(m, nn.BatchNorm1d):
-                m.weight.data.fill_(1)
-                m.bias.data.zero_()
-
-    def forward(self, nodes_list, nodes_count_list):
-        '''
-
-        :param nodes: a list, each element n_i is a tensor for node's k-i hop neighbours
-                (the first nodes_hop is the furthest neighbor)
-                where n_i = N * num_neighbours * features
-               nodes_count: a list, each element is a list that show how many neighbours belongs to the father node
-        :return:
-        '''
-
-        # 3-hop feature
-        # nodes original features to representations
-        nodes_list[0] = Variable(nodes_list[0]).cuda(CUDA)
-        nodes_list[0] = self.linear_projection(nodes_list[0]) # to match input dimension
-        nodes_list[0] = torch.cat((nodes_list[0],nodes_list[0]),2)
-        nodes_features = self.linear(nodes_list[0])
-        nodes_features = self.bn(nodes_features.view(-1, nodes_features.size(2), nodes_features.size(1)))
-        nodes_features = nodes_features.view(-1, nodes_features.size(2), nodes_features.size(1))
-        nodes_features = self.relu(nodes_features)
-        # nodes count from previous hop
-        nodes_count = nodes_count_list[0]
-        # print(nodes_count,nodes_count.size())
-        # aggregated representations placeholder, feature dim * 2
-        nodes_features_farther = Variable(
-            torch.Tensor(nodes_features.size(0), nodes_count.size(1), nodes_features.size(2))).cuda(CUDA)
-        i = 0
-        for j in range(nodes_count.size(1)):
-            # mean pooling for each father node
-            # print(nodes_count[:,j][0],type(nodes_count[:,j][0]))
-            nodes_features_farther[:, j, :] = torch.mean(nodes_features[:, i:i + int(nodes_count[:, j][0]), :], 1,
-                                                         keepdim=False)
-            i += int(nodes_count[:, j][0])
-        # assign node_features
-        nodes_features = nodes_features_farther
-        nodes_list[1] = Variable(nodes_list[1]).cuda(CUDA)
-        nodes_list[1] = self.linear_projection(nodes_list[1])
-        nodes_list[1] = torch.cat((nodes_list[0], nodes_list[0]), 2)
-        nodes_features = self.linear(nodes_list[0])
-        nodes_features = self.bn(nodes_features.view(-1, nodes_features.size(2), nodes_features.size(1)))
-        nodes_features = nodes_features.view(-1, nodes_features.size(2), nodes_features.size(1))
-        nodes_features = self.relu(nodes_features)
-        # nodes count from previous hop
-        nodes_count = nodes_count_list[0]
-        # print(nodes_count,nodes_count.size())
-        # aggregated representations placeholder, feature dim * 2
-        nodes_features_farther = Variable(
-            torch.Tensor(nodes_features.size(0), nodes_count.size(1), nodes_features.size(2))).cuda(CUDA)
-        i = 0
-        for j in range(nodes_count.size(1)):
-            # mean pooling for each father node
-            # print(nodes_count[:,j][0],type(nodes_count[:,j][0]))
-            nodes_features_farther[:, j, :] = torch.mean(nodes_features[:, i:i + int(nodes_count[:, j][0]), :], 1,
-                                                         keepdim=False)
-            i += int(nodes_count[:, j][0])
-
-
-
-
-        nodes_features = self.linear_3_1(nodes_features)
-        nodes_features = self.bn_3_1(nodes_features.view(-1, nodes_features.size(2), nodes_features.size(1)))
-        nodes_features = nodes_features.view(-1, nodes_features.size(2), nodes_features.size(1))
-        nodes_features = self.relu(nodes_features)
-        # nodes count from previous hop
-        nodes_count = nodes_count_list[1]
-        # aggregated representations placeholder, feature dim * 2
-        nodes_features_farther = Variable(
-            torch.Tensor(nodes_features.size(0), nodes_count.size(1), nodes_features.size(2))).cuda(CUDA)
-        i = 0
-        for j in range(nodes_count.size(1)):
-            # mean pooling for each father node
-            nodes_features_farther[:, j, :] = torch.mean(nodes_features[:, i:i + int(nodes_count[:, j][0]), :], 1,
-                                                         keepdim=False)
-            i += int(nodes_count[:, j][0])
-        # assign node_features
-        nodes_features = nodes_features_farther
-        # print('nodes_feature',nodes_features.size())
-        nodes_features = self.linear_3_2(nodes_features)
-        nodes_features = self.bn_3_2(nodes_features.view(-1, nodes_features.size(2), nodes_features.size(1)))
-        nodes_features = nodes_features.view(-1, nodes_features.size(2), nodes_features.size(1))
-        # nodes_features = self.relu(nodes_features)
-        # nodes count from previous hop
-        nodes_features_hop_3 = torch.mean(nodes_features, 1, keepdim=True)
-        # print(nodes_features_hop_3.size())
-
-        # 2-hop feature
-        # nodes original features to representations
-        nodes_list[1] = Variable(nodes_list[1]).cuda(CUDA)
-        nodes_list[1] = self.linear_projection(nodes_list[1])
-        nodes_features = self.linear_2_0(nodes_list[1])
-        nodes_features = self.bn_2_0(nodes_features.view(-1, nodes_features.size(2), nodes_features.size(1)))
-        nodes_features = nodes_features.view(-1, nodes_features.size(2), nodes_features.size(1))
-        nodes_features = self.relu(nodes_features)
-        # nodes count from previous hop
-        nodes_count = nodes_count_list[1]
-        # aggregated representations placeholder, feature dim * 2
-        nodes_features_farther = Variable(
-            torch.Tensor(nodes_features.size(0), nodes_count.size(1), nodes_features.size(2))).cuda(CUDA)
-        i = 0
-        for j in range(nodes_count.size(1)):
-            # mean pooling for each father node
-            nodes_features_farther[:, j, :] = torch.mean(nodes_features[:, i:i + int(nodes_count[:, j][0]), :], 1,
-                                                         keepdim=False)
-            i += int(nodes_count[:, j][0])
-        # assign node_features
-        nodes_features = nodes_features_farther
-        nodes_features = self.linear_2_1(nodes_features)
-        nodes_features = self.bn_2_1(nodes_features.view(-1, nodes_features.size(2), nodes_features.size(1)))
-        nodes_features = nodes_features.view(-1, nodes_features.size(2), nodes_features.size(1))
-        # nodes_features = self.relu(nodes_features)
-        # nodes count from previous hop
-        nodes_features_hop_2 = torch.mean(nodes_features, 1, keepdim=True)
-        # print(nodes_features_hop_2.size())
-
-
-        # 1-hop feature
-        # nodes original features to representations
-        nodes_list[2] = Variable(nodes_list[2]).cuda(CUDA)
-        nodes_list[2] = self.linear_projection(nodes_list[2])
-        nodes_features = self.linear_1_0(nodes_list[2])
-        nodes_features = self.bn_1_0(nodes_features.view(-1, nodes_features.size(2), nodes_features.size(1)))
-        nodes_features = nodes_features.view(-1, nodes_features.size(2), nodes_features.size(1))
-        # nodes_features = self.relu(nodes_features)
-        # nodes count from previous hop
-        nodes_features_hop_1 = torch.mean(nodes_features, 1, keepdim=True)
-        # print(nodes_features_hop_1.size())
-
-
-        # own feature
-        nodes_list[3] = Variable(nodes_list[3]).cuda(CUDA)
-        nodes_list[3] = self.linear_projection(nodes_list[3])
-        nodes_features = self.linear_0_0(nodes_list[3])
-        nodes_features = self.bn_0_0(nodes_features.view(-1, nodes_features.size(2), nodes_features.size(1)))
-        nodes_features_hop_0 = nodes_features.view(-1, nodes_features.size(2), nodes_features.size(1))
-        # print(nodes_features_hop_0.size())
-
-
-
-        # concatenate
-        nodes_features = torch.cat(
-            (nodes_features_hop_0, nodes_features_hop_1, nodes_features_hop_2, nodes_features_hop_3), dim=2)
-        nodes_features = self.linear(nodes_features)
-        # nodes_features = self.bn(nodes_features.view(-1,nodes_features.size(2),nodes_features.size(1)))
-        nodes_features = nodes_features.view(-1, nodes_features.size(2), nodes_features.size(1))
-        # print(nodes_features.size())
-        return (nodes_features)
-
-
-
-
-
-
-
-#### test code ####
-# embedding_size = 4
-# # test
-# x0 = Variable(torch.randn(1, 1, embedding_size)).cuda(CUDA)
-# x1 = Variable(torch.randn(1, 4, embedding_size)).cuda(CUDA)
-# x2 = Variable(torch.randn(1, 12, embedding_size)).cuda(CUDA)
-# x3 = Variable(torch.randn(1, 36, embedding_size)).cuda(CUDA)
-# print(x3, x2, x1, x0)
-# node_list = [x3, x2, x1, x0]
-# count1 = torch.Tensor([3]).repeat(4)
-# count2 = torch.Tensor([3]).repeat(12)
-# node_count_list = [count2, count1]
-#
-# encoder = Encoder(embedding_size, 3).cuda(CUDA)
-# y = encoder(node_list, node_count_list)
-# # print(y)
-#
-# decoder = CNN_decoder(y.size(1), embedding_size).cuda(CUDA)
-# x = decoder(y)
-# print(x)
-
-
-
-
-
-
-
-
-
-class EncoderRNN(nn.Module):
-    def __init__(self, input_size, hidden_size, n_layers=1, is_bidirection = True):
-        super(EncoderRNN, self).__init__()
-        self.n_layers = n_layers
-        self.hidden_size = hidden_size
-        self.is_bidirection = is_bidirection
-
-        self.gru = nn.GRU(input_size, hidden_size, bidirectional=self.is_bidirection, batch_first=True)
-
-    def forward(self, input, hidden):
-        # run the whole sequence at a time
-        output, hidden = self.gru(input, hidden)
-        return output, hidden
-
-    def initHidden(self):
-        result = Variable(torch.zeros(self.n_layers*self.is_bidirection*2, 1, self.hidden_size), requires_grad = True)
-        if USE_CUDA:
-            return result.cuda(CUDA)
-        else:
-            return result
-
-
-
-class DecoderRNN_step(nn.Module):
-    def __init__(self, input_size, hidden_size, embedding_size, n_layers=1, is_bidirection = True, embedding_init_flag = False, embedding_init = 0, hidden_grad = False):
-        super(DecoderRNN_step, self).__init__()
-        self.n_layers = n_layers
-        self.input_size = input_size
-        self.hidden_size = hidden_size
-        self.embedding_size = embedding_size
-        self.is_bidirection = is_bidirection
-
-        self.gru = nn.GRU(input_size, hidden_size, bidirectional=self.is_bidirection, batch_first=True)
-        # init.xavier_uniform(self.gru.weight)
-        self.linear = nn.Linear(hidden_size,input_size)
-        self.softmax = torch.nn.Softmax()
-        self.tanh = torch.nn.Tanh()
-
-        self.embedding = nn.Embedding(embedding_size, input_size)
-        print(self.embedding.weight.data.size())
-        if embedding_init_flag == False:
-            self.embedding.weight.data = init.uniform(torch.Tensor(embedding_size, input_size))
-        else:
-            self.embedding.weight.data[3:,:] = embedding_init
-
-        if self.is_bidirection:
-            w = torch.Tensor(self.n_layers*2, 1, self.hidden_size)
-            init.xavier_uniform(w, gain=init.calculate_gain('relu'))
-            self.hidden = nn.Parameter(w, requires_grad = hidden_grad)
-
-            # self.hidden = nn.Parameter(torch.zeros(self.n_layers*2, 1, self.hidden_size), requires_grad = hidden_grad)
-        else:
-            w = torch.Tensor(self.n_layers, 1, self.hidden_size)
-            init.xavier_uniform(w, gain=init.calculate_gain('relu'))
-            self.hidden = nn.Parameter(w, requires_grad = hidden_grad)
-
-            # self.hidden = nn.Parameter(torch.zeros(self.n_layers, 1, self.hidden_size), requires_grad = hidden_grad)
-
-        # for m in self.modules():
-        #     print(m)
-
-    def forward(self, input, hidden, modify_input = True):
-        # run one time step at a time
-        # input = F.relu(input) # maybe a trick, need to try
-
-        # input_shape: (batch, seq_length, input_size)
-        # hidden_shape: (batch, n_layers*n_directions, hidden_size)
-        # input_shape (before modify): (batch, input_size)
-        input = input.view(input.size(0),1,input.size(1))
-        self.gru.flatten_parameters() # fix pytorch warning
-        output, hidden = self.gru(input, hidden)
-        # uncomment if bi-directional
-
-        if self.is_bidirection:
-            output = output[:, :, :self.hidden_size] + output[:, :, self.hidden_size:]  # Sum bidirectional outputs
-        output = torch.squeeze(output,dim=1)
-        output = self.linear(output)
-        output = self.tanh(output)
-        return output, hidden
-
-    def initHidden(self, requires_grad = False):
-        if self.is_bidirection:
-            w = torch.Tensor(self.n_layers*2, 1, self.hidden_size)
-            init.xavier_uniform(w, gain=init.calculate_gain('relu'))
-            result = nn.Parameter(w, requires_grad = requires_grad)
-
-            # result = Variable(torch.zeros(self.n_layers*2, 1, self.hidden_size), requires_grad = requires_grad)
-        else:
-            w = torch.Tensor(self.n_layers, 1, self.hidden_size)
-            init.xavier_uniform(w, gain=init.calculate_gain('relu'))
-            result = nn.Parameter(w, requires_grad = requires_grad)
-
-            # result = Variable(torch.zeros(self.n_layers, 1, self.hidden_size), requires_grad = requires_grad)
-        self.register_parameter('result', result)
-        if USE_CUDA:
-            return result.cuda(CUDA)
-        else:
-            return result
-
-
-
-
-
-##### reference code #####
-
-
-
-
-# # test DecoderRNN_step
-# seq_len = 5
-# hidden_size = 4
-# input_size = 4
-#
-# decoder = DecoderRNN_step(input_size=input_size, hidden_size=hidden_size, embedding_size=10, is_bidirection=False)
-# # hidden = decoder.initHidden()
-# hidden = Variable(torch.rand(1,1,hidden_size)).cuda(CUDA)
-#
-# print('hidden -- 0', hidden)
-# input_seqence = Variable(torch.rand(1,seq_len,hidden_size)).cuda(CUDA)
-#
-# loss_f = nn.BCELoss()
-#
-# output = input_seqence[:,0,:]
-# print('input -- 0', output)
-# loss = 0
-# for i in range(seq_len-1):
-#     output, hidden = decoder(output,hidden)
-#     print('output -- '+str(i), output)
-#     print('hidden -- '+str(i), hidden)
-#     loss += loss_f(output,input_seqence[:,i+1,:])
-#     print('loss -- '+str(i), loss_f(output,input_seqence[:,i+1,:]))
-# print('total loss', loss)
-
-
-#
-# class EncoderRNN(nn.Module):
-#     def __init__(self, input_size, hidden_size, n_layers=1, is_bidirection = True):
-#         super(EncoderRNN, self).__init__()
-#         self.n_layers = n_layers
-#         self.hidden_size = hidden_size
-#         self.is_bidirection = is_bidirection
-#
-#         self.gru = nn.GRU(input_size, hidden_size, bidirectional=self.is_bidirection, batch_first=True)
-#
-#     def forward(self, input, hidden):
-#         # run the whole sequence at a time
-#         output, hidden = self.gru(input, hidden)
-#         return output, hidden
-#
-#     def initHidden(self):
-#         result = Variable(torch.zeros(self.n_layers*self.is_bidirection*2, 1, self.hidden_size))
-#         if USE_CUDA:
-#             return result.cuda(CUDA)
-#         else:
-#             return result
-#
-# class DecoderRNN(nn.Module):
-#     def __init__(self, input_size, hidden_size, n_layers=1, is_bidirection = True):
-#         super(DecoderRNN, self).__init__()
-#         self.n_layers = n_layers
-#         self.hidden_size = hidden_size
-#         self.is_bidirection = is_bidirection
-#
-#         self.gru = nn.GRU(input_size, hidden_size, bidirectional=self.is_bidirection, batch_first=True)
-#
-#     def forward(self, input, hidden):
-#         # run one time step at a time
-#         # input = F.relu(input) # maybe a trick, need to try
-#         output, hidden = self.gru(input, hidden)
-#         output = self.softmax(output)
-#         return output, hidden
-#
-#     def initHidden(self):
-#         result = Variable(1, torch.zeros(self.n_layers*self.is_bidirection*2, self.hidden_size))
-#         if USE_CUDA:
-#             return result.cuda(CUDA)
-#         else:
-#             return result
-#
-#
-# encoder = EncoderRNN(16, 64, 1).cuda(CUDA)
-# decoder = DecoderRNN(16, 64)
-# input_dummy = Variable(torch.rand(1,30,16)).cuda(CUDA)
-# hidden = encoder.initHidden()
-# output, hidden = encoder(input_dummy,hidden)
-# print('output', output.size())
-# print('hidden', hidden.size())
