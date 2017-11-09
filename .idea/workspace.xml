@@ -1,29 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="ba808d55-a4e0-4b07-9054-24aeb41ac5b9" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/analysis.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/main.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_MMD.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/utils.py" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/main_0.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/main_1.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/main_cnn.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/main_cnn_0.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/main_cnn_attention.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/main_gcn.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/main_rnn.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/node2vec/src/main_mine.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/test_graph.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/train_cnn.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/train_cnn_attention.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/train_gcn.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/train_rnn.py" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/data.py" afterPath="$PROJECT_DIR$/data.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/model.py" afterPath="$PROJECT_DIR$/model.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test_code.py" afterPath="$PROJECT_DIR$/test_code.py" />
-    </list>
+    <list default="true" id="ba808d55-a4e0-4b07-9054-24aeb41ac5b9" name="Default" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -483,7 +461,14 @@
       <option name="project" value="LOCAL" />
       <updated>1509036070932</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="sequential LSTM generator&#10;clean up the code">
+      <created>1510202832109</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1510202832109</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TestHistory">
@@ -537,7 +522,7 @@
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32980332" sideWeight="0.49841145" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32753405" sideWeight="0.47418585" order="9" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32980332" sideWeight="0.49841145" order="10" side_tool="false" content_ui="tabs" />
-      <window_info id="Remote Host" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.58154505" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="Remote Host" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.30972818" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.2932761" sideWeight="0.49668247" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32648125" sideWeight="0.49427754" order="1" side_tool="false" content_ui="tabs" />
@@ -591,7 +576,8 @@
     <MESSAGE value="add CNN module" />
     <MESSAGE value="move to CNN with attention" />
     <MESSAGE value="Baseline: GCN pairwise decoder done" />
-    <option name="LAST_COMMIT_MESSAGE" value="Baseline: GCN pairwise decoder done" />
+    <MESSAGE value="sequential LSTM generator&#10;clean up the code" />
+    <option name="LAST_COMMIT_MESSAGE" value="sequential LSTM generator&#10;clean up the code" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
