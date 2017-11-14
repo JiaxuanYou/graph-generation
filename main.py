@@ -23,7 +23,7 @@ import pickle
 
 
 
-CUDA = 0
+CUDA = 3
 
 
 

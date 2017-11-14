@@ -1,0 +1,15 @@
+
+*.pyc
+*.sw?
+
+*.dat
+*.pkl
+*.pickle
+
+figures/
+bin/
+model_save/
+logs/
+graphs/
+
+__pycache__
