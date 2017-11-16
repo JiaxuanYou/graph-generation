@@ -11,9 +11,9 @@ def degree_stats(graph_ref_list, graph_pred_list):
     '''
     sample_ref = []
     sample_pred = []
-    for G in graph_ref_list:
-        sample_ref.append(np.array(nx.degree_histogram(G)))
-        sample_pred.append(np.array(nx.degree_histogram(G)))
+    for i in range(len(graph_ref_list)):
+        sample_ref.append(np.array(nx.degree_histogram(graph_ref_list[i])))
+        sample_pred.append(np.array(nx.degree_histogram(graph_pred_list[i])))
     mmd_dist = mmd.compute_mmd(sample_ref, sample_pred, kernel=mmd.gaussian_emd)
     return mmd_dist
 
