@@ -56,8 +56,8 @@
       <file leaf-file-name="main.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/main.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="398">
-              <caret line="1074" column="21" lean-forward="true" selection-start-line="1074" selection-start-column="21" selection-end-line="1074" selection-end-column="21" />
+            <state relative-caret-position="203">
+              <caret line="1061" column="25" lean-forward="true" selection-start-line="1061" selection-start-column="25" selection-end-line="1061" selection-end-column="25" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -478,7 +478,14 @@
       <option name="project" value="LOCAL" />
       <updated>1511194709880</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="Workable LSTM and Structure RNN model">
+      <created>1511194717188</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1511194717189</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="TestHistory">
@@ -869,8 +876,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/main.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="398">
-          <caret line="1074" column="21" lean-forward="true" selection-start-line="1074" selection-start-column="21" selection-end-line="1074" selection-end-column="21" />
+        <state relative-caret-position="203">
+          <caret line="1061" column="25" lean-forward="true" selection-start-line="1061" selection-start-column="25" selection-end-line="1061" selection-end-column="25" />
           <folding>
             <element signature="e#0#21#0" expanded="true" />
           </folding>
