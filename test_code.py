@@ -8,7 +8,12 @@ import torch.nn.functional as F
 import numpy as np
 import community
 from random import shuffle
+from torch.autograd import Variable
+from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
+import torch.nn as nn
 
+
+CUDA = 2
 # G = nx.ladder_graph(4)
 # print(nx.info(G))
 # print(nx.cycle_basis(G,0))
@@ -16,13 +21,82 @@ from random import shuffle
 # dict = nx.bfs_successors(G,3)
 # print(dict)
 
-plt.switch_backend('agg')
+# plt.switch_backend('agg')
+#
+# G = nx.karate_club_graph()
+#
+# length = nx.all_pairs_shortest_path_length(G)
 
-G = nx.karate_club_graph()
 
-length = nx.all_pairs_shortest_path_length(G)
+# def gumbel_softmax(logits, temperature, eps=1e-9):
+#     # get gumbel noise
+#     noise = torch.rand(logits.size())
+#     noise.add_(eps).log_().neg_()
+#     noise.add_(eps).log_().neg_()
+#     noise = Variable(noise)
+#
+#     x = (logits + noise) / temperature
+#     x = F.softmax(x)
+#     return x
+#
+# def gumbel_sigmoid(logits, temperature, eps=1e-9):
+#     # get gumbel noise
+#     noise = torch.rand(logits.size())
+#     noise.add_(eps).log_().neg_()
+#     noise.add_(eps).log_().neg_()
+#     noise = Variable(noise)
+#
+#     x = (logits + noise) / temperature
+#     x = F.sigmoid(x)
+#     return x
+#
+# logits = Variable(torch.randn(8,1)*5)
+# x = gumbel_sigmoid(logits=logits, temperature=1)
+# print(logits)
+# print(x)
 
 
+# x = Variable(torch.zeros(2,1)).cuda(CUDA)
+# y = x.data
+# print(x)
+# print(y)
+
+# a = np.arange(0,11,3)
+# b = range(0,11,3)
+# print(a)
+# print(b[1])
+
+
+
+x = Variable(torch.randn(10, 20, 3)).cuda()
+lens = np.arange(1,11)[::-1]
+
+# print('x_before', x)
+x = pack_padded_sequence(x, lens, batch_first=True)
+# print('x_pack', x)
+print('x_unpack', pad_packed_sequence(x,batch_first=True)[0])
+
+lstm = nn.LSTM(3, 2, batch_first=True).cuda()
+h0 = Variable(torch.zeros(1, 10, 2)).cuda()
+c0 = Variable(torch.zeros(1, 10, 2)).cuda()
+
+packed_h, (packed_h_t, packed_c_t) = lstm(x, (h0, c0))
+h, _ = pad_packed_sequence(packed_h,batch_first=True)
+# print(h.size()) # Size 20 x 10 x 50 instead of 10 x 20 x 50
+# print(h)
+
+
+
+# p_list = np.linspace(0,1,100)
+# pred = p_list+(1-p_list)*p_list+(1-p_list)*(1-p_list)*p_list
+# print(p_list)
+# print(pred)
+
+
+
+
+# a = torch.Tensor([1,2,3,4])
+# print(a[-3:])
 
 # G_cluster = sorted(list(nx.clustering(G).values()))
 # print(G_cluster)

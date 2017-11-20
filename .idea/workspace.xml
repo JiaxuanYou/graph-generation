@@ -1,7 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="ba808d55-a4e0-4b07-9054-24aeb41ac5b9" name="Default" comment="" />
+    <list default="true" id="ba808d55-a4e0-4b07-9054-24aeb41ac5b9" name="Default" comment="Workable LSTM and Structure RNN model">
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/analysis.py" afterPath="$PROJECT_DIR$/analysis.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/data.py" afterPath="$PROJECT_DIR$/data.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main.py" afterPath="$PROJECT_DIR$/main.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/model.py" afterPath="$PROJECT_DIR$/model.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test_code.py" afterPath="$PROJECT_DIR$/test_code.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/utils.py" afterPath="$PROJECT_DIR$/utils.py" />
+    </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -11,7 +19,7 @@
   </component>
   <component name="CoverageDataManager">
     <SUITE FILE_PATH="coverage/local$train_generator.coverage" NAME="train_generator Coverage Results" MODIFIED="1509334807893" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/local$test_code.coverage" NAME="test_code Coverage Results" MODIFIED="1509665148663" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/local$test_code.coverage" NAME="test_code Coverage Results" MODIFIED="1511117842779" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/local$main_0.coverage" NAME="main_0 Coverage Results" MODIFIED="1507838629710" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/local$main_gcn.coverage" NAME="main_gcn Coverage Results" MODIFIED="1509146515173" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/local$test_MMD.coverage" NAME="test_MMD Coverage Results" MODIFIED="1509341072303" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
@@ -21,20 +29,20 @@
     <SUITE FILE_PATH="coverage/local$main__1_.coverage" NAME="main (1) Coverage Results" MODIFIED="1507833754216" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="/" />
     <SUITE FILE_PATH="coverage/local$Nosetests_for_train_gcn_test_epoch.coverage" NAME="Nosetests for train_gcn.test_epoch Coverage Results" MODIFIED="1508800502246" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/local$main_seq_gen.coverage" NAME="main_seq_gen Coverage Results" MODIFIED="1509480755572" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/local$data.coverage" NAME="data Coverage Results" MODIFIED="1509680451253" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/local$data.coverage" NAME="data Coverage Results" MODIFIED="1511050332325" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/local$variable.coverage" NAME="variable Coverage Results" MODIFIED="1508870072871" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$USER_HOME$/Library/Caches/PyCharm2017.2/remote_sources/-2092026269/792558717/torch/autograd" />
     <SUITE FILE_PATH="coverage/local$test_graph__1_.coverage" NAME="test_graph (1) Coverage Results" MODIFIED="1507677312868" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/local$main_cnn_attention.coverage" NAME="main_cnn_attention Coverage Results" MODIFIED="1508453398138" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/local$load_data.coverage" NAME="load_data Coverage Results" MODIFIED="1508802808219" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/dataset/ENZYMES" />
     <SUITE FILE_PATH="coverage/local$main_dual.coverage" NAME="main_dual Coverage Results" MODIFIED="1507579318959" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/local$utils.coverage" NAME="utils Coverage Results" MODIFIED="1509666172529" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/local$model.coverage" NAME="model Coverage Results" MODIFIED="1509857687903" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/local$model.coverage" NAME="model Coverage Results" MODIFIED="1511117456223" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/local$Nosetests_for_train_cnn_test_epoch.coverage" NAME="Nosetests for train_cnn.test_epoch Coverage Results" MODIFIED="1508181964559" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/local$Nosetests_in_train_cnn_py.coverage" NAME="Nosetests in train_cnn.py Coverage Results" MODIFIED="1508271448262" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/local$test__1_.coverage" NAME="test (1) Coverage Results" MODIFIED="1506840966207" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="/" />
     <SUITE FILE_PATH="coverage/local$test_load_data.coverage" NAME="test_load_data Coverage Results" MODIFIED="1508781191059" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/dataset" />
     <SUITE FILE_PATH="coverage/local$main_cnn_0.coverage" NAME="main_cnn_0 Coverage Results" MODIFIED="1508437903236" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/local$analysis.coverage" NAME="analysis Coverage Results" MODIFIED="1509944223549" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/local$analysis.coverage" NAME="analysis Coverage Results" MODIFIED="1511145348935" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/local$main_mine.coverage" NAME="main_mine Coverage Results" MODIFIED="1507681846645" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/node2vec-master/src" />
     <SUITE FILE_PATH="coverage/local$main_1.coverage" NAME="main_1 Coverage Results" MODIFIED="1508170773108" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/local$main__2_.coverage" NAME="main (2) Coverage Results" MODIFIED="1507842643951" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/upload/mnist_hogwild" />
@@ -43,29 +51,19 @@
     <SUITE FILE_PATH="coverage/local$node2vec_main.coverage" NAME="node2vec_main Coverage Results" MODIFIED="1507681073712" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/node2vec-master/src" />
     <SUITE FILE_PATH="coverage/local$test.coverage" NAME="test Coverage Results" MODIFIED="1506976507298" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/local$Nosetests_in_train_gcn_py.coverage" NAME="Nosetests in train_gcn.py Coverage Results" MODIFIED="1508870068217" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/local$main.coverage" NAME="main Coverage Results" MODIFIED="1507852232070" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/local$main_seq_gen_new.coverage" NAME="main_seq_gen_new Coverage Results" MODIFIED="1510189129738" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/local$main.coverage" NAME="main Coverage Results" MODIFIED="1511147797673" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/local$main_seq_gen_new.coverage" NAME="main Coverage Results" MODIFIED="1511145198067" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
   <component name="FavoritesManager">
     <favorites_list name="local" />
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="analysis.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/analysis.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="522">
-              <caret line="29" column="17" lean-forward="true" selection-start-line="29" selection-start-column="17" selection-end-line="29" selection-end-column="17" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
       <file leaf-file-name="main.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/main.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="809">
-              <caret line="65" column="39" lean-forward="true" selection-start-line="65" selection-start-column="39" selection-end-line="65" selection-end-column="39" />
+            <state relative-caret-position="447">
+              <caret line="1075" column="53" lean-forward="true" selection-start-line="1075" selection-start-column="53" selection-end-line="1075" selection-end-column="53" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -76,44 +74,10 @@
       <file leaf-file-name="model.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/model.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1887">
-              <caret line="114" column="27" lean-forward="true" selection-start-line="114" selection-start-column="27" selection-end-line="114" selection-end-column="27" />
+            <state relative-caret-position="45">
+              <caret line="21" column="8" lean-forward="false" selection-start-line="21" selection-start-column="8" selection-end-line="21" selection-end-column="8" />
               <folding>
                 <element signature="e#0#65#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="rnn.py" pinned="false" current-in-tab="false">
-        <entry file="file://$USER_HOME$/Library/Caches/PyCharm2017.2/remote_sources/-2092026269/792558717/torch/nn/modules/rnn.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1093">
-              <caret line="433" column="8" lean-forward="false" selection-start-line="433" selection-start-column="8" selection-end-line="433" selection-end-column="8" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="utils.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/utils.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="736">
-              <caret line="246" column="0" lean-forward="true" selection-start-line="246" selection-start-column="0" selection-end-line="246" selection-end-column="0" />
-              <folding>
-                <element signature="e#0#21#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="data.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/data.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="0">
-              <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-              <folding>
-                <element signature="e#0#12#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -130,21 +94,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>cuda()</find>
-      <find>module</find>
-      <find>adj</find>
-      <find>find</find>
-      <find>5061</find>
-      <find>5080</find>
-      <find>0876</find>
-      <find>average predict</find>
-      <find>average pre</find>
-      <find>average p</find>
-      <find>p</find>
-      <find>loaded</find>
-      <find>seed</find>
-      <find>print</find>
-      <find>lr_rate</find>
       <find>lr</find>
       <find>args.gra</find>
       <find>cuda(</find>
@@ -160,6 +109,21 @@
       <find>adj_batch_sam</find>
       <find>args</find>
       <find>decode_g</find>
+      <find>hiddd</find>
+      <find>connection_y</find>
+      <find>Graph_Rnn</find>
+      <find>Graph_RNN</find>
+      <find>autoencoder</find>
+      <find>sample_y</find>
+      <find>random.r</find>
+      <find>print</find>
+      <find>temper</find>
+      <find>sample_w</find>
+      <find>is_fl</find>
+      <find>start_i</find>
+      <find>graph size</find>
+      <find>max_prev</find>
+      <find>load_epoch</find>
     </findStrings>
     <replaceStrings>
       <replace />
@@ -167,6 +131,10 @@
       <replace>input_size</replace>
       <replace>cuda(CUDA)</replace>
       <replace>0.9</replace>
+      <replace>y</replace>
+      <replace>Graph_RNN_structure</replace>
+      <replace>AE</replace>
+      <replace>sample</replace>
     </replaceStrings>
   </component>
   <component name="Git.Settings">
@@ -210,13 +178,13 @@
         <option value="$PROJECT_DIR$/main_cnn.py" />
         <option value="$PROJECT_DIR$/test_MMD.py" />
         <option value="$PROJECT_DIR$/main_seq_gen.py" />
-        <option value="$PROJECT_DIR$/test_code.py" />
         <option value="$PROJECT_DIR$/main_seq_gen_new.py" />
-        <option value="$PROJECT_DIR$/utils.py" />
         <option value="$PROJECT_DIR$/data.py" />
+        <option value="$PROJECT_DIR$/test_code.py" />
+        <option value="$PROJECT_DIR$/utils.py" />
+        <option value="$PROJECT_DIR$/analysis.py" />
         <option value="$PROJECT_DIR$/model.py" />
         <option value="$PROJECT_DIR$/main.py" />
-        <option value="$PROJECT_DIR$/analysis.py" />
       </list>
     </option>
   </component>
@@ -226,9 +194,26 @@
     <detection-done>true</detection-done>
     <sorting>DEFINITION_ORDER</sorting>
   </component>
-  <component name="ProjectFrameBounds" extendedState="6" fullScreen="true">
+  <component name="ProjectFrameBounds">
+    <option name="y" value="23" />
     <option name="width" value="1440" />
-    <option name="height" value="900" />
+    <option name="height" value="877" />
+  </component>
+  <component name="ProjectInspectionProfilesVisibleTreeState">
+    <entry key="Project Default">
+      <profile-state>
+        <expanded-state>
+          <State>
+            <id />
+          </State>
+        </expanded-state>
+        <selected-state>
+          <State>
+            <id>AngularJS</id>
+          </State>
+        </selected-state>
+      </profile-state>
+    </entry>
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
@@ -246,6 +231,35 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scratches" />
+      <pane id="Scope">
+        <subPane subId="Project Files">
+          <expand>
+            <path>
+              <item name="Root" type="cbb8eebc:String" user="Root" />
+              <item name="local" type="cbb8eebc:String" user="local" />
+            </path>
+            <path>
+              <item name="Root" type="cbb8eebc:String" user="Root" />
+              <item name="local" type="cbb8eebc:String" user="local" />
+              <item name="dataset" type="cbb8eebc:String" user="dataset" />
+            </path>
+            <path>
+              <item name="Root" type="cbb8eebc:String" user="Root" />
+              <item name="local" type="cbb8eebc:String" user="local" />
+              <item name="dataset" type="cbb8eebc:String" user="dataset" />
+              <item name="DD" type="cbb8eebc:String" user="DD" />
+            </path>
+            <path>
+              <item name="Root" type="cbb8eebc:String" user="Root" />
+              <item name="local" type="cbb8eebc:String" user="local" />
+              <item name="dataset" type="cbb8eebc:String" user="dataset" />
+              <item name="ENZYMES" type="cbb8eebc:String" user="ENZYMES" />
+            </path>
+          </expand>
+          <select />
+        </subPane>
+      </pane>
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -257,28 +271,17 @@
           <select />
         </subPane>
       </pane>
-      <pane id="Scratches" />
-      <pane id="Scope">
-        <subPane subId="Project Files">
-          <expand>
-            <path>
-              <item name="Root" type="cbb8eebc:String" user="Root" />
-              <item name="local" type="cbb8eebc:String" user="local" />
-            </path>
-          </expand>
-          <select />
-        </subPane>
-      </pane>
     </panes>
   </component>
   <component name="PropertiesComponent">
-    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PythonContentEntriesConfigurable" />
+    <property name="settings.editor.selected.configurable" value="preferences.keymap" />
     <property name="WebServerToolWindowFactoryState" value="true" />
     <property name="WebServerToolWindowPanel.toolwindow.show.size" value="true" />
     <property name="WebServerToolWindowPanel.toolwindow.show.date" value="true" />
     <property name="WebServerToolWindowPanel.toolwindow.show.permissions" value="false" />
     <property name="WebServerToolWindowPanel.toolwindow.highlight.symlinks" value="true" />
     <property name="WebServerToolWindowPanel.toolwindow.highlight.mappings" value="true" />
+    <property name="SearchEverywhereHistoryKey" value="&#9;FILE&#9;file:///Users/jiaxuan/PycharmProjects/local/model.py" />
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
@@ -300,7 +303,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.main_seq_gen_new">
+  <component name="RunManager" selected="Python.main">
     <configuration name="analysis" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -337,7 +340,7 @@
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
     </configuration>
-    <configuration name="main_seq_gen_new" type="PythonConfigurationType" factoryName="Python" temporary="true">
+    <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -373,7 +376,7 @@
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
     </configuration>
-    <configuration name="utils" type="PythonConfigurationType" factoryName="Python" temporary="true">
+    <configuration name="test_code" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -386,30 +389,33 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <module name="local" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/utils.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test_code.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
     </configuration>
     <list size="5">
-      <item index="0" class="java.lang.String" itemvalue="Python.main_seq_gen_new" />
-      <item index="1" class="java.lang.String" itemvalue="Python.utils" />
-      <item index="2" class="java.lang.String" itemvalue="Python.analysis" />
-      <item index="3" class="java.lang.String" itemvalue="Python.data" />
-      <item index="4" class="java.lang.String" itemvalue="Python.model" />
+      <item index="0" class="java.lang.String" itemvalue="Python.main" />
+      <item index="1" class="java.lang.String" itemvalue="Python.analysis" />
+      <item index="2" class="java.lang.String" itemvalue="Python.data" />
+      <item index="3" class="java.lang.String" itemvalue="Python.model" />
+      <item index="4" class="java.lang.String" itemvalue="Python.test_code" />
     </list>
     <recent_temporary>
       <list size="5">
-        <item index="0" class="java.lang.String" itemvalue="Python.main_seq_gen_new" />
+        <item index="0" class="java.lang.String" itemvalue="Python.main" />
         <item index="1" class="java.lang.String" itemvalue="Python.analysis" />
-        <item index="2" class="java.lang.String" itemvalue="Python.model" />
-        <item index="3" class="java.lang.String" itemvalue="Python.data" />
-        <item index="4" class="java.lang.String" itemvalue="Python.utils" />
+        <item index="2" class="java.lang.String" itemvalue="Python.test_code" />
+        <item index="3" class="java.lang.String" itemvalue="Python.model" />
+        <item index="4" class="java.lang.String" itemvalue="Python.data" />
       </list>
     </recent_temporary>
   </component>
   <component name="ShelveChangesManager" show_recycled="false">
     <option name="remove_strategy" value="false" />
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
   </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
@@ -513,19 +519,18 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="0" width="1440" height="900" extended-state="6" />
+    <frame x="0" y="23" width="1440" height="877" extended-state="6" />
+    <editor active="true" />
     <layout>
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.22092173" sideWeight="0.49682286" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.28900257" sideWeight="0.34406295" order="7" side_tool="true" content_ui="tabs" />
-      <window_info id="File Transfer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.31922612" sideWeight="0.4833201" order="11" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.21281742" sideWeight="0.6559371" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.18621524" sideWeight="0.6559371" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32980332" sideWeight="0.49841145" order="8" side_tool="false" content_ui="tabs" />
-      <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32753405" sideWeight="0.47418585" order="9" side_tool="false" content_ui="tabs" />
+      <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3269934" sideWeight="0.47418585" order="9" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32980332" sideWeight="0.49841145" order="10" side_tool="false" content_ui="tabs" />
-      <window_info id="Remote Host" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.30972818" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.2932761" sideWeight="0.49668247" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Remote Host" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.20457797" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.22532189" sideWeight="0.49668247" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32648125" sideWeight="0.49427754" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.24980143" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.39941478" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.11874504" sideWeight="0.50331753" order="2" side_tool="true" content_ui="tabs" />
@@ -535,33 +540,11 @@
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Documentation" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="FLOATING" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" x="178" y="209" width="1200" height="441" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
+      <window_info id="File Transfer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.33631712" sideWeight="0.4833201" order="11" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32648125" sideWeight="0.49427754" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
     </layout>
-    <layout-to-restore>
-      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.22092173" sideWeight="0.49682286" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
-      <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.28900257" sideWeight="0.34406295" order="7" side_tool="true" content_ui="tabs" />
-      <window_info id="Documentation" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="FLOATING" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" x="178" y="209" width="1200" height="441" />
-      <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
-      <window_info id="File Transfer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.31922612" sideWeight="0.4833201" order="11" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.15235792" sideWeight="0.6559371" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32980332" sideWeight="0.49841145" order="8" side_tool="false" content_ui="tabs" />
-      <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32753405" sideWeight="0.47418585" order="9" side_tool="false" content_ui="tabs" />
-      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32980332" sideWeight="0.49841145" order="10" side_tool="false" content_ui="tabs" />
-      <window_info id="Remote Host" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.07725322" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.2932761" sideWeight="0.49668247" order="0" side_tool="false" content_ui="combo" />
-      <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
-      <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32648125" sideWeight="0.49427754" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.24980143" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.39941478" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.11874504" sideWeight="0.50331753" order="2" side_tool="true" content_ui="tabs" />
-      <window_info id="Data View" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
-    </layout-to-restore>
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="1" />
@@ -577,7 +560,8 @@
     <MESSAGE value="move to CNN with attention" />
     <MESSAGE value="Baseline: GCN pairwise decoder done" />
     <MESSAGE value="sequential LSTM generator&#10;clean up the code" />
-    <option name="LAST_COMMIT_MESSAGE" value="sequential LSTM generator&#10;clean up the code" />
+    <MESSAGE value="Workable LSTM and Structure RNN model" />
+    <option name="LAST_COMMIT_MESSAGE" value="Workable LSTM and Structure RNN model" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -586,20 +570,6 @@
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$USER_HOME$/Library/Caches/PyCharm2017.2/remote_sources/-2092026269/792558717/torch/nn/modules/conv.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="135">
-          <caret line="9" column="20" lean-forward="false" selection-start-line="9" selection-start-column="14" selection-end-line="9" selection-end-column="20" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/Library/Caches/PyCharm2017.2/remote_sources/-2092026269/792558717/numpy/linalg/linalg.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-853">
-          <caret line="518" column="4" lean-forward="false" selection-start-line="518" selection-start-column="4" selection-end-line="518" selection-end-column="4" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/Library/Caches/PyCharm2017.2/remote_sources/-2092026269/792558717/torch/nn/parameter.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="45">
@@ -670,14 +640,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$USER_HOME$/Library/Caches/PyCharm2017.2/remote_sources/-2092026269/792558717/torch/nn/init.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="359">
-          <caret line="183" column="4" lean-forward="false" selection-start-line="183" selection-start-column="4" selection-end-line="183" selection-end-column="4" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/Library/Caches/PyCharm2017.2/remote_sources/-2092026269/792558717/torch/backends/cudnn/rnn.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="359">
@@ -685,19 +647,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$USER_HOME$/Library/Caches/PyCharm2017.2/remote_sources/-2092026269/792558717/torch/autograd/variable.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="635">
-          <caret line="155" column="0" lean-forward="false" selection-start-line="155" selection-start-column="0" selection-end-line="155" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/Library/Caches/PyCharm2017.2/remote_sources/-2092026269/792558717/numpy/lib/twodim_base.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="346">
           <caret line="138" column="4" lean-forward="false" selection-start-line="138" selection-start-column="4" selection-end-line="138" selection-end-column="4" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -705,7 +658,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-207">
           <caret line="2227" column="4" lean-forward="false" selection-start-line="2227" selection-start-column="4" selection-end-line="2227" selection-end-column="4" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -713,7 +665,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="284">
           <caret line="2068" column="4" lean-forward="false" selection-start-line="2068" selection-start-column="4" selection-end-line="2068" selection-end-column="4" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -729,7 +680,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="369">
           <caret line="115" column="4" lean-forward="false" selection-start-line="115" selection-start-column="4" selection-end-line="115" selection-end-column="4" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -737,7 +687,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="256">
           <caret line="297" column="4" lean-forward="false" selection-start-line="297" selection-start-column="4" selection-end-line="297" selection-end-column="4" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -748,19 +697,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$USER_HOME$/Library/Caches/PyCharm2017.2/remote_sources/-2092026269/792558717/matplotlib/pyplot.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="381">
-          <caret line="3838" column="23" lean-forward="true" selection-start-line="3838" selection-start-column="23" selection-end-line="3838" selection-end-column="23" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/Library/Caches/PyCharm2017.2/remote_sources/-2092026269/792558717/numpy/core/function_base.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="255">
           <caret line="24" column="4" lean-forward="false" selection-start-line="24" selection-start-column="4" selection-end-line="24" selection-end-column="4" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -768,166 +708,28 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$USER_HOME$/Library/Caches/PyCharm2017.2/python_stubs/-2092026269/torch/_C/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="199">
-          <caret line="677" column="4" lean-forward="false" selection-start-line="677" selection-start-column="4" selection-end-line="677" selection-end-column="4" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/main_0.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/main_1.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1809">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/train_rnn.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-2703">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/main_rnn.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-483">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/node2vec/src/main_mine.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="105">
-          <caret line="7" column="0" lean-forward="true" selection-start-line="7" selection-start-column="0" selection-end-line="7" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/main_cnn_attention.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/main_cnn_0.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/test_graph.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-2088">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/train_cnn.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/train_cnn_attention.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/main_cnn.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/train_generator.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/main_seq_gen.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-5688">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/main_gcn.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/train_gcn.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/test_code.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding>
-            <element signature="e#17#30#0" expanded="true" />
-            <marker date="1509665155328" expanded="true" signature="3630:3757" ph="..." />
-          </folding>
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/main_0.py" />
+    <entry file="file://$PROJECT_DIR$/main_1.py" />
+    <entry file="file://$PROJECT_DIR$/train_rnn.py" />
+    <entry file="file://$PROJECT_DIR$/main_rnn.py" />
+    <entry file="file://$PROJECT_DIR$/node2vec/src/main_mine.py" />
+    <entry file="file://$PROJECT_DIR$/main_cnn_attention.py" />
+    <entry file="file://$PROJECT_DIR$/main_cnn_0.py" />
+    <entry file="file://$PROJECT_DIR$/test_graph.py" />
+    <entry file="file://$PROJECT_DIR$/train_cnn.py" />
+    <entry file="file://$PROJECT_DIR$/train_cnn_attention.py" />
+    <entry file="file://$PROJECT_DIR$/main_cnn.py" />
+    <entry file="file://$PROJECT_DIR$/train_generator.py" />
+    <entry file="file://$PROJECT_DIR$/main_seq_gen.py" />
+    <entry file="file://$PROJECT_DIR$/main_gcn.py" />
+    <entry file="file://$PROJECT_DIR$/train_gcn.py" />
     <entry file="file://$PROJECT_DIR$/test_MMD.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding>
-            <element signature="e#0#12#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/data.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding>
-            <element signature="e#0#12#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -935,7 +737,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -943,7 +744,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -951,42 +751,93 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1093">
           <caret line="433" column="8" lean-forward="false" selection-start-line="433" selection-start-column="8" selection-end-line="433" selection-end-column="8" />
-          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/Library/Caches/PyCharm2017.2/remote_sources/-2092026269/792558717/torch/nn/init.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="387">
+          <caret line="183" column="4" lean-forward="false" selection-start-line="183" selection-start-column="4" selection-end-line="183" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/Library/Caches/PyCharm2017.2/remote_sources/-2092026269/792558717/torch/autograd/variable.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="205">
+          <caret line="84" column="0" lean-forward="false" selection-start-line="84" selection-start-column="0" selection-end-line="84" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/dataset/DD/DD_graph_indicator.txt">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/dataset/DD/DD_graph_labels.txt">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-3337">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/Library/Caches/PyCharm2017.2/remote_sources/-2092026269/792558717/matplotlib/pyplot.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="377">
+          <caret line="3061" column="4" lean-forward="false" selection-start-line="3061" selection-start-column="4" selection-end-line="3061" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/Library/Caches/PyCharm2017.2/python_stubs/-2092026269/torch/_C/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="203">
+          <caret line="1742" column="4" lean-forward="false" selection-start-line="1742" selection-start-column="4" selection-end-line="1742" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/test_code.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1140">
+          <caret line="76" column="59" lean-forward="false" selection-start-line="76" selection-start-column="59" selection-end-line="76" selection-end-column="59" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/data.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="957">
+          <caret line="77" column="23" lean-forward="false" selection-start-line="77" selection-start-column="23" selection-end-line="77" selection-end-column="23" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/utils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="4080">
+          <caret line="275" column="15" lean-forward="true" selection-start-line="275" selection-start-column="15" selection-end-line="275" selection-end-column="15" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/analysis.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="75">
+          <caret line="5" column="12" lean-forward="false" selection-start-line="5" selection-start-column="12" selection-end-line="5" selection-end-column="12" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/model.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1887">
-          <caret line="114" column="27" lean-forward="true" selection-start-line="114" selection-start-column="27" selection-end-line="114" selection-end-column="27" />
+        <state relative-caret-position="45">
+          <caret line="21" column="8" lean-forward="false" selection-start-line="21" selection-start-column="8" selection-end-line="21" selection-end-column="8" />
           <folding>
             <element signature="e#0#65#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/analysis.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="522">
-          <caret line="29" column="17" lean-forward="true" selection-start-line="29" selection-start-column="17" selection-end-line="29" selection-end-column="17" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/utils.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="736">
-          <caret line="246" column="0" lean-forward="true" selection-start-line="246" selection-start-column="0" selection-end-line="246" selection-end-column="0" />
-          <folding>
-            <element signature="e#0#21#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/main.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="809">
-          <caret line="65" column="39" lean-forward="true" selection-start-line="65" selection-start-column="39" selection-end-line="65" selection-end-column="39" />
+        <state relative-caret-position="447">
+          <caret line="1075" column="53" lean-forward="true" selection-start-line="1075" selection-start-column="53" selection-end-line="1075" selection-end-column="53" />
           <folding>
             <element signature="e#0#21#0" expanded="true" />
           </folding>

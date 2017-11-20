@@ -167,6 +167,7 @@ def draw_graph_list(G_list, row, col, fname = 'figures/test.png'):
         plt.hist(np.array(cycle_len), bins=bins, align='left')
         plt.xlabel('cycle length', fontsize=3)
         plt.ylabel('count', fontsize=3)
+        G_cycle_mean = 0
         if len(cycle_len)>0:
             G_cycle_mean = sum(cycle_len) / len(cycle_len)
         if i % 2 == 0:
@@ -260,8 +261,16 @@ def save_graph_list(G_list, fname):
     with open(fname, "wb") as f:
         pickle.dump(G_list, f)
 
+
+# pick the first connected component
+def pick_connected_component(G):
+    node_list = nx.node_connected_component(G,0)
+    return G.subgraph(node_list)
+
 # load a list of graphs
 def load_graph_list(fname):
     with open(fname, "rb") as f:
         list = pickle.load(f)
+    for i in range(len(list)):
+        list[i] = pick_connected_component(list[i])
     return list
