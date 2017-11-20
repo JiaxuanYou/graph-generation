@@ -3,14 +3,14 @@ import numpy as np
 from scipy.linalg import toeplitz
 import pyemd
 
-def gaussian_emd(x, y, sigma=1.0):
+def gaussian_emd(x, y, sigma=1.0, distance_scaling=1.0):
     ''' Gaussian kernel with squared distance in exponential term replaced by EMD
     Args:
       x, y: 1D pmf of two distributions with the same support
       sigma: standard deviation
     '''
     support_size = max(len(x), len(y))
-    distance_mat = toeplitz(range(support_size)).astype(np.float)
+    distance_mat = toeplitz(range(support_size)).astype(np.float) / distance_scaling
 
     # convert histogram values x and y to float, and make them equal len
     x = x.astype(np.float)
@@ -39,9 +39,11 @@ def compute_mmd(samples1, samples2, kernel, *args, **kwargs):
     # normalize histograms into pmf
     samples1 = [s1 / np.sum(s1) for s1 in samples1]
     samples2 = [s2 / np.sum(s2) for s2 in samples2]
-    print(disc(samples1, samples1, kernel, *args, **kwargs))
-    print(disc(samples2, samples2, kernel, *args, **kwargs))
-    print(disc(samples1, samples2, kernel, *args, **kwargs))
+    #print(disc(samples1, samples1, kernel, *args, **kwargs))
+    #print('--------------------------')
+    #print(disc(samples2, samples2, kernel, *args, **kwargs))
+    #print('--------------------------')
+    #print(disc(samples1, samples2, kernel, *args, **kwargs))
     return disc(samples1, samples1, kernel, *args, **kwargs) + \
             disc(samples2, samples2, kernel, *args, **kwargs) - \
             2 * disc(samples1, samples2, kernel, *args, **kwargs)

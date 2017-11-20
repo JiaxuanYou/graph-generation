@@ -10,10 +10,21 @@ def load_graph_list(fname):
         list = pickle.load(f)
     return list
 
-def extract_result_id(name, after_word):
+def extract_result_id_and_epoch(name, prefix, after_word):
+    '''
+    Args:
+        eval_every: the number of epochs between consecutive evaluations
+    Returns:
+        A tuple of (id, epoch number)
+    '''
     pos = name.find(after_word) + len(after_word)
     end_pos = name.find('.dat')
-    return name[pos:end_pos]
+    result_id = name[pos:end_pos]
+
+    pos = name.find(prefix) + len(prefix)
+    end_pos = name.find('_', pos)
+    epochs = int(name[pos:end_pos])
+    return result_id, epochs
 
 def perturb(graph_list, p_add, p_del):
     ''' Perturb the list of graphs by adding/removing edges.
@@ -47,34 +58,57 @@ def perturb(graph_list, p_add, p_del):
         perturbed_graph_list.append(G)
     return perturbed_graph_list
 
-def eval_list(real_graphs_filename, pred_graphs_filename):
+def eval_list(real_graphs_filename, pred_graphs_filename, prefix, eval_every):
     real_graphs_dict = {}
     pred_graphs_dict = {}
 
     for fname in real_graphs_filename:
-        real_graphs_dict[extract_result_id(fname, 'real_')] = fname
+        result_id, epochs = extract_result_id_and_epoch(fname, prefix, 'real_')
+        if not epochs % eval_every == 0:
+            continue
+        if result_id not in real_graphs_dict:
+            real_graphs_dict[result_id] = {}
+        real_graphs_dict[result_id][epochs] = fname
     for fname in pred_graphs_filename:
-        pred_graphs_dict[extract_result_id(fname, 'pred_')] = fname
+        result_id, epochs = extract_result_id_and_epoch(fname, prefix, 'pred_')
+        if not epochs % eval_every == 0:
+            continue
+        if result_id not in pred_graphs_dict:
+            pred_graphs_dict[result_id] = {}
+        pred_graphs_dict[result_id][epochs] = fname
     
     for result_id in real_graphs_dict.keys():
-        real_g_list = load_graph_list(real_graphs_dict[result_id])
-        pred_g_list = load_graph_list(pred_graphs_dict[result_id])
-        perturbed_g_list = perturb(real_g_list, 0.05, 0.05)
+        for epochs in sorted(real_graphs_dict[result_id]):
+            real_g_list = load_graph_list(real_graphs_dict[result_id][epochs])
+            pred_g_list = load_graph_list(pred_graphs_dict[result_id][epochs])
+            perturbed_g_list = perturb(real_g_list, 0.001, 0.02)
 
-        dist = eval.stats.degree_stats(real_g_list, pred_g_list)
-        print('dist between real and pred (', result_id, '): ', dist)
+            #dist = eval.stats.degree_stats(real_g_list, pred_g_list)
+            dist = eval.stats.clustering_stats(real_g_list, pred_g_list)
+            print('dist between real and pred (', result_id, ') at epoch ', epochs, ': ', dist)
     
-        dist = eval.stats.degree_stats(real_g_list, perturbed_g_list)
-        print('dist between real and perturbed: ', dist)
+            #dist = eval.stats.degree_stats(real_g_list, perturbed_g_list)
+            dist = eval.stats.clustering_stats(real_g_list, perturbed_g_list)
+            print('dist between real and perturbed: ', dist)
 
+            mid = len(real_g_list) // 2
+            #dist = eval.stats.degree_stats(real_g_list[:mid], real_g_list[mid:])
+            dist = eval.stats.clustering_stats(real_g_list[:mid], real_g_list[mid:])
+            print('dist among real: ', dist)
+
+def eval_performance(datadir, prefix):
+    real_graphs_filename = [datadir + f for f in os.listdir(datadir) 
+            if re.match(prefix + '.*real.*\.dat', f)]
+    pred_graphs_filename = [datadir + f for f in os.listdir(datadir) 
+            if re.match(prefix + '.*pred.*\.dat', f)]
+    eval_list(real_graphs_filename, pred_graphs_filename, prefix, 200)
 
 if __name__ == '__main__':
-    datadir = "/dfs/scratch0/rexy/graph_gen_data/"
-    prefix = "GraphRNN_enzymes_50_26000_"
-    real_graphs_filename = [datadir + f for f in os.listdir(datadir) 
-            if re.match(prefix + 'real.*\.dat', f)]
-    pred_graphs_filename = [datadir + f for f in os.listdir(datadir) 
-            if re.match(prefix + 'pred.*\.dat', f)]
-    eval_list(real_graphs_filename, pred_graphs_filename)
+    #datadir = "/dfs/scratch0/rexy/graph_gen_data/"
+    #prefix = "GraphRNN_enzymes_50_"
+    datadir = "/lfs/local/0/jiaxuany/pycharm/graphs_share/"
+    #prefix = "GraphRNN_enzymes_50_"
+    prefix = "GraphRNN_structure_enzymes_50_"
+    eval_performance(datadir, prefix)
     
 
