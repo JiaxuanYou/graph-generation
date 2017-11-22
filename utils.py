@@ -85,9 +85,9 @@ def draw_graph_list(G_list, row, col, fname = 'figures/test.png'):
     for i,G in enumerate(G_list):
         plt.subplot(row,col,i+1)
         if i%2==0:
-            plt.title('real', fontsize = 4)
+            plt.title('real nodes: '+str(G.number_of_nodes()), fontsize = 4)
         else:
-            plt.title('pred', fontsize = 4)
+            plt.title('pred nodes: '+str(G.number_of_nodes()), fontsize = 4)
         parts = community.best_partition(G)
         values = [parts.get(node) for node in G.nodes()]
         colors = []

@@ -2,8 +2,12 @@ import numpy as np
 import os
 import pickle
 import re
+from random import shuffle
+
 
 import eval.stats
+# import main.Args
+from main import *
 
 def load_graph_list(fname):
     with open(fname, "rb") as f:
@@ -81,6 +85,8 @@ def eval_list(real_graphs_filename, pred_graphs_filename, prefix, eval_every):
         for epochs in sorted(real_graphs_dict[result_id]):
             real_g_list = load_graph_list(real_graphs_dict[result_id][epochs])
             pred_g_list = load_graph_list(pred_graphs_dict[result_id][epochs])
+            shuffle(real_g_list)
+            shuffle(pred_g_list)
             perturbed_g_list = perturb(real_g_list, 0.001, 0.02)
 
             #dist = eval.stats.degree_stats(real_g_list, pred_g_list)
@@ -96,12 +102,49 @@ def eval_list(real_graphs_filename, pred_graphs_filename, prefix, eval_every):
             dist = eval.stats.clustering_stats(real_g_list[:mid], real_g_list[mid:])
             print('dist among real: ', dist)
 
-def eval_performance(datadir, prefix):
-    real_graphs_filename = [datadir + f for f in os.listdir(datadir) 
-            if re.match(prefix + '.*real.*\.dat', f)]
-    pred_graphs_filename = [datadir + f for f in os.listdir(datadir) 
-            if re.match(prefix + '.*pred.*\.dat', f)]
-    eval_list(real_graphs_filename, pred_graphs_filename, prefix, 200)
+
+def eval_list_fname(real_graphs_filename, pred_graphs_filename, eval_every):
+    for i in range(len(real_graphs_filename)):
+        real_g_list = load_graph_list(real_graphs_filename[i])
+        pred_g_list = load_graph_list(pred_graphs_filename[i])
+        shuffle(real_g_list)
+        shuffle(pred_g_list)
+        perturbed_g_list = perturb(real_g_list, 0.001, 0.02)
+
+        dist_degree = eval.stats.degree_stats(real_g_list, pred_g_list)
+        dist_clustering = eval.stats.clustering_stats(real_g_list, pred_g_list)
+        print('degree dist between real and pred at epoch ', i*eval_every, ': ', dist_degree)
+        print('clustering dist between real and pred at epoch ', i*eval_every, ': ', dist_clustering)
+
+
+        dist_degree = eval.stats.degree_stats(real_g_list, perturbed_g_list)
+        dist_clustering = eval.stats.clustering_stats(real_g_list, perturbed_g_list)
+        print('degree dist between real and perturbed: ', dist_degree)
+        print('clustering dist between real and perturbed: ', dist_clustering)
+
+
+        mid = len(real_g_list) // 2
+        dist_degree = eval.stats.degree_stats(real_g_list[:mid], real_g_list[mid:])
+        dist_clustering = eval.stats.clustering_stats(real_g_list[:mid], real_g_list[mid:])
+        print('degree dist among real: ', dist_degree)
+        print('clustering dist among real: ', dist_clustering)
+
+
+def eval_performance(datadir, prefix, args=None,eval_every=500):
+    if args is None:
+        real_graphs_filename = [datadir + f for f in os.listdir(datadir)
+                if re.match(prefix + '.*real.*\.dat', f)]
+        pred_graphs_filename = [datadir + f for f in os.listdir(datadir)
+                if re.match(prefix + '.*pred.*\.dat', f)]
+        eval_list(real_graphs_filename, pred_graphs_filename, prefix, 200)
+
+    else:
+        real_graphs_filename = [args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
+                     str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(args.bptt_len) + '.dat' for epoch in range(0,50001,eval_every)]
+        pred_graphs_filename = [args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
+                 str(epoch) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(args.bptt_len) + '.dat' for epoch in range(0,50001,eval_every)]
+        eval_list_fname(real_graphs_filename, pred_graphs_filename,eval_every=eval_every)
+
 
 if __name__ == '__main__':
     #datadir = "/dfs/scratch0/rexy/graph_gen_data/"
@@ -109,6 +152,9 @@ if __name__ == '__main__':
     datadir = "/lfs/local/0/jiaxuany/pycharm/graphs_share/"
     #prefix = "GraphRNN_enzymes_50_"
     prefix = "GraphRNN_structure_enzymes_50_"
-    eval_performance(datadir, prefix)
+    # eval_performance(datadir, prefix)
+    args = Args()
+    print(args.graph_type)
+    eval_performance(datadir, prefix,args)
     
 

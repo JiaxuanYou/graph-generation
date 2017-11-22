@@ -47,16 +47,19 @@ class Args():
 
         ## self.graph_node_num = 50 # obsolete
 
-        # self.max_prev_node = 150 # max previous node that looks back
+        # max previous node that looks back
+        self.max_prev_node = 150
         # self.max_prev_node = 100
-        self.max_prev_node = 50
-        # self.max_prev_node = 25
+        # self.max_prev_node = 50 # ladder, protein
+        # self.max_prev_node = 25 # enzyme
 
 
         ### network config
         ## GraphRNN
-        self.input_size = 128
-        self.hidden_size = 128
+        # self.input_size = 64
+        # self.hidden_size = 64
+        self.input_size = 128 # for DD dataset
+        self.hidden_size = 128 # for DD dataset
         self.batch_size = 128
         self.num_layers = 4
         self.is_dilation = True
@@ -70,7 +73,7 @@ class Args():
 
         ### training config
         self.lr = 0.01
-        self.epochs = 50000
+        self.epochs = 30000
         # self.epochs = 100000
         self.epochs_test = 500
         self.epochs_log = 500
@@ -80,16 +83,18 @@ class Args():
 
         self.lr_rate = 0.3
         self.sample_when_validate = True
-        self.sample_time = 2
+        self.sample_time = 1
         # self.sample_when_validate = False
 
         ### output config
         self.model_save_path = 'model_save/'
         self.graph_save_path = 'graphs/'
         self.figure_save_path = 'figures/'
-        self.load = False
-        self.load_epoch = 8000
-        self.save = True
+        self.load = True
+        # self.load_epoch = 50000
+        self.load_epoch = 16000
+
+        self.save = False
         self.note = 'GraphRNN'
         # self.note = 'GraphRNN_AE'
         # self.note = 'GraphRNN_structure'
