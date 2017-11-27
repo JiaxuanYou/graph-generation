@@ -19,7 +19,7 @@ import numpy as np
 import time
 
 USE_CUDA = torch.cuda.is_available()
-CUDA = 0
+CUDA = 2
 
 
 def sample_tensor(y,sample, thresh=0.5):
@@ -51,10 +51,10 @@ def gumbel_softmax(logits, temperature, eps=1e-9):
     x = F.softmax(x)
     return x
 
-def gumbel_sigmoid(logits, temperature, eps=1e-9):
+def gumbel_sigmoid(logits, temperature, eps=1e-6):
     '''
 
-    :param logits: shape: N*L
+    :param logits:
     :param temperature:
     :param eps:
     :return:
@@ -69,130 +69,11 @@ def gumbel_sigmoid(logits, temperature, eps=1e-9):
     x = F.sigmoid(x)
     return x
 
-# RNN that updates according to graph structure
-# class Graph_RNN_structure_attention(nn.Module):
-#     def __init__(self, hidden_size, batch_size, num_layers):
-#         super(Graph_RNN_structure_attention, self).__init__()
-#         ## model configuration
-#         self.hidden_size = hidden_size
-#         self.batch_size = batch_size
-#         self.num_layers = num_layers
-#
-#         ## model
-#         self.relu = nn.ReLU()
-#         self.linear_output = nn.Linear(hidden_size, 1)
-#         # for state transition use only, input is null
-#         self.gru = nn.GRU(input_size=1, hidden_size=hidden_size, num_layers=num_layers, batch_first=True)
-#         # CNN based attention, using dilation trick to expand receptive field, input size: batch*hidden_size*current_num_nodes
-#         self.attention = nn.Sequential(
-#             nn.Conv1d(hidden_size, hidden_size, kernel_size=3, dilation=1, padding=1),
-#             nn.BatchNorm1d(hidden_size),
-#             nn.ReLU(),
-#             nn.Conv1d(hidden_size, hidden_size, kernel_size=3, dilation=1, padding=1),
-#             nn.BatchNorm1d(hidden_size),
-#             nn.ReLU(),
-#             nn.Conv1d(hidden_size, hidden_size, kernel_size=3, dilation=1, padding=1),
-#             nn.BatchNorm1d(hidden_size),
-#             nn.ReLU(),
-#             nn.Conv1d(hidden_size, 1, kernel_size=3, dilation=1, padding=1) # output attention
-#         )
-#         # GRU based output, output a single edge prediction at a time
-#         self.gru_output = nn.GRU(input_size=1, hidden_size=hidden_size, num_layers=num_layers, batch_first=True)
-#         # use a list to keep all generated hidden vectors, each hidden has size batch*hidden_dim*1, and the list size is expanding
-#         # when using convolution to compute attention weight, we need to first concat the list into a pytorch variable: batch*hidden_dim*current_num_nodes
-#         self.hidden_all = []
-#
-#         ## initialize
-#         for m in self.modules():
-#             if isinstance(m, nn.Linear):
-#                 # print('linear')
-#                 m.weight.data = init.xavier_uniform(m.weight.data, gain=nn.init.calculate_gain('relu'))
-#             if isinstance(m, nn.Conv1d):
-#                 # print('conv1d')
-#                 m.weight.data = init.xavier_uniform(m.weight.data, gain=nn.init.calculate_gain('relu'))
-#             if isinstance(m, nn.BatchNorm1d):
-#                 # print('batchnorm1d')
-#                 m.weight.data.fill_(1)
-#                 m.bias.data.zero_()
-#             if isinstance(m, nn.GRU):
-#                 # print('gru')
-#                 m.weight_ih_l0.data = init.xavier_uniform(m.weight_ih_l0.data,
-#                                                                   gain=nn.init.calculate_gain('sigmoid'))
-#                 m.weight_hh_l0.data = init.xavier_uniform(m.weight_hh_l0.data,
-#                                                                   gain=nn.init.calculate_gain('sigmoid'))
-#                 m.bias_ih_l0.data = torch.ones(m.bias_ih_l0.data.size(0)) * 0.25
-#                 m.bias_hh_l0.data = torch.ones(m.bias_hh_l0.data.size(0)) * 0.25
-#
-#     def init_hidden(self,random=False):
-#         if random:
-#             return Variable(torch.rand(self.batch_size, self.hidden_size, 1)).cuda(CUDA)
-#         else:
-#             return Variable(torch.ones(self.batch_size, self.hidden_size, 1)).cuda(CUDA)
-#
-#     # only run a single forward step
-#     def forward(self, x, y, teacher_forcing, sample):
-#         # x&y: batch*current_num_nodes*1, y is the groud truth, x is a shifted version of y
-#
-#         # 1 first compute attention
-#         hidden_all_cat = torch.cat(self.hidden_all, dim=2)
-#         # att_weight size: batch*1*current_num_nodes
-#         att_weight = self.attention(hidden_all_cat)
-#         # att_applied size: batch*hidden_dim*1
-#         att_applied = torch.bmm(hidden_all_cat,att_weight.permute(0,2,1))
-#
-#         # 2 then compute output, using a gru
-#         # todo: extend to multi-layer scenario
-#         if sample==False:
-#             # when training: we know the ground truth, input the sequence at once
-#             y_pred,_ = self.gru_output(x, att_applied.permute(2,0,1))
-#             y_pred = self.linear_output(y_pred)
-#         else:
-#             # when validating, we need to sampling at each time step
-#             y_pred = Variable(torch.zeros(x.size(0), x.size(1), x.size(2))).cuda(CUDA)
-#             y_pred_long = Variable(torch.zeros(x.size(0), x.size(1), x.size(2))).cuda(CUDA)
-#             x_step = x[:, 0:1, :]
-#             for i in range(x.size(1)):
-#                 y_step,_ = self.gru_output(x_step)
-#                 y_step = self.linear_output(y_step)
-#                 y_pred[:, i, :] = y_step
-#                 y_step = F.sigmoid(y_step)
-#                 x_step = sample_tensor(y_step, sample=True, thresh=0.45)
-#                 y_pred_long[:, i, :] = x_step
-#             pass
-#
-#         # 3 then update self.hidden_all list
-#         # i.e., model will use ground truth to update new node
-#         if teacher_forcing:
-#             hidden_new = torch.bmm(hidden_all_cat,y)
-#         # i.e., the model will use it's own prediction to attend
-#         else:
-#             # todo: current is soft attention, try the hard attention version
-#             hidden_new = torch.bmm(hidden_all_cat,F.sigmoid(y_pred))
-#
-#         input_null = Variable(torch.zeros(self.batch_size, 1, 1)).cuda(CUDA)
-#         _,hidden_new = self.gru(input_null, hidden_new.permute(2,0,1).contiguous())
-#         self.hidden_all.append(hidden_new.permute(1,2,0))
-#
-#         # 4 return prediction
-#         return y_pred
-#
-# # batch_size = 8
-# # hidden_size = 16
-# # model = Graph_RNN_structure(hidden_size=hidden_size, batch_size=batch_size, num_layers=1).cuda(CUDA)
-# # model.hidden_all.append(model.init_hidden())
-# # model.hidden_all.append(model.init_hidden())
-# #
-# #
-# # x = Variable(torch.rand(batch_size,2,1)).cuda(CUDA)
-# # y = Variable(torch.rand(batch_size,2,1)).cuda(CUDA)
-# # y_pred = model(x, y, False, False)
-# # # print(y_pred)
-# # print(model.hidden_all)
 
 
 
 
-# RNN that updates according to graph structure
+# RNN that updates according to graph structure, new proposed model
 class Graph_RNN_structure(nn.Module):
     def __init__(self, hidden_size, batch_size, output_size, num_layers, is_dilation=True, is_bn=True):
         super(Graph_RNN_structure, self).__init__()
@@ -252,13 +133,16 @@ class Graph_RNN_structure(nn.Module):
             if isinstance(m, nn.Linear):
                 # print('linear')
                 m.weight.data = init.xavier_uniform(m.weight.data, gain=nn.init.calculate_gain('relu'))
+                # print(m.weight.data.size())
             if isinstance(m, nn.Conv1d):
                 # print('conv1d')
                 m.weight.data = init.xavier_uniform(m.weight.data, gain=nn.init.calculate_gain('relu'))
+                # print(m.weight.data.size())
             if isinstance(m, nn.BatchNorm1d):
                 # print('batchnorm1d')
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
+                # print(m.weight.data.size())
             if isinstance(m, nn.GRU):
                 # print('gru')
                 m.weight_ih_l0.data = init.xavier_uniform(m.weight_ih_l0.data,
@@ -278,7 +162,7 @@ class Graph_RNN_structure(nn.Module):
             return hidden_list
 
     # only run a single forward step
-    def forward(self, x, teacher_forcing, temperature = 0.5, bptt=True, flexible=True,max_prev_node=100):
+    def forward(self, x, teacher_forcing, temperature = 0.5, bptt=True,bptt_len=20, flexible=True,max_prev_node=100):
         # x: batch*1*self.output_size, the groud truth
         # todo: current only look back to self.output_size nodes, try to look back according to bfs sequence
 
@@ -286,12 +170,12 @@ class Graph_RNN_structure(nn.Module):
         # print('hidden_all', self.hidden_all[-1*self.output_size:])
         # hidden_all_cat = torch.cat(self.hidden_all[-1*self.output_size:], dim=2)
 
-        # add BPTT, detach the first variable
-        if bptt:
-            self.hidden_all[0] = Variable(self.hidden_all[0].data)
+        # # # add BPTT, detach the first variable
+        # if bptt:
+        #     self.hidden_all[0] = Variable(self.hidden_all[0].data).cuda(CUDA)
 
         hidden_all_cat = torch.cat(self.hidden_all, dim=2)
-
+        # print(hidden_all_cat.size())
 
         # print('hidden_all_cat',hidden_all_cat.size())
         # att_weight size: batch*1*current_num_nodes
@@ -328,7 +212,8 @@ class Graph_RNN_structure(nn.Module):
 
         # 3 then update self.hidden_all list
         # i.e., model will use ground truth to update new node
-        x_pred_sample = gumbel_sigmoid(x_pred, temperature=temperature)
+        # x_pred_sample = gumbel_sigmoid(x_pred, temperature=temperature)
+        x_pred_sample = sample_tensor(F.sigmoid(x_pred),sample=True)
         thresh = 0.5
         x_thresh = Variable(torch.ones(x_pred_sample.size(0), x_pred_sample.size(1), x_pred_sample.size(2)) * thresh).cuda(CUDA)
         x_pred_sample_long = torch.gt(x_pred_sample, x_thresh).long()
@@ -345,6 +230,7 @@ class Graph_RNN_structure(nn.Module):
 
         # update hidden vector for new nodes
         hidden_new = torch.sum(hidden_all_cat_select, dim=2, keepdim=True) / x_sum
+
         hidden_new = self.linear_transition(hidden_new.permute(0, 2, 1))
         hidden_new = hidden_new.permute(0, 2, 1)
 
@@ -361,10 +247,15 @@ class Graph_RNN_structure(nn.Module):
 
         # maintaing a fixed size history state
         else:
-            self.hidden_all.pop(0)
+            # self.hidden_all.pop(0)
+            self.hidden_all = self.hidden_all[1:]
+
         self.hidden_all.append(hidden_new)
 
         # 4 return prediction
+        # print('x_pred',x_pred)
+        # print('x_pred_mean', torch.mean(x_pred))
+        # print('x_pred_sample_mean', torch.mean(x_pred_sample))
         return x_pred, x_pred_sample
 
 # batch_size = 8
@@ -379,10 +270,11 @@ class Graph_RNN_structure(nn.Module):
 
 
 
+
 # current baseline model, generating a graph by lstm
-class Graph_generator_LSTM_graph(nn.Module):
+class Graph_generator_LSTM(nn.Module):
     def __init__(self,feature_size, input_size, hidden_size, output_size, batch_size, num_layers):
-        super(Graph_generator_LSTM_graph, self).__init__()
+        super(Graph_generator_LSTM, self).__init__()
         self.batch_size = batch_size
         self.num_layers = num_layers
         self.hidden_size = hidden_size
@@ -417,7 +309,99 @@ class Graph_generator_LSTM_graph(nn.Module):
         return output
 
 
-# todo: finish a discriminator to train the generator in a GAN way
+
+# plain LSTM model
+class Graph_generator_LSTM_plain(nn.Module):
+    def __init__(self, feature_size, input_size, hidden_size, batch_size, num_layers):
+        super(Graph_generator_LSTM_plain, self).__init__()
+        self.batch_size = batch_size
+        self.num_layers = num_layers
+        self.hidden_size = hidden_size
+        self.lstm = nn.LSTM(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, batch_first=True)
+        self.linear_input = nn.Linear(feature_size, input_size)
+        self.relu = nn.ReLU()
+        # initialize
+        # self.hidden,self.cell = self.init_hidden()
+        self.hidden = self.init_hidden()
+
+        self.lstm.weight_ih_l0.data = init.xavier_uniform(self.lstm.weight_ih_l0.data,
+                                                          gain=nn.init.calculate_gain('sigmoid'))
+        self.lstm.weight_hh_l0.data = init.xavier_uniform(self.lstm.weight_hh_l0.data,
+                                                          gain=nn.init.calculate_gain('sigmoid'))
+        self.lstm.bias_ih_l0.data = torch.ones(self.lstm.bias_ih_l0.data.size(0)) * 0.25
+        self.lstm.bias_hh_l0.data = torch.ones(self.lstm.bias_hh_l0.data.size(0)) * 0.25
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                m.weight.data = init.xavier_uniform(m.weight.data, gain=nn.init.calculate_gain('relu'))
+
+    def init_hidden(self):
+        return (Variable(torch.zeros(self.num_layers, self.batch_size, self.hidden_size)).cuda(CUDA),
+                Variable(torch.zeros(self.num_layers, self.batch_size, self.hidden_size)).cuda(CUDA))
+
+    def forward(self, input_raw, pack=False, input_len=None):
+        input = self.linear_input(input_raw)
+        input = self.relu(input)
+        if pack:
+            input = pack_padded_sequence(input, input_len, batch_first=True)
+        output_raw, self.hidden = self.lstm(input, self.hidden)
+        if pack:
+            output_raw = pad_packed_sequence(output_raw, batch_first=True)[0]
+        # return hidden state at each time step
+        return output_raw
+
+#####
+# definition of terms
+# h: hidden state of LSTM
+# y: edge prediction, model output
+# n: noise for generator
+# l: whether an output is real or not, binary
+
+# a deterministic output
+class Graph_generator_LSTM_output_deterministic(nn.Module):
+    def __init__(self,h_size, y_size):
+        super(Graph_generator_LSTM_output_deterministic, self).__init__()
+        self.deterministic_output = nn.Sequential(
+            nn.Linear(h_size, 64),
+            nn.ReLU(),
+            nn.Linear(64, y_size),
+            nn.Sigmoid()
+        )
+    def forward(self,h):
+        y = self.deterministic_output(h)
+        return y
+
+# a simple MLP generator output
+class Graph_generator_LSTM_output_generator(nn.Module):
+    def __init__(self,h_size, n_size, y_size):
+        super(Graph_generator_LSTM_output_generator, self).__init__()
+        # one layer MLP
+        self.generator_output = nn.Sequential(
+            nn.Linear(h_size+n_size, 64),
+            nn.LeakyReLU(),
+            nn.Linear(64, y_size),
+            # nn.Sigmoid() # use gumbel sigmoid instead
+        )
+    def forward(self,h,n,temperature):
+        y_cat = torch.cat((h,n), dim=2)
+        y = self.generator_output(y_cat)
+        y = gumbel_sigmoid(y,temperature=temperature)
+        return y
+
+# a simple MLP discriminator
+class Graph_generator_LSTM_output_discriminator(nn.Module):
+    def __init__(self, h_size, y_size):
+        super(Graph_generator_LSTM_output_discriminator, self).__init__()
+        # one layer MLP
+        self.discriminator_output = nn.Sequential(
+            nn.Linear(h_size+y_size, 64),
+            nn.ReLU(),
+            nn.Linear(64, 1),
+            nn.Sigmoid()
+        )
+    def forward(self,h,y):
+        y_cat = torch.cat((h,y),dim=2)
+        l = self.discriminator_output(y_cat)
+        return l
 
 
 

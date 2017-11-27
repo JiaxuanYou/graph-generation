@@ -68,20 +68,64 @@ CUDA = 2
 
 
 
-x = Variable(torch.randn(10, 20, 3)).cuda()
-lens = np.arange(1,11)[::-1]
+################# learn autograd
+# a = Variable(torch.ones(2), requires_grad = True)
+# b = Variable(torch.ones(2)*2)
+# c = torch.sum(a*b)
+# d = c*2
+#
+# d.backward(retain_graph=True)
+# # d.backward()
+# print(a.grad)
+#
+# d = c*5
+# d.backward()
+# print(a.grad)
 
-# print('x_before', x)
-x = pack_padded_sequence(x, lens, batch_first=True)
-# print('x_pack', x)
-print('x_unpack', pad_packed_sequence(x,batch_first=True)[0])
+# y = torch.Tensor([-1,0,1,2,3,4,0])
+# print(y)
+# print(torch.squeeze(torch.nonzero(y<=0)))
 
-lstm = nn.LSTM(3, 2, batch_first=True).cuda()
-h0 = Variable(torch.zeros(1, 10, 2)).cuda()
-c0 = Variable(torch.zeros(1, 10, 2)).cuda()
 
-packed_h, (packed_h_t, packed_c_t) = lstm(x, (h0, c0))
-h, _ = pad_packed_sequence(packed_h,batch_first=True)
+############# test the behaviour of using .long()
+y = torch.rand(5,1)
+
+
+
+
+
+# x = torch.LongTensor([1])
+# print(x)
+# print(x.size())
+# print(len(x.size()))
+
+# a = Variable(torch.rand(5, 3), requires_grad=True)
+# a = a.clone() # Otherwise we change inplace a leaf Variable
+# print(a)
+#
+# ind = Variable(torch.LongTensor([3]))
+# a.index_fill_(0, ind, 0)
+#
+# print(a)
+#
+# a[1, :] = 0
+#
+# print(a)
+
+# x = Variable(torch.randn(10, 20, 3)).cuda()
+# lens = np.arange(1,11)[::-1]
+#
+# # print('x_before', x)
+# x = pack_padded_sequence(x, lens, batch_first=True)
+# # print('x_pack', x)
+# print('x_unpack', pad_packed_sequence(x,batch_first=True)[0])
+#
+# lstm = nn.LSTM(3, 2, batch_first=True).cuda()
+# h0 = Variable(torch.zeros(1, 10, 2)).cuda()
+# c0 = Variable(torch.zeros(1, 10, 2)).cuda()
+#
+# packed_h, (packed_h_t, packed_c_t) = lstm(x, (h0, c0))
+# h, _ = pad_packed_sequence(packed_h,batch_first=True)
 # print(h.size()) # Size 20 x 10 x 50 instead of 10 x 20 x 50
 # print(h)
 
