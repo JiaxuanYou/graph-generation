@@ -139,9 +139,9 @@ def eval_performance(datadir, prefix, args=None,eval_every=500):
         eval_list(real_graphs_filename, pred_graphs_filename, prefix, 200)
 
     else:
-        real_graphs_filename = [args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
+        real_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
                      str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(args.bptt_len) + '.dat' for epoch in range(0,50001,eval_every)]
-        pred_graphs_filename = [args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
+        pred_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
                  str(epoch) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(args.bptt_len) + '.dat' for epoch in range(0,50001,eval_every)]
         eval_list_fname(real_graphs_filename, pred_graphs_filename,eval_every=eval_every)
 
@@ -149,7 +149,8 @@ def eval_performance(datadir, prefix, args=None,eval_every=500):
 if __name__ == '__main__':
     #datadir = "/dfs/scratch0/rexy/graph_gen_data/"
     #prefix = "GraphRNN_enzymes_50_"
-    datadir = "/lfs/local/0/jiaxuany/pycharm/graphs_share/"
+    #datadir = "/lfs/local/0/jiaxuany/pycharm/graphs_share/"
+    datadir = "/lfs/local/0/jiaxuany/pycharm/"
     #prefix = "GraphRNN_enzymes_50_"
     prefix = "GraphRNN_structure_enzymes_50_"
     # eval_performance(datadir, prefix)
