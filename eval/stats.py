@@ -45,7 +45,7 @@ def clustering_worker(param):
     G, bins = param
     clustering_coeffs_list = list(nx.clustering(G).values())
     hist, _ = np.histogram(
-            clustering_coeffs_list, bins=bins, range=(0.0, 1.0), density=True)
+            clustering_coeffs_list, bins=bins, range=(0.0, 1.0), density=False)
     return hist
 
 def clustering_stats(graph_ref_list, graph_pred_list, bins=100, is_parallel=True):
@@ -63,20 +63,26 @@ def clustering_stats(graph_ref_list, graph_pred_list, bins=100, is_parallel=True
             for clustering_hist in executor.map(clustering_worker, 
                     [(G, bins) for G in graph_pred_list_remove_empty]):
                 sample_pred.append(clustering_hist)
+        # check non-zero elements in hist
+        #total = 0
+        #for i in range(len(sample_pred)):
+        #    nz = np.nonzero(sample_pred[i])[0].shape[0]
+        #    total += nz
+        #print(total)
     else:
         for i in range(len(graph_ref_list)):
             clustering_coeffs_list = list(nx.clustering(graph_ref_list[i]).values())
             hist, _ = np.histogram(
-                    clustering_coeffs_list, bins=bins, range=(0.0, 1.0), density=True)
+                    clustering_coeffs_list, bins=bins, range=(0.0, 1.0), density=False)
             sample_ref.append(hist)
 
             clustering_coeffs_list = list(nx.clustering(graph_pred_list[i]).values())
             hist, _ = np.histogram(
-                    clustering_coeffs_list, bins=bins, range=(0.0, 1.0), density=True)
+                    clustering_coeffs_list, bins=bins, range=(0.0, 1.0), density=False)
             sample_pred.append(hist)
     
     mmd_dist = mmd.compute_mmd(sample_ref, sample_pred, kernel=mmd.gaussian_emd,
-                               sigma=1.0, distance_scaling=2.0/bins)
+                               sigma=1.0/10, distance_scaling=bins)
     elapsed = datetime.now() - prev
     if PRINT_TIME:
         print('Time computing clustering mmd: ', elapsed)

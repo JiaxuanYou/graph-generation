@@ -103,34 +103,51 @@ def eval_list(real_graphs_filename, pred_graphs_filename, prefix, eval_every):
             print('dist among real: ', dist)
 
 
-def eval_list_fname(real_graphs_filename, pred_graphs_filename, eval_every):
+def eval_list_fname(real_graphs_filename, pred_graphs_filename, eval_every, out_file_prefix=None):
+
+    if out_file_prefix is not None:
+        out_files = {
+                'degree': open(out_file_prefix + '_deg.txt', 'w'),
+                'clustering': open(out_file_prefix + '_clustering.txt', 'w')
+        }
     for i in range(len(real_graphs_filename)):
         real_g_list = load_graph_list(real_graphs_filename[i])
         pred_g_list = load_graph_list(pred_graphs_filename[i])
         shuffle(real_g_list)
         shuffle(pred_g_list)
-        perturbed_g_list = perturb(real_g_list, 0.001, 0.02)
+        perturbed_g_list = perturb(real_g_list, 0.0001, 0.02)
 
-        dist_degree = eval.stats.degree_stats(real_g_list, pred_g_list)
+        #dist_degree = eval.stats.degree_stats(real_g_list, pred_g_list)
         dist_clustering = eval.stats.clustering_stats(real_g_list, pred_g_list)
-        print('degree dist between real and pred at epoch ', i*eval_every, ': ', dist_degree)
+        #print('degree dist between real and pred at epoch ', i*eval_every, ': ', dist_degree)
         print('clustering dist between real and pred at epoch ', i*eval_every, ': ', dist_clustering)
-
+        #out_files['degree'].write(str(dist_degree) + ',')
+        out_files['clustering'].write(str(dist_clustering) + ',')
 
         dist_degree = eval.stats.degree_stats(real_g_list, perturbed_g_list)
         dist_clustering = eval.stats.clustering_stats(real_g_list, perturbed_g_list)
-        print('degree dist between real and perturbed: ', dist_degree)
+        #print('degree dist between real and perturbed: ', dist_degree)
         print('clustering dist between real and perturbed: ', dist_clustering)
+        out_files['degree'].write(str(dist_degree) + ',')
+        out_files['clustering'].write(str(dist_clustering) + ',')
 
 
         mid = len(real_g_list) // 2
         dist_degree = eval.stats.degree_stats(real_g_list[:mid], real_g_list[mid:])
         dist_clustering = eval.stats.clustering_stats(real_g_list[:mid], real_g_list[mid:])
-        print('degree dist among real: ', dist_degree)
+        #print('degree dist among real: ', dist_degree)
         print('clustering dist among real: ', dist_clustering)
+        out_files['degree'].write(str(dist_degree) + ',')
+        out_files['clustering'].write(str(dist_clustering) + ',')
+
+        for _, file in out_files.items():
+            file.write('\n')
+
+    for _, file in out_files.items():
+        file.close()
 
 
-def eval_performance(datadir, prefix, args=None,eval_every=500):
+def eval_performance(datadir, prefix=None, args=None, eval_every=10000, out_file_prefix=None):
     if args is None:
         real_graphs_filename = [datadir + f for f in os.listdir(datadir)
                 if re.match(prefix + '.*real.*\.dat', f)]
@@ -140,10 +157,13 @@ def eval_performance(datadir, prefix, args=None,eval_every=500):
 
     else:
         real_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
-                     str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(args.bptt_len) + '.dat' for epoch in range(0,50001,eval_every)]
+                str(epoch) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' +
+                str(args.bptt_len) + '.dat' for epoch in range(0,50001,eval_every)]
         pred_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
-                 str(epoch) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(args.bptt_len) + '.dat' for epoch in range(0,50001,eval_every)]
-        eval_list_fname(real_graphs_filename, pred_graphs_filename,eval_every=eval_every)
+                str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' +
+                str(args.bptt_len) + '.dat' for epoch in range(0,50001,eval_every)]
+        eval_list_fname(real_graphs_filename, pred_graphs_filename, eval_every=eval_every,
+                out_file_prefix=out_file_prefix)
 
 
 if __name__ == '__main__':
@@ -156,6 +176,6 @@ if __name__ == '__main__':
     # eval_performance(datadir, prefix)
     args = Args()
     print(args.graph_type)
-    eval_performance(datadir, prefix,args)
-    
+    out_file_prefix = 'eval_results/' + args.graph_type
+    eval_performance(datadir, args=args, out_file_prefix=out_file_prefix)
 
