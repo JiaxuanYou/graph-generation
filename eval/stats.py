@@ -34,7 +34,7 @@ def degree_stats(graph_ref_list, graph_pred_list, is_parallel=False):
         for i in range(len(graph_ref_list)):
             sample_ref.append(np.array(nx.degree_histogram(graph_ref_list[i])))
             # in case an empty graph is generated
-            sample_pred.append(np.array(nx.degree_histogram(graph_pred_list[i])))
+            sample_pred.append(np.array(nx.degree_histogram(graph_pred_list_remove_empty[i])))
     mmd_dist = mmd.compute_mmd(sample_ref, sample_pred, kernel=mmd.gaussian_emd)
     elapsed = datetime.now() - prev
     if PRINT_TIME:
