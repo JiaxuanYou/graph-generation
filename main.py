@@ -1,4 +1,4 @@
-import networkx as nx
+import networkx as nx0
 import numpy as np
 import torch
 import torch.nn as nn
@@ -21,7 +21,7 @@ from model import *
 from data import *
 from random import shuffle
 import pickle
-# from tensorboard_logger import configure, log_value
+from tensorboard_logger import configure, log_value
 
 
 
@@ -58,7 +58,9 @@ class Args():
         ## GraphRNN
         self.input_size = 64
         self.hidden_size = 64
-        self.noise_size = 8
+        self.embedding_size = 64
+        self.noise_size = 64
+        self.noise_level = 0.1
         # self.input_size = 128 # for DD dataset
         # self.hidden_size = 128 # for DD dataset
         self.batch_size = 128
@@ -68,19 +70,22 @@ class Args():
         self.is_bn = True
         self.bptt = False # if use truncate back propagation (not very stable)
         self.bptt_len = 20
+        self.gumbel = False
+        self.has_noise = True
         ## GCN
         self.output_dim = 64
         self.hidden_dim = 64
 
         ### training config
         self.lr = 0.003
+        self.lr_gan = 0.001
         self.epochs = 50000
-        # self.epochs = 100000
-        self.epochs_gan = 4000
+        self.epochs_gan = 50001 # which means not using GAN
+        # self.epochs_gan = 4000 # use GAN from epoch 4000
         self.epochs_test = 500
         self.epochs_log = 500
         self.epochs_save = 500
-        self.milestones = [8000, 16000, 30000]
+        self.milestones = [4000, 8000, 16000]
         # self.milestones = [16000, 32000]
 
         self.lr_rate = 0.3
@@ -99,10 +104,20 @@ class Args():
 
         self.save = False
         # self.note = 'GraphRNN'
-        self.note = 'GraphRNN_GAN'
+        # self.note = 'GraphRNN_VAE'
+        # self.note = 'GraphRNN_VAE_nobn'
+        self.note = 'GraphRNN_VAE_simple'
+        # self.note = 'GraphRNN_VAE_simple_newdecoder'
+
+
+        # self.note = 'GraphRNN_GAN'
         # self.note = 'GraphRNN_AE'
         # self.note = 'GraphRNN_structure'
         # self.note = 'GCN'
+
+
+        # self.clean_tensorboard = True
+        self.clean_tensorboard = False
 
 
 
@@ -377,71 +392,152 @@ def train_gan_epoch(epoch, args, lstm, output_deterministic, output_generator, o
             # y_pred_clean[:, 0:y_pred.size(1), :] = y_pred
             # y_pred = y_pred_clean
 
-
         # if backprop through the start
         else:
-            h = lstm(x, pack=True, input_len=y_len)
             if gan:
-                # 1A: train D on real data
-                output_discriminator.zero_grad()
-                # now we assume that discriminator cannot tune lstm or generator to make decision
-                # todo: try h.detach() vs h (tune lstm vs not)
-                l_real = output_discriminator(h.detach(),y)
-                # clean
-                l_real = pack_padded_sequence(l_real, y_len, batch_first=True)
-                l_real = pad_packed_sequence(l_real, batch_first=True)[0]
-                loss_real_d = F.binary_cross_entropy(l_real, Variable(torch.ones(l_real.size(0),l_real.size(1),l_real.size(2))*0.9).cuda(CUDA))
-                loss_real_d.backward()
+                # if using model's own prediction each time step to train
+                if args.gumbel:
+                    y_pred = Variable(torch.zeros(y.size(0), y.size(1), y.size(2))).cuda(CUDA)  # normalized score
+                    x_step = x[:, 0:1, :]
+                    for i in range(x.size(1)):
+                        h = lstm(x_step)
+                        # 1A: train D on real data
+                        output_discriminator.zero_grad()
+                        # now we assume that discriminator cannot tune lstm or generator to make decision
+                        # todo: try h.detach() vs h (tune lstm vs not)
+                        l_real = output_discriminator(h.detach(), y)
+                        # clean
+                        l_real = pack_padded_sequence(l_real, y_len, batch_first=True)
+                        l_real = pad_packed_sequence(l_real, batch_first=True)[0]
+                        loss_real_d = F.binary_cross_entropy(l_real, Variable(
+                            torch.ones(l_real.size(0), l_real.size(1), l_real.size(2)) * 0.9).cuda(CUDA))
+                        loss_real_d.backward()
 
-                # 1B: train D on fake data
-                # uniform noise
-                n = Variable(torch.rand(h.size(0), h.size(1), args.noise_size)).cuda(CUDA)
-                # generator
-                y_fake = output_generator(h,n,temperature)
-                # discriminator
-                l_fake = output_discriminator(h.detach(),y_fake.detach())
-                # clean
-                l_fake = pack_padded_sequence(l_fake, y_len, batch_first=True)
-                l_fake = pad_packed_sequence(l_fake, batch_first=True)[0]
-                loss_fake_d = F.binary_cross_entropy(l_fake, Variable(torch.zeros(l_real.size(0), l_real.size(1),l_real.size(2))).cuda(CUDA))
-                loss_fake_d.backward()
+                        # 1B: train D on fake data
+                        # uniform noise
+                        n = Variable(torch.rand(h.size(0), h.size(1), args.noise_size)).cuda(CUDA)
+                        # generator
+                        y_fake = output_generator(h, n, temperature)
+                        # discriminator
+                        l_fake = output_discriminator(h.detach(), y_fake.detach())
+                        # clean
+                        l_fake = pack_padded_sequence(l_fake, y_len, batch_first=True)
+                        l_fake = pad_packed_sequence(l_fake, batch_first=True)[0]
+                        loss_fake_d = F.binary_cross_entropy(l_fake, Variable(
+                            torch.zeros(l_real.size(0), l_real.size(1), l_real.size(2))).cuda(CUDA))
+                        loss_fake_d.backward()
 
-                # 1C: update D
-                optimizer_discriminator.step()
-                scheduler_discriminator.step()
+                        # 1C: update D
+                        optimizer_discriminator.step()
+                        scheduler_discriminator.step()
 
-                # 2A: Train G on D's response, do not tune D's parameter, but tune lstm's paremeter
-                output_generator.zero_grad()
-                n = Variable(torch.rand(h.size(0), h.size(1), args.noise_size)).cuda(CUDA)
-                y_fake = output_generator(h, n, temperature)
-                # todo: try h.detach() vs h (tune lstm vs not)
-                l_fake = output_discriminator(h,y_fake)
-                # clean
-                l_fake = pack_padded_sequence(l_fake, y_len, batch_first=True)
-                l_fake = pad_packed_sequence(l_fake, batch_first=True)[0]
-                loss_fake_g = F.binary_cross_entropy(l_fake, Variable(torch.ones(l_real.size(0),l_real.size(1),l_real.size(2))*0.9).cuda(CUDA))
-                loss_fake_g.backward()
+                        # 2A: Train G on D's response, do not tune D's parameter, but tune lstm's paremeter
+                        output_generator.zero_grad()
+                        n = Variable(torch.rand(h.size(0), h.size(1), args.noise_size)).cuda(CUDA)
+                        y_fake = output_generator(h, n, temperature)
+                        # todo: try h.detach() vs h (tune lstm vs not)
+                        l_fake = output_discriminator(h, y_fake)
+                        # clean
+                        l_fake = pack_padded_sequence(l_fake, y_len, batch_first=True)
+                        l_fake = pad_packed_sequence(l_fake, batch_first=True)[0]
+                        loss_fake_g = F.binary_cross_entropy(l_fake, Variable(
+                            torch.ones(l_real.size(0), l_real.size(1), l_real.size(2)) * 0.9).cuda(CUDA))
+                        loss_fake_g.backward()
 
-                # 2B: update G and lstm
-                optimizer_generator.step()
-                scheduler_generator.step()
-                optimizer_lstm.step()
-                scheduler_lstm.step()
-                pass
+                        # 2B: update G and lstm
+                        optimizer_generator.step()
+                        scheduler_generator.step()
+                        optimizer_lstm.step()
+                        scheduler_lstm.step()
+                    pass
+                # if using ground truth to train
+                else:
+                    h = lstm(x, pack=True, input_len=y_len)
+                    # 1A: train D on real data
+                    output_discriminator.zero_grad()
+                    # now we assume that discriminator cannot tune lstm or generator to make decision
+                    # todo: try h.detach() vs h (tune lstm vs not)
+                    l_real = output_discriminator(h.detach(),y)
+                    # clean
+                    l_real = pack_padded_sequence(l_real, y_len, batch_first=True)
+                    l_real = pad_packed_sequence(l_real, batch_first=True)[0]
+                    loss_real_d = F.binary_cross_entropy(l_real, Variable(torch.ones(l_real.size(0),l_real.size(1),l_real.size(2))*0.9).cuda(CUDA))
+                    loss_real_d.backward()
+
+                    # 1B: train D on fake data
+                    # uniform noise
+                    n = Variable(torch.rand(h.size(0), h.size(1), args.noise_size)).cuda(CUDA)
+                    # generator
+                    y_fake = output_generator(h,n,temperature)
+                    # discriminator
+                    l_fake = output_discriminator(h.detach(),y_fake.detach())
+                    # clean
+                    l_fake = pack_padded_sequence(l_fake, y_len, batch_first=True)
+                    l_fake = pad_packed_sequence(l_fake, batch_first=True)[0]
+                    loss_fake_d = F.binary_cross_entropy(l_fake, Variable(torch.zeros(l_real.size(0), l_real.size(1),l_real.size(2))).cuda(CUDA))
+                    loss_fake_d.backward()
+
+                    # 1C: update D
+                    optimizer_discriminator.step()
+                    scheduler_discriminator.step()
+
+                    # 2A: Train G on D's response, do not tune D's parameter, but tune lstm's paremeter
+                    output_generator.zero_grad()
+                    n = Variable(torch.rand(h.size(0), h.size(1), args.noise_size)).cuda(CUDA)
+                    y_fake = output_generator(h, n, temperature)
+                    # todo: try h.detach() vs h (tune lstm vs not)
+                    l_fake = output_discriminator(h,y_fake)
+                    # clean
+                    l_fake = pack_padded_sequence(l_fake, y_len, batch_first=True)
+                    l_fake = pad_packed_sequence(l_fake, batch_first=True)[0]
+                    loss_fake_g = F.binary_cross_entropy(l_fake, Variable(torch.ones(l_real.size(0),l_real.size(1),l_real.size(2))*0.9).cuda(CUDA))
+                    loss_fake_g.backward()
+
+                    # 2B: update G and lstm
+                    optimizer_generator.step()
+                    scheduler_generator.step()
+                    optimizer_lstm.step()
+                    scheduler_lstm.step()
+                    pass
             else:
-                output_deterministic.zero_grad()
-                y_pred = output_deterministic(h)
-                # clean
-                y_pred = pack_padded_sequence(y_pred, y_len, batch_first=True)
-                y_pred = pad_packed_sequence(y_pred, batch_first=True)[0]
-                # use cross entropy loss
-                loss_determinstic = F.binary_cross_entropy(y_pred, y)
-                loss_determinstic.backward()
-                # update deterministic and lstm
-                optimizer_deterministic.step()
-                optimizer_lstm.step()
-                scheduler_deterministic.step()
-                scheduler_lstm.step()
+                # if using model's own prediction each time step to train
+                if args.gumbel:
+                    output_deterministic.zero_grad()
+                    y_pred = Variable(torch.zeros(y.size(0), y.size(1), y.size(2))).cuda(CUDA) # normalized score
+                    x_step = x[:, 0:1, :]
+                    for i in range(x.size(1)):
+                        h = lstm(x_step)
+                        y_pred_step = output_deterministic(h,sigmoid=False)
+                        y_pred[:, i:i + 1, :] = F.sigmoid(y_pred_step) # write down score
+                        x_step = gumbel_sigmoid(y_pred_step, temperature=temperature)
+                    # clean
+                    y_pred = pack_padded_sequence(y_pred, y_len, batch_first=True)
+                    y_pred = pad_packed_sequence(y_pred, batch_first=True)[0]
+
+                    loss_determinstic = F.binary_cross_entropy(y_pred, y)
+                    loss_determinstic.backward()
+                    # update deterministic and lstm
+                    optimizer_deterministic.step()
+                    optimizer_lstm.step()
+                    scheduler_deterministic.step()
+                    scheduler_lstm.step()
+                # if using ground truth to train
+                else:
+                    h = lstm(x, pack=True, input_len=y_len)
+                    output_deterministic.zero_grad()
+                    y_pred = output_deterministic(h)
+                    # clean
+                    y_pred = pack_padded_sequence(y_pred, y_len, batch_first=True)
+                    y_pred = pad_packed_sequence(y_pred, batch_first=True)[0]
+                    # use cross entropy loss
+                    loss_determinstic = F.binary_cross_entropy(y_pred, y)
+                    loss_determinstic.backward()
+                    # update deterministic and lstm
+                    optimizer_deterministic.step()
+                    optimizer_lstm.step()
+                    scheduler_deterministic.step()
+                    scheduler_lstm.step()
+
 
     # if validate, do sampling/threshold each step
     else:
@@ -455,7 +551,10 @@ def train_gan_epoch(epoch, args, lstm, output_deterministic, output_generator, o
                 x_step = sample_y(x_step, sample=False, thresh=0.5) # get threshold prediction
             else:
                 y_pred_step = output_deterministic(h)
-                x_step = sample_y(y_pred_step, sample=True)
+                if args.has_noise: # if output function has noise, then no need to do additional sampling
+                    x_step = sample_y(y_pred_step, sample=False, thresh=0.5)
+                else:
+                    x_step = sample_y(y_pred_step, sample=True)
             y_pred_long[:, i:i + 1, :] = x_step
         loss_determinstic = F.binary_cross_entropy(y_pred_long, y)
         y_pred_long = y_pred_long.long()
@@ -485,30 +584,193 @@ def train_gan_epoch(epoch, args, lstm, output_deterministic, output_generator, o
         # save list of objects
         fname_pred = args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
                      str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
-            args.bptt_len) + '.dat'
+            args.bptt_len) + '_' + str(args.gumbel) + '_' + str(args.has_noise)+ '_' + str(args.noise_level) + '.dat'
         save_graph_list(G_pred_list, fname_pred)
         fname_real = args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
                      str(epoch) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
-            args.bptt_len) + '.dat'
+            args.bptt_len) + '_' + str(args.gumbel) + '_' + str(args.has_noise)+ '_' + str(args.noise_level) + '.dat'
         save_graph_list(G_real_list, fname_real)
 
 
     if epoch % args.epochs_log == 0 and train == True:
         if gan:
-            print('Epoch: {}/{}, train loss_real_d: {:.6f}, train loss_fake_d: {:.6f}, train loss_fake_g: {:.6f}, graph type: {}, num_layer: {}, bptt: {}, bptt_len:{}'.format(
-                epoch, args.epochs, loss_real_d.data[0], loss_fake_d.data[0], loss_fake_g.data[0], args.graph_type, args.num_layers, args.bptt, args.bptt_len))
+            print('Epoch: {}/{}, train loss_real_d: {:.6f}, train loss_fake_d: {:.6f}, train loss_fake_g: {:.6f}, graph type: {}, num_layer: {}, bptt: {}, bptt_len:{}, gumbel:{}, temperature:{}, has_noise:{}, noise_level:{}'.format(
+                epoch, args.epochs, loss_real_d.data[0], loss_fake_d.data[0], loss_fake_g.data[0], args.graph_type, args.num_layers, args.bptt, args.bptt_len, args.gumbel, temperature, args.has_noise, args.noise_level))
         else:
-            print('Epoch: {}/{}, train loss: {:.6f}, graph type: {}, num_layer: {}, bptt: {}, bptt_len:{}'.format(
-                epoch, args.epochs, loss_determinstic.data[0], args.graph_type, args.num_layers, args.bptt, args.bptt_len))
+            print('Epoch: {}/{}, train loss: {:.6f}, graph type: {}, num_layer: {}, bptt: {}, bptt_len:{}, gumbel:{}, temperature:{}, has_noise:{}, noise_level:{}'.format(
+                epoch, args.epochs, loss_determinstic.data[0], args.graph_type, args.num_layers, args.bptt, args.bptt_len, args.gumbel, temperature, args.has_noise, args.noise_level))
     elif epoch % args.epochs_log == 0 and train == False:
         print('Epoch: {}/{}, test loss: {:.6f}, real mean: {:.4f}, pred mean: {:.4f}'.format(
             epoch, args.epochs, loss_determinstic.data[0], real_score_mean, pred_score_mean))
 
-    # log_value('train_loss', loss.data[0], epoch)
-    # log_value('accuracy', accuracy, epoch)
-    # log_value('auc_mean', auc_mean, epoch)
-    # log_value('ap_mean', ap_mean, epoch)
+    log_value('train_loss_'+ args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
+            args.bptt_len) + '_' + str(args.gumbel)+ '_' + str(args.noise_level), loss_determinstic.data[0], epoch)
+    # log_value('temperature_' + args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
+    #     args.bptt) + '_' + str(args.bptt_len) + '_' + str(args.gumbel), temperature, epoch)
 
+
+def train_vae_epoch(epoch, args, lstm, output_vae, dataset,
+                    optimizer_lstm, optimizer_vae,
+                    scheduler_lstm, scheduler_vae, train=True):
+    lstm.zero_grad()
+    output_vae.zero_grad()
+    lstm.hidden = lstm.init_hidden()
+
+    x, y, y_len = dataset.sample()
+
+    y_len_max = max(y_len)
+    x = x[:, 0:y_len_max, :]
+    y = y[:, 0:y_len_max, :]
+
+    x = Variable(x).cuda(CUDA)
+    y = Variable(y).cuda(CUDA)
+
+    # if train
+    if train:
+        # if do truncate backprop
+        # todo: finish a memory efficient bptt
+        if args.bptt:
+            pass
+            # start_id = 0
+            # while start_id < x.size(1):
+            #     print('start id', start_id)
+            #     end_id = min(start_id + args.bptt_len, x.size(1))
+            #     y_pred_temp = generator(x[:, start_id:end_id, :])
+            #     generator.hidden = detach_hidden_lstm(generator.hidden)
+            #     # generator.hidden[0].detach()
+            #     # generator.hidden[1].detach()
+            #
+            #     y_pred[:, start_id:end_id, :] = y_pred_temp
+            #     start_id += args.bptt_len
+            # y_pred_clean = Variable(torch.ones(x.size(0), x.size(1), x.size(2)) * -100).cuda(CUDA)
+            # # before computing loss, cleaning y_pred so that only valid entries are supervised
+            # y_pred = pack_padded_sequence(y_pred, y_len, batch_first=True)
+            # y_pred = pad_packed_sequence(y_pred, batch_first=True)[0]
+            # y_pred_clean[:, 0:y_pred.size(1), :] = y_pred
+            # y_pred = y_pred_clean
+
+        # if backprop through the start
+        else:
+            # if using model's own prediction each time step to train
+            if args.gumbel:
+                y_pred = Variable(torch.zeros(y.size(0), y.size(1), y.size(2))).cuda(CUDA) # normalized score
+                x_step = x[:, 0:1, :]
+                for i in range(x.size(1)):
+                    h = lstm(x_step)
+                    y_pred_step = output_vae(h,sigmoid=False)
+                    y_pred[:, i:i + 1, :] = F.sigmoid(y_pred_step) # write down score
+                    x_step = gumbel_sigmoid(y_pred_step, temperature=0.5)
+                # clean
+                y_pred = pack_padded_sequence(y_pred, y_len, batch_first=True)
+                y_pred = pad_packed_sequence(y_pred, batch_first=True)[0]
+
+                loss_determinstic = F.binary_cross_entropy(y_pred, y)
+                loss_determinstic.backward()
+                # update deterministic and lstm
+                optimizer_vae.step()
+                optimizer_lstm.step()
+                scheduler_vae.step()
+                scheduler_lstm.step()
+            # if using ground truth to train
+            else:
+                h = lstm(x, pack=True, input_len=y_len)
+                y_pred,z_mu,z_lsgms = output_vae(h)
+                # clean
+                y_pred = pack_padded_sequence(y_pred, y_len, batch_first=True)
+                y_pred = pad_packed_sequence(y_pred, batch_first=True)[0]
+                z_mu = pack_padded_sequence(z_mu, y_len, batch_first=True)
+                z_mu = pad_packed_sequence(z_mu, batch_first=True)[0]
+                z_lsgms = pack_padded_sequence(z_lsgms, y_len, batch_first=True)
+                z_lsgms = pad_packed_sequence(z_lsgms, batch_first=True)[0]
+                # use cross entropy loss
+                loss_bce = F.binary_cross_entropy(y_pred, y)
+                loss_kl = -0.5 * torch.sum(1 + z_lsgms - z_mu.pow(2) - z_lsgms.exp())
+                loss_kl /= y.size(0)*y.size(1)*sum(y_len) # normalize
+                loss = loss_bce + loss_kl
+                loss.backward()
+                # update deterministic and lstm
+                optimizer_vae.step()
+                optimizer_lstm.step()
+                scheduler_vae.step()
+                scheduler_lstm.step()
+
+                z_mu_mean = torch.mean(z_mu.data)
+                z_sgm_mean = torch.mean(z_lsgms.mul(0.5).exp_().data)
+                z_mu_min = torch.min(z_mu.data)
+                z_sgm_min = torch.min(z_lsgms.mul(0.5).exp_().data)
+                z_mu_max = torch.max(z_mu.data)
+                z_sgm_max = torch.max(z_lsgms.mul(0.5).exp_().data)
+
+
+    # if validate, do sampling/threshold each step
+    else:
+        y_pred = Variable(torch.zeros(y.size(0), y.size(1), y.size(2))).cuda(CUDA)
+        y_pred_long = Variable(torch.zeros(y.size(0), y.size(1), y.size(2))).cuda(CUDA)
+        x_step = x[:, 0:1, :]
+        for i in range(x.size(1)):
+            h = lstm(x_step)
+            y_pred_step,_,_ = output_vae(h)
+            y_pred[:, i:i + 1, :] = y_pred_step
+            x_step = sample_y(y_pred_step, sample=True)
+            y_pred_long[:, i:i + 1, :] = x_step
+        loss = F.binary_cross_entropy(y_pred_long, y)
+        y_pred_long = y_pred_long.long()
+
+        y_data = y.data
+        y_pred_data = y_pred_long.data
+
+        real_score_mean = y_data.mean()
+        pred_score_mean = y_pred.data[y_pred.data>1e-6].mean()
+        real_score_max = y_data.max()
+        pred_score_max = y_pred.data[y_pred.data>1e-6].max()
+        real_score_min = y_data.min()
+        pred_score_min = y_pred.data[y_pred.data>1e-6].min()
+
+    # plot graph
+    if epoch % args.epochs_log == 0 and train == False:
+        # save graphs as pickle
+        G_real_list = []
+        G_pred_list = []
+        for i in range(y_data.size(0)):
+            adj_real = decode_adj(y_data[i].cpu().numpy(), args.max_prev_node)
+            adj_pred = decode_adj(y_pred_data[i].cpu().numpy(), args.max_prev_node)
+            # adj_error = adj_real-adj_raw
+            # print(np.amin(adj_error),np.amax(adj_error))
+            G_real = get_graph(adj_real)
+            G_pred = get_graph(adj_pred)
+            # print('real', G_real.number_of_nodes())
+            # print('pred', G_pred.number_of_nodes())
+            G_real_list.append(G_real)
+            G_pred_list.append(G_pred)
+        # save list of objects
+        fname_pred = args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
+                     str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
+            args.bptt_len) + '_' + str(args.gumbel)  + '.dat'
+        save_graph_list(G_pred_list, fname_pred)
+        fname_real = args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
+                     str(epoch) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
+            args.bptt_len) + '_' + str(args.gumbel) + '.dat'
+        save_graph_list(G_real_list, fname_real)
+
+
+    if epoch % args.epochs_log == 0 and train == True:
+        print('Epoch: {}/{}, train bce loss: {:.6f}, train kl loss: {:.6f}, graph type: {}, num_layer: {}, bptt: {}, bptt_len:{}, gumbel:{}'.format(
+            epoch, args.epochs,loss_bce.data[0], loss_kl.data[0], args.graph_type, args.num_layers, args.bptt, args.bptt_len, args.gumbel))
+        print('z_mu_mean', z_mu_mean, 'z_mu_min', z_mu_min, 'z_mu_max', z_mu_max, 'z_sgm_mean', z_sgm_mean, 'z_sgm_min', z_sgm_min, 'z_sgm_max', z_sgm_max)
+    elif epoch % args.epochs_log == 0 and train == False:
+        print('Epoch: {}/{}, test loss: {:.6f}, real mean: {:.4f}, pred mean: {:.4f}, real min: {:.4f}, pred min: {:.4f}, real max: {:.4f}, pred max: {:.4f}'.format(
+            epoch, args.epochs, loss.data[0], real_score_mean, pred_score_mean, real_score_min, pred_score_min, real_score_max, pred_score_max))
+
+    if train:
+        log_value('train_bce_loss_' + args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
+            args.bptt) + '_' + str(args.bptt_len) + '_' + str(args.gumbel) + '_' + str(args.noise_level), loss_bce.data[0],
+                  epoch)
+        log_value('train_kl_loss_' + args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
+            args.bptt) + '_' + str(args.bptt_len) + '_' + str(args.gumbel) + '_' + str(args.noise_level), loss_kl.data[0],
+                  epoch)
+
+    # log_value('temperature_' + args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
+    #     args.bptt) + '_' + str(args.bptt_len) + '_' + str(args.gumbel), temperature, epoch)
 
 
 def train_epoch_GCN(epoch, args, encoder, decoder, dataset, optimizer, scheduler, thresh, train=True):
@@ -1257,7 +1519,7 @@ def train(args, dataset_train, generator):
     else:
         epoch = 0
 
-    torch.manual_seed(args.seed)
+    # torch.manual_seed(args.seed)
     optimizer = optim.Adam(list(generator.parameters()), lr=args.lr)
     scheduler = MultiStepLR(optimizer, milestones=args.milestones, gamma=args.lr_rate)
     thresh = 0.3
@@ -1289,11 +1551,11 @@ def train_gan(args, dataset_train, lstm, output_deterministic, output_generator,
     # else:
     #     epoch = 0
 
-    torch.manual_seed(args.seed)
+    # torch.manual_seed(args.seed)
     optimizer_lstm = optim.Adam(list(lstm.parameters()), lr=args.lr)
     optimizer_deterministic = optim.Adam(list(output_deterministic.parameters()), lr=args.lr)
-    optimizer_generator = optim.Adam(list(output_generator.parameters()), lr=args.lr)
-    optimizer_discriminator = optim.Adam(list(output_discriminator.parameters()), lr=args.lr)
+    optimizer_generator = optim.Adam(list(output_generator.parameters()), lr=args.lr_gan)
+    optimizer_discriminator = optim.Adam(list(output_discriminator.parameters()), lr=args.lr_gan)
 
     scheduler_lstm = MultiStepLR(optimizer_lstm, milestones=args.milestones, gamma=args.lr_rate)
     scheduler_deterministic = MultiStepLR(optimizer_deterministic, milestones=args.milestones, gamma=args.lr_rate)
@@ -1303,10 +1565,18 @@ def train_gan(args, dataset_train, lstm, output_deterministic, output_generator,
     epoch = 0
     gan = False
     while epoch<=args.epochs:
-        if epoch>=args.epochs_gan:
+        # start using GAN loss to train
+        if epoch==args.epochs_gan:
             gan = True
+            optimizer_lstm = optim.Adam(list(lstm.parameters()), lr=args.lr/100) # almost freeze lstm
+            scheduler_lstm = MultiStepLR(optimizer_lstm, milestones=[50000], gamma=args.lr_rate) # and don't change lr afterwards
+
         # train
-        temperature = np.exp((-1e-4) * (epoch-args.epochs_gan))
+        if gan:
+            temperature = np.exp((-1e-4) * (epoch-args.epochs_gan))
+        else:
+            temperature = np.exp((-1e-4) * (epoch))
+
         # print(temperature)
         train_gan_epoch(epoch, args, lstm, output_deterministic, output_generator, output_discriminator, dataset_train,
                         optimizer_lstm, optimizer_deterministic, optimizer_generator, optimizer_discriminator,
@@ -1327,6 +1597,50 @@ def train_gan(args, dataset_train, lstm, output_deterministic, output_generator,
         #         torch.save(generator.state_dict(), fname)
         epoch += 1
 
+
+########### train function for LSTM + VAE
+def train_vae(args, dataset_train, lstm, output_vae):
+    # todo: load new models
+    # if args.load:
+    #     epoch_load = args.load_epoch
+    #     fname = args.model_save_path + args.note + '_' + args.graph_type + '_' + \
+    #     str(epoch_load) + str(args.num_layers) + '_' + str(args.bptt)+'_'+str(args.bptt_len)+ '.dat'
+    #     generator.load_state_dict(torch.load(fname))
+    #     args.lr = 0.00001
+    #     epoch = epoch_load
+    #     print('model loaded!')
+    # else:
+    #     epoch = 0
+
+    # torch.manual_seed(args.seed)
+    optimizer_lstm = optim.Adam(list(lstm.parameters()), lr=args.lr)
+    optimizer_vae = optim.Adam(list(output_vae.parameters()), lr=args.lr)
+
+    scheduler_lstm = MultiStepLR(optimizer_lstm, milestones=args.milestones, gamma=args.lr_rate)
+    scheduler_vae = MultiStepLR(optimizer_vae, milestones=args.milestones, gamma=args.lr_rate)
+
+    epoch = 0
+    while epoch<=args.epochs:
+        # train
+
+        train_vae_epoch(epoch, args, lstm, output_vae, dataset_train,
+                        optimizer_lstm, optimizer_vae,
+                        scheduler_lstm, scheduler_vae, train=True)
+        # test
+        if epoch % args.epochs_test == 0:
+            train_vae_epoch(epoch, args, lstm, output_vae, dataset_train,
+                            optimizer_lstm, optimizer_vae,
+                            scheduler_lstm, scheduler_vae, train=False)
+        # todo: load new model
+        # if args.save:
+        #     if epoch % args.epochs_save == 0:
+        #         fname = args.model_save_path + args.note + '_' + args.graph_type + '_' + \
+        #                 str(epoch) + str(args.num_layers) + '_' + str(args.bptt)+'_'+str(args.bptt_len)+ '.dat'
+        #         torch.save(generator.state_dict(), fname)
+        epoch += 1
+
+
+
 def train_AE(args, dataset_train,encoder, generator):
     if args.load:
         epoch_load = 6100
@@ -1342,7 +1656,7 @@ def train_AE(args, dataset_train,encoder, generator):
     else:
         epoch = 0
 
-    torch.manual_seed(args.seed)
+    # torch.manual_seed(args.seed)
     optimizer = optim.Adam(list(generator.parameters()), lr=args.lr)
     scheduler = MultiStepLR(optimizer, milestones=args.milestones, gamma=args.lr_rate)
     thresh = 0.3
@@ -1376,7 +1690,7 @@ def train_GraphRNN_structure(args, dataset_train, generator):
     else:
         epoch = 0
 
-    torch.manual_seed(args.seed)
+    # torch.manual_seed(args.seed)
     optimizer = optim.Adam(list(generator.parameters()), lr=args.lr)
     scheduler = MultiStepLR(optimizer, milestones=args.milestones, gamma=args.lr_rate)
     thresh = 0.3
@@ -1413,7 +1727,7 @@ def train_GCN(args, dataset_train, encoder, decoder):
     else:
         epoch = 0
 
-    torch.manual_seed(args.seed)
+    # torch.manual_seed(args.seed)
     optimizer = optim.Adam(list(encoder.parameters()), lr=args.lr)
     scheduler = MultiStepLR(optimizer, milestones=args.milestones, gamma=args.lr_rate)
     thresh = 0.45
@@ -1431,15 +1745,16 @@ def train_GCN(args, dataset_train, encoder, decoder):
 
 ################ start test code
 if __name__ == '__main__':
+    args = Args()
     print('CUDA', CUDA)
     time = strftime("%Y-%m-%d %H:%M:%S", gmtime())
-    logging.basicConfig(filename='logs/train' + time + '.log', level=logging.DEBUG)
+    # logging.basicConfig(filename='logs/train' + time + '.log', level=logging.DEBUG)
 
-    # if os.path.isdir("tensorboard/run"+time):
-    #     shutil.rmtree("tensorboard/run"+time)
-    # configure("tensorboard/run"+time, flush_secs=5)
+    if args.clean_tensorboard:
+        if os.path.isdir("tensorboard"):
+            shutil.rmtree("tensorboard")
+    configure("tensorboard/run"+time, flush_secs=5)
 
-    args = Args()
     print(args.graph_type)
     print('bptt', args.bptt)
     # if using a single graph
@@ -1521,12 +1836,21 @@ if __name__ == '__main__':
     # train(args,sampler,generator)
 
     ### Graph RNN GAN model
+    # lstm = Graph_generator_LSTM_plain(feature_size=args.max_prev_node, input_size=args.input_size,
+    #                                  hidden_size=args.hidden_size, batch_size=args.batch_size, num_layers=args.num_layers).cuda(CUDA)
+    # output_deterministic = Graph_generator_LSTM_output_deterministic_mlp(h_size=args.hidden_size, y_size=args.max_prev_node, has_noise=args.has_noise, noise_level=args.noise_level).cuda(CUDA)
+    # output_generator = Graph_generator_LSTM_output_generator(h_size=args.hidden_size, n_size=args.noise_size, y_size=args.max_prev_node).cuda(CUDA)
+    # output_discriminator = Graph_generator_LSTM_output_discriminator(h_size=args.hidden_size, y_size=args.max_prev_node).cuda(CUDA)
+    # train_gan(args, sampler, lstm, output_deterministic, output_generator, output_discriminator)
+
+    ### Graph RNN VAE model
     lstm = Graph_generator_LSTM_plain(feature_size=args.max_prev_node, input_size=args.input_size,
-                                     hidden_size=args.hidden_size, batch_size=args.batch_size, num_layers=args.num_layers).cuda(CUDA)
-    output_deterministic = Graph_generator_LSTM_output_deterministic(h_size=args.hidden_size, y_size=args.max_prev_node).cuda(CUDA)
-    output_generator = Graph_generator_LSTM_output_generator(h_size=args.hidden_size, n_size=args.noise_size, y_size=args.max_prev_node).cuda(CUDA)
-    output_discriminator = Graph_generator_LSTM_output_discriminator(h_size=args.hidden_size, y_size=args.max_prev_node).cuda(CUDA)
-    train_gan(args, sampler, lstm, output_deterministic, output_generator, output_discriminator)
+                                      hidden_size=args.hidden_size, batch_size=args.batch_size,
+                                      num_layers=args.num_layers).cuda(CUDA)
+    output_vae = Graph_generator_LSTM_output_vae(h_size=args.hidden_size, embedding_size=args.embedding_size,
+                                                                         y_size=args.max_prev_node).cuda(CUDA)
+
+    train_vae(args, sampler, lstm, output_vae)
 
     ### auto encoder model
     # encoder = GCN_encoder_graph(feature.size(2),args.hidden_dim,args.input_size,args.num_layers).cuda(CUDA)

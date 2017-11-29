@@ -114,11 +114,11 @@ def eval_list_fname(real_graphs_filename, pred_graphs_filename, eval_every, out_
     if out_file_prefix is not None:
         out_files = {
                 'train': open(out_file_prefix + '_train.txt', 'w'),
-                'compare': open(out_file_prefix + '_compare.txt', 'a')
+                'compare': open(out_file_prefix + '_compare.txt', 'w')
         }
 
     out_files['train'].write('degree,clustering\n')
-    out_files['compare'].write('real,ours,perturbed\n')
+    out_files['compare'].write('metric,real,ours,perturbed\n')
 
     results = {
             'deg': {
@@ -165,11 +165,12 @@ def eval_list_fname(real_graphs_filename, pred_graphs_filename, eval_every, out_
         out_files['train'].write('\n')
 
     for metric, methods in results.items():
-        methods['real'] /= num_graphs_filename
-        methods['perturbed'] /= num_graphs_filename
+        methods['real'] /= num_graphs
+        methods['perturbed'] /= num_graphs
 
     for metric, methods in results.items():
-        out_files['compare'].write(str(methods['real'])+','+
+        out_files['compare'].write(metric+','+
+                                   str(methods['real'])+','+
                                    str(methods['ours'])+','+
                                    str(methods['perturbed'])+'\n')
 
@@ -186,24 +187,38 @@ def eval_performance(datadir, prefix=None, args=None, eval_every=1000, out_file_
         eval_list(real_graphs_filename, pred_graphs_filename, prefix, 200)
 
     else:
-        real_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
-                str(epoch) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' +
-                str(args.bptt_len) + '.dat' for epoch in range(0,50001,eval_every)]
-        pred_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
-                str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' +
-                str(args.bptt_len) + '.dat' for epoch in range(0,50001,eval_every)]
+        # # for vanilla graphrnn
+        # real_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
+        #              str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(args.bptt_len) + '.dat' for epoch in range(0,50001,eval_every)]
+        # pred_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
+        #          str(epoch) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(args.bptt_len) + '.dat' for epoch in range(0,50001,eval_every)]
+        vae = 'VAE' in args.note
+        # for vae graphrnn
+        if not vae:
+            real_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
+                    str(epoch) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' +
+                    str(args.bptt_len) + '.dat' for epoch in range(0,50001,eval_every)]
+            pred_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
+                    str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' +
+                    str(args.bptt_len) + '.dat' for epoch in range(0,50001,eval_every)]
+        else:
+            real_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
+                     str(epoch) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
+                     args.bptt_len) + '_' + str(args.gumbel) + '.dat' for epoch in range(0, 50001, eval_every)]
+            pred_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
+                     str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
+                     args.bptt_len) + '_' + str(args.gumbel) + '.dat' for epoch in range(0, 50001, eval_every)]
+
         eval_list_fname(real_graphs_filename, pred_graphs_filename, eval_every=eval_every,
                 out_file_prefix=out_file_prefix)
 
 
 if __name__ == '__main__':
     #datadir = "/dfs/scratch0/rexy/graph_gen_data/"
-    #prefix = "GraphRNN_enzymes_50_"
     #datadir = "/lfs/local/0/jiaxuany/pycharm/graphs_share/"
     datadir = "/lfs/local/0/jiaxuany/pycharm/"
     #prefix = "GraphRNN_enzymes_50_"
     prefix = "GraphRNN_structure_enzymes_50_"
-    # eval_performance(datadir, prefix)
     args = Args()
     print(args.graph_type)
     out_file_prefix = 'eval_results/' + args.graph_type

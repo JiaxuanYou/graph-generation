@@ -336,3 +336,9 @@ y = torch.rand(5,1)
 #     with open('dataset/ind.{}.{}'.format(DATASET,NAMES[i]), 'rb') as f:
 #         OBJECTS.append(cPickle.load(f))
 # x, y, tx, ty, graph = tuple(OBJECTS)
+
+
+# torch.manual_seed(123)
+# for i in range(10):
+#     a = torch.randn([2])
+#     print(a)
