@@ -139,10 +139,20 @@ def eval_performance(datadir, prefix, args=None,eval_every=500):
         eval_list(real_graphs_filename, pred_graphs_filename, prefix, 200)
 
     else:
+        # # for vanilla graphrnn
+        # real_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
+        #              str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(args.bptt_len) + '.dat' for epoch in range(0,50001,eval_every)]
+        # pred_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
+        #          str(epoch) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(args.bptt_len) + '.dat' for epoch in range(0,50001,eval_every)]
+        # for vae graphrnn
         real_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
-                     str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(args.bptt_len) + '.dat' for epoch in range(0,50001,eval_every)]
+                     str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
+            args.bptt_len) + '_' + str(args.gumbel) + '.dat' for epoch in range(0, 50001, eval_every)]
         pred_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
-                 str(epoch) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(args.bptt_len) + '.dat' for epoch in range(0,50001,eval_every)]
+                     str(epoch) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
+            args.bptt_len) + '_' + str(args.gumbel) + '.dat' for epoch in range(0, 50001, eval_every)]
+
+
         eval_list_fname(real_graphs_filename, pred_graphs_filename,eval_every=eval_every)
 
 

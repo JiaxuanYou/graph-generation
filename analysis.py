@@ -4,18 +4,18 @@ from main import *
 args = Args()
 print(args.graph_type)
 # epoch = 16000
-epoch = 49500
+epoch = 50000
 
 # for baseline model
-if args.note == 'GraphRNN' or 'GraphRNN_GAN':
+if args.note == 'GraphRNN' or 'GraphRNN_VAE' or 'GraphRNN_VAE_nobn' or 'GraphRNN_VAE_simple':
     for num_layers in range(4,5):
         # give file name and figure name
         fname_pred = args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
-                     str(epoch) + '_pred_' + str(num_layers) + '_' + str(args.bptt) + '_' + str(args.bptt_len)
+                     str(epoch) + '_pred_' + str(num_layers) + '_' + str(args.bptt) + '_' + str(args.bptt_len)+ '_' + str(args.gumbel)
         fname_real = args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
-                     str(epoch) + '_real_' + str(num_layers) + '_' + str(args.bptt) + '_' + str(args.bptt_len)
+                     str(epoch) + '_real_' + str(num_layers) + '_' + str(args.bptt) + '_' + str(args.bptt_len)+ '_' + str(args.gumbel)
         figname = args.figure_save_path + args.note + '_' + args.graph_type + '_' + \
-                     str(epoch) + str(num_layers) + '_' + str(args.bptt) + '_' + str(args.bptt_len)
+                     str(epoch) + str(num_layers) + '_' + str(args.bptt) + '_' + str(args.bptt_len)+ '_' + str(args.gumbel)
 
         # fname_real = args.graph_save_path + args.note + '_' + args.graph_type + '_' + str(args.graph_node_num) + '_' + \
         #              str(epoch) + '_real_' + str(True) + '_' + str(num_layers)
@@ -44,7 +44,7 @@ if args.note == 'GraphRNN' or 'GraphRNN_GAN':
         print('num of graphs', len(graph_real_list))
 
         # draw all graphs
-        for iter in range(3):
+        for iter in range(8):
             print('iter', iter)
             graph_list = []
             for i in range(8):

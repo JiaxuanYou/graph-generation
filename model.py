@@ -19,7 +19,7 @@ import numpy as np
 import time
 
 USE_CUDA = torch.cuda.is_available()
-CUDA = 2
+CUDA = 1
 
 
 def sample_tensor(y,sample, thresh=0.5):
@@ -356,19 +356,77 @@ class Graph_generator_LSTM_plain(nn.Module):
 # n: noise for generator
 # l: whether an output is real or not, binary
 
-# a deterministic output
-class Graph_generator_LSTM_output_deterministic(nn.Module):
-    def __init__(self,h_size, y_size):
-        super(Graph_generator_LSTM_output_deterministic, self).__init__()
+# a deterministic linear output (update: add noise)
+class Graph_generator_LSTM_output_deterministic_mlp(nn.Module):
+    def __init__(self,h_size, y_size, has_noise=False, noise_level=1):
+        super(Graph_generator_LSTM_output_deterministic_mlp, self).__init__()
+        self.has_noise = has_noise
+        self.noise_level = noise_level
         self.deterministic_output = nn.Sequential(
             nn.Linear(h_size, 64),
             nn.ReLU(),
-            nn.Linear(64, y_size),
-            nn.Sigmoid()
+            nn.Linear(64, y_size)
         )
-    def forward(self,h):
+    def forward(self,h,sigmoid=True):
+        if self.has_noise:
+            n = Variable(torch.randn(h.size(0), h.size(1), h.size(2))*self.noise_level).cuda(CUDA)
+            # print('h',torch.min(h).data[0],torch.max(h).data[0],torch.mean(h).data[0])
+            # print('n',torch.min(n).data[0],torch.max(n).data[0],torch.mean(n).data[0])
+            h = h+n
         y = self.deterministic_output(h)
+        if sigmoid:
+            y = F.sigmoid(y)
         return y
+
+# a deterministic linear output (update: add noise)
+class Graph_generator_LSTM_output_vae(nn.Module):
+    def __init__(self, h_size, embedding_size, y_size):
+        # todo: try different NN structure (hidden size, depth)
+        super(Graph_generator_LSTM_output_vae, self).__init__()
+        # self.encode_1 = nn.Linear(h_size, embedding_size)
+        # self.encode_1_bn = nn.BatchNorm1d(embedding_size)
+        self.encode_21 = nn.Linear(h_size, embedding_size) # mu
+        self.encode_22 = nn.Linear(h_size, embedding_size) # lsgms
+
+        self.decode_1 = nn.Linear(embedding_size, embedding_size)
+        # self.decode_1_bn = nn.BatchNorm1d(embedding_size)
+        self.decode_2 = nn.Linear(embedding_size, y_size) # make edge prediction (reconstruct)
+
+        self.relu = nn.ReLU()
+        self.sigmoid = nn.Sigmoid()
+
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                m.weight.data = init.xavier_uniform(m.weight.data, gain=nn.init.calculate_gain('relu'))
+            if isinstance(m, nn.BatchNorm1d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+
+    def forward(self, h):
+        # todo: see if this type of batchnorm improves
+        # encoder
+        # h = self.encode_1(h)
+        # h = h.permute(0,2,1) # fit bn
+        # h = self.encode_1_bn(h.contiguous())
+        # h = h.permute(0,2,1)
+        # h = self.relu(h)
+        z_mu = self.encode_21(h)
+        z_lsgms = self.encode_22(h)
+        # reparameterize
+        z_sgm = z_lsgms.mul(0.5).exp_()
+        eps = Variable(torch.randn(z_sgm.size(0),z_sgm.size(1),z_sgm.size(2))).cuda(CUDA)
+        z = eps*z_sgm + z_mu
+        # decoder
+        y = self.decode_1(z)
+        # y = y.permute(0,2,1)  # fit bn
+        # y = self.decode_1_bn(y.contiguous())
+        # y = y.permute(0,2,1)
+        y = self.relu(y)
+        y = self.decode_2(y)
+        y = self.sigmoid(y)
+
+        return y, z_mu, z_lsgms
+
 
 # a simple MLP generator output
 class Graph_generator_LSTM_output_generator(nn.Module):
@@ -377,14 +435,14 @@ class Graph_generator_LSTM_output_generator(nn.Module):
         # one layer MLP
         self.generator_output = nn.Sequential(
             nn.Linear(h_size+n_size, 64),
-            nn.LeakyReLU(),
+            nn.ReLU(),
             nn.Linear(64, y_size),
-            # nn.Sigmoid() # use gumbel sigmoid instead
+            nn.Sigmoid()
         )
     def forward(self,h,n,temperature):
         y_cat = torch.cat((h,n), dim=2)
         y = self.generator_output(y_cat)
-        y = gumbel_sigmoid(y,temperature=temperature)
+        # y = gumbel_sigmoid(y,temperature=temperature)
         return y
 
 # a simple MLP discriminator
