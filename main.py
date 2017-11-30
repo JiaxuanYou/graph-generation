@@ -38,7 +38,7 @@ class Args():
         # self.graph_type = 'karate'
         # self.graph_type = 'tree'
         # self.graph_type = 'caveman'
-        self.graph_type = 'grid'
+        # self.graph_type = 'grid'
         # self.graph_type = 'barabasi'
         self.graph_type = 'enzymes'
         # self.graph_type = 'protein'
@@ -106,8 +106,8 @@ class Args():
         # self.note = 'GraphRNN'
         # self.note = 'GraphRNN_VAE'
         # self.note = 'GraphRNN_VAE_nobn'
-        self.note = 'GraphRNN_VAE_simple'
-        # self.note = 'GraphRNN_VAE_simple_newdecoder'
+        # self.note = 'GraphRNN_VAE_simple'
+        self.note = 'GraphRNN_VAE_simple_newdecoder'
 
 
         # self.note = 'GraphRNN_GAN'

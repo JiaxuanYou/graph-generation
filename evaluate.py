@@ -153,7 +153,7 @@ def eval_list_fname(real_graphs_filename, pred_graphs_filename, eval_every, out_
         out_files['train'].write(str(dist_degree) + ',')
         out_files['train'].write(str(dist_clustering) + ',')
         results['deg']['ours'] = min(dist_degree, results['deg']['ours'])
-        results['clustering']['ours'] = min(dist_degree, results['clustering']['ours'])
+        results['clustering']['ours'] = min(dist_clustering, results['clustering']['ours'])
 
         dist_degree = eval.stats.degree_stats(real_g_list, perturbed_g_list)
         dist_clustering = eval.stats.clustering_stats(real_g_list, perturbed_g_list)
@@ -204,10 +204,10 @@ def eval_performance(datadir, prefix=None, args=None, eval_every=1000, out_file_
         else:
             real_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
                      str(epoch) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
-                     args.bptt_len) + '_' + str(args.gumbel) + '.dat' for epoch in range(0, 50001, eval_every)]
+                     args.bptt_len) + '_' + str(args.gumbel) + '.dat' for epoch in range(30000, 50001, eval_every)]
             pred_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
                      str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
-                     args.bptt_len) + '_' + str(args.gumbel) + '.dat' for epoch in range(0, 50001, eval_every)]
+                     args.bptt_len) + '_' + str(args.gumbel) + '.dat' for epoch in range(30000, 50001, eval_every)]
 
         eval_list_fname(real_graphs_filename, pred_graphs_filename, eval_every=eval_every,
                 out_file_prefix=out_file_prefix)
@@ -221,7 +221,7 @@ if __name__ == '__main__':
     prefix = "GraphRNN_structure_enzymes_50_"
     args = Args()
     print(args.graph_type)
-    out_file_prefix = 'eval_results/' + args.graph_type
+    out_file_prefix = 'eval_results/' + args.graph_type + '_' + args.note
     if not os.path.isdir('eval_results'):
         os.makedirs('eval_results')
     eval_performance(datadir, args=args, out_file_prefix=out_file_prefix)
