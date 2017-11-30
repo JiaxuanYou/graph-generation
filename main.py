@@ -22,11 +22,19 @@ from data import *
 from random import shuffle
 import pickle
 from tensorboard_logger import configure, log_value
+import scipy.misc
 
 
 
 
+def imsave(fname, arr, vmin=None, vmax=None, cmap=None, format=None, origin=None):
+    from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+    from matplotlib.figure import Figure
 
+    fig = Figure(figsize=arr.shape[::-1], dpi=1, frameon=False)
+    canvas = FigureCanvas(fig)
+    fig.figimage(arr, cmap=cmap, vmin=vmin, vmax=vmax, origin=origin)
+    fig.savefig(fname, dpi=1, format=format)
 
 class Args():
     def __init__(self):
@@ -44,6 +52,7 @@ class Args():
         # self.graph_type = 'protein'
         # self.graph_type = 'DD'
 
+        #
 
         ## self.graph_node_num = 50 # obsolete
 
@@ -98,17 +107,25 @@ class Args():
         # self.graph_save_path = 'graphs/'
         self.graph_save_path = 'graphs_new/'
         self.figure_save_path = 'figures/'
+        self.figure_prediction_save_path = 'figures_prediction/'
         self.load = False
         # self.load_epoch = 50000
         self.load_epoch = 16000
 
         self.save = False
+        ######### baseline
         # self.note = 'GraphRNN'
-        # self.note = 'GraphRNN_VAE'
-        # self.note = 'GraphRNN_VAE_nobn'
-        self.note = 'GraphRNN_VAE_simple'
-        # self.note = 'GraphRNN_VAE_simple_newdecoder'
 
+        ######### vae
+        #### baseline
+        # self.note = 'GraphRNN_MLP'
+        # enzyme running
+        #### vae
+        self.note = 'GraphRNN_VAE_simple_newdecoder'
+        # enzyme running
+        # protein done
+        # DD running
+        # synthetic running
 
         # self.note = 'GraphRNN_GAN'
         # self.note = 'GraphRNN_AE'
@@ -224,11 +241,11 @@ def train_epoch(epoch, args, generator, dataset, optimizer, scheduler, thresh, t
 
         # if backprop through the start
         else:
-            y_pred_temp = generator(x,pack = True,len=y_len)
+            y_pred = generator(x,pack = True,len=y_len)
             # before computing loss, cleaning y_pred so that only valid entries are supervised
-            y_pred_temp = pack_padded_sequence(y_pred_temp, y_len, batch_first=True)
-            y_pred_temp = pad_packed_sequence(y_pred_temp, batch_first=True)[0]
-            y_pred[:, 0:y_pred_temp.size(1), :] = y_pred_temp
+            y_pred = pack_padded_sequence(y_pred, y_len, batch_first=True)
+            y_pred = pad_packed_sequence(y_pred, batch_first=True)[0]
+            # y_pred[:, 0:y_pred_temp.size(1), :] = y_pred_temp
 
             loss = F.binary_cross_entropy_with_logits(y_pred, y)
             loss.backward()
@@ -319,6 +336,28 @@ def train_epoch(epoch, args, generator, dataset, optimizer, scheduler, thresh, t
         fname_real = args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
                      str(epoch) + '_real_' +str(args.num_layers)+'_'+str(args.bptt)+'_'+str(args.bptt_len)+'.dat'
         save_graph_list(G_real_list, fname_real)
+
+        # save prediction histograms, plot histogram over each time step, then concate
+        bin_n = 50
+        bin_edge_real = np.linspace(0, 1, bin_n + 1)
+        bin_edge_pred = np.linspace(1e-4, 1, bin_n + 1)
+        output_real = np.zeros((bin_n, y.size(1)))
+        output_pred = np.zeros((bin_n, y.size(1)))
+        for i in range(y.size(1)):
+            y_numpy = y_data.cpu().numpy()
+            y_pred_numpy = y_pred_data.cpu().numpy()
+            output_real[:, i], _ = np.histogram(y_numpy[:, i, :], bins=bin_edge_real, density=False)
+            output_pred[:, i], _ = np.histogram(y_pred_numpy[:, i, :], bins=bin_edge_pred, density=False)
+            # normalize
+            output_real[:, i] /= np.sum(output_real[:, i])
+            output_pred[:, i] /= np.sum(output_pred[:, i])
+            # print(np.amin(output_pred[:,i]),np.amax(output_pred[:,i]))
+        # scipy.misc.toimage(output_real, cmin=0.0, cmax=1).save('figures_prediction/real'+str(epoch)+'.jpg')
+        # scipy.misc.toimage(output_pred, cmin=0.0, cmax=1).save('figures_prediction/pred'+str(epoch)+'.jpg')
+        imsave(fname='figures_prediction/real_mlp' + str(epoch) + '.jpg', arr=output_real, origin='upper', cmap='Greys_r',
+               vmin=0.0, vmax=3.0 / bin_n)
+        imsave(fname='figures_prediction/pred_mlp' + str(epoch) + '.jpg', arr=output_pred, origin='upper', cmap='Greys_r',
+               vmin=0.0, vmax=3.0 / bin_n)
 
         # adj_real = np.zeros((y_data.size(1)+1,y_data.size(1)+1))
         # adj_real[1:y_data.size(1)+1,0:y_data.size(1)] = np.tril(y_data[0].cpu().numpy(),0)
@@ -627,6 +666,8 @@ def train_vae_epoch(epoch, args, lstm, output_vae, dataset,
 
     # if train
     if train:
+        lstm.train()
+        output_vae.train()
         # if do truncate backprop
         # todo: finish a memory efficient bptt
         if args.bptt:
@@ -657,7 +698,7 @@ def train_vae_epoch(epoch, args, lstm, output_vae, dataset,
                 x_step = x[:, 0:1, :]
                 for i in range(x.size(1)):
                     h = lstm(x_step)
-                    y_pred_step = output_vae(h,sigmoid=False)
+                    y_pred_step = output_vae(h, sigmoid=False)
                     y_pred[:, i:i + 1, :] = F.sigmoid(y_pred_step) # write down score
                     x_step = gumbel_sigmoid(y_pred_step, temperature=0.5)
                 # clean
@@ -704,6 +745,8 @@ def train_vae_epoch(epoch, args, lstm, output_vae, dataset,
 
     # if validate, do sampling/threshold each step
     else:
+        lstm.eval()
+        output_vae.eval()
         y_pred = Variable(torch.zeros(y.size(0), y.size(1), y.size(2))).cuda(CUDA)
         y_pred_long = Variable(torch.zeros(y.size(0), y.size(1), y.size(2))).cuda(CUDA)
         x_step = x[:, 0:1, :]
@@ -713,6 +756,8 @@ def train_vae_epoch(epoch, args, lstm, output_vae, dataset,
             y_pred[:, i:i + 1, :] = y_pred_step
             x_step = sample_y(y_pred_step, sample=True)
             y_pred_long[:, i:i + 1, :] = x_step
+            lstm.hidden = (Variable(lstm.hidden[0].data).cuda(CUDA),Variable(lstm.hidden[1].data).cuda(CUDA))
+
         loss = F.binary_cross_entropy(y_pred_long, y)
         y_pred_long = y_pred_long.long()
 
@@ -720,11 +765,12 @@ def train_vae_epoch(epoch, args, lstm, output_vae, dataset,
         y_pred_data = y_pred_long.data
 
         real_score_mean = y_data.mean()
-        pred_score_mean = y_pred.data[y_pred.data>1e-6].mean()
+        pred_score_mean = y_pred.data[y_pred.data>1e-3].mean()
         real_score_max = y_data.max()
-        pred_score_max = y_pred.data[y_pred.data>1e-6].max()
+        pred_score_max = y_pred.data[y_pred.data>1e-3].max()
         real_score_min = y_data.min()
-        pred_score_min = y_pred.data[y_pred.data>1e-6].min()
+        pred_score_min = y_pred.data[y_pred.data>1e-3].min()
+
 
     # plot graph
     if epoch % args.epochs_log == 0 and train == False:
@@ -751,7 +797,31 @@ def train_vae_epoch(epoch, args, lstm, output_vae, dataset,
                      str(epoch) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
             args.bptt_len) + '_' + str(args.gumbel) + '.dat'
         save_graph_list(G_real_list, fname_real)
-
+        # save prediction histograms, plot histogram over each time step, then concate
+        bin_n = 20
+        bin_edge_real = np.linspace(0, 1, bin_n + 1)
+        bin_edge_pred = np.linspace(1e-4, 1, bin_n + 1)
+        output_real = np.zeros((bin_n, y.size(1)))
+        output_pred = np.zeros((bin_n, y.size(1)))
+        for i in range(y.size(1)):
+            y_numpy = y_data.cpu().numpy()
+            y_pred_numpy = y_pred.data.cpu().numpy()
+            output_real[:,i],_ = np.histogram(y_numpy[:,i,:],bins=bin_edge_real,density=False)
+            output_pred[:,i],_ = np.histogram(y_pred_numpy[:,i,:],bins=bin_edge_pred,density=False)
+            # normalize
+            output_real[:,i] /= np.sum(output_real[:,i])
+            output_pred[:,i] /= np.sum(output_pred[:, i])
+            # print(np.amin(output_pred[:,i]),np.amax(output_pred[:,i]))
+        # scipy.misc.toimage(output_real, cmin=0.0, cmax=1).save('figures_prediction/real'+str(epoch)+'.jpg')
+        # scipy.misc.toimage(output_pred, cmin=0.0, cmax=1).save('figures_prediction/pred'+str(epoch)+'.jpg')
+        fname_pred = args.figure_prediction_save_path + args.note + '_' + args.graph_type + '_' + \
+                     str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
+            args.bptt_len) + '_' + str(args.gumbel) + '.jpg'
+        fname_real = args.figure_prediction_save_path + args.note + '_' + args.graph_type + '_' + \
+                     str(epoch) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
+            args.bptt_len) + '_' + str(args.gumbel) + '.jpg'
+        imsave(fname=fname_real, arr=output_real,origin='upper',cmap='Greys_r',vmin=0.0,vmax=3.0/bin_n)
+        imsave(fname=fname_pred, arr=output_pred,origin='upper',cmap='Greys_r',vmin=0.0,vmax=3.0/bin_n)
 
     if epoch % args.epochs_log == 0 and train == True:
         print('Epoch: {}/{}, train bce loss: {:.6f}, train kl loss: {:.6f}, graph type: {}, num_layer: {}, bptt: {}, bptt_len:{}, gumbel:{}'.format(
@@ -771,6 +841,186 @@ def train_vae_epoch(epoch, args, lstm, output_vae, dataset,
 
     # log_value('temperature_' + args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
     #     args.bptt) + '_' + str(args.bptt_len) + '_' + str(args.gumbel), temperature, epoch)
+
+
+################### still baseline model, but match with vae, using a MLP as output
+def train_mlp_epoch(epoch, args, lstm, output_mlp, dataset,
+                         optimizer_lstm, optimizer_mlp,
+                         scheduler_lstm, scheduler_mlp, train=True):
+    lstm.zero_grad()
+    output_mlp.zero_grad()
+    lstm.hidden = lstm.init_hidden()
+
+    x, y, y_len = dataset.sample()
+
+    y_len_max = max(y_len)
+    x = x[:, 0:y_len_max, :]
+    y = y[:, 0:y_len_max, :]
+
+    x = Variable(x).cuda(CUDA)
+    y = Variable(y).cuda(CUDA)
+
+    # if train
+    if train:
+        lstm.train()
+        output_mlp.train()
+        # if do truncate backprop
+        # todo: finish a memory efficient bptt
+        if args.bptt:
+            pass
+            # start_id = 0
+            # while start_id < x.size(1):
+            #     print('start id', start_id)
+            #     end_id = min(start_id + args.bptt_len, x.size(1))
+            #     y_pred_temp = generator(x[:, start_id:end_id, :])
+            #     generator.hidden = detach_hidden_lstm(generator.hidden)
+            #     # generator.hidden[0].detach()
+            #     # generator.hidden[1].detach()
+            #
+            #     y_pred[:, start_id:end_id, :] = y_pred_temp
+            #     start_id += args.bptt_len
+            # y_pred_clean = Variable(torch.ones(x.size(0), x.size(1), x.size(2)) * -100).cuda(CUDA)
+            # # before computing loss, cleaning y_pred so that only valid entries are supervised
+            # y_pred = pack_padded_sequence(y_pred, y_len, batch_first=True)
+            # y_pred = pad_packed_sequence(y_pred, batch_first=True)[0]
+            # y_pred_clean[:, 0:y_pred.size(1), :] = y_pred
+            # y_pred = y_pred_clean
+
+        # if backprop through the start
+        else:
+            # if using model's own prediction each time step to train
+            if args.gumbel:
+                y_pred = Variable(torch.zeros(y.size(0), y.size(1), y.size(2))).cuda(CUDA) # normalized score
+                x_step = x[:, 0:1, :]
+                for i in range(x.size(1)):
+                    h = lstm(x_step)
+                    y_pred_step = output_mlp(h, sigmoid=False)
+                    y_pred[:, i:i + 1, :] = F.sigmoid(y_pred_step) # write down score
+                    x_step = gumbel_sigmoid(y_pred_step, temperature=0.5)
+                # clean
+                y_pred = pack_padded_sequence(y_pred, y_len, batch_first=True)
+                y_pred = pad_packed_sequence(y_pred, batch_first=True)[0]
+
+                loss_determinstic = F.binary_cross_entropy(y_pred, y)
+                loss_determinstic.backward()
+                # update deterministic and lstm
+                optimizer_mlp.step()
+                optimizer_lstm.step()
+                scheduler_mlp.step()
+                scheduler_lstm.step()
+            # if using ground truth to train
+            else:
+                h = lstm(x, pack=True, input_len=y_len)
+                y_pred = output_mlp(h)
+                # clean
+                y_pred = pack_padded_sequence(y_pred, y_len, batch_first=True)
+                y_pred = pad_packed_sequence(y_pred, batch_first=True)[0]
+                # use cross entropy loss
+                loss = F.binary_cross_entropy(y_pred, y)
+                loss.backward()
+                # update deterministic and lstm
+                optimizer_mlp.step()
+                optimizer_lstm.step()
+                scheduler_mlp.step()
+                scheduler_lstm.step()
+
+
+    # if validate, do sampling/threshold each step
+    else:
+        lstm.eval()
+        output_mlp.eval()
+        y_pred = Variable(torch.zeros(y.size(0), y.size(1), y.size(2))).cuda(CUDA)
+        y_pred_long = Variable(torch.zeros(y.size(0), y.size(1), y.size(2))).cuda(CUDA)
+        x_step = x[:, 0:1, :]
+        for i in range(x.size(1)):
+            h = lstm(x_step)
+            y_pred_step = output_mlp(h)
+            y_pred[:, i:i + 1, :] = y_pred_step
+            x_step = sample_y(y_pred_step, sample=True)
+            y_pred_long[:, i:i + 1, :] = x_step
+            lstm.hidden = (Variable(lstm.hidden[0].data).cuda(CUDA),Variable(lstm.hidden[1].data).cuda(CUDA))
+
+        loss = F.binary_cross_entropy(y_pred_long, y)
+        y_pred_long = y_pred_long.long()
+
+        y_data = y.data
+        y_pred_data = y_pred_long.data
+
+        real_score_mean = y_data.mean()
+        pred_score_mean = y_pred.data[y_pred.data>1e-3].mean()
+        real_score_max = y_data.max()
+        pred_score_max = y_pred.data[y_pred.data>1e-3].max()
+        real_score_min = y_data.min()
+        pred_score_min = y_pred.data[y_pred.data>1e-3].min()
+
+
+    # plot graph
+    if epoch % args.epochs_log == 0 and train == False:
+        # save graphs as pickle
+        G_real_list = []
+        G_pred_list = []
+        for i in range(y_data.size(0)):
+            adj_real = decode_adj(y_data[i].cpu().numpy(), args.max_prev_node)
+            adj_pred = decode_adj(y_pred_data[i].cpu().numpy(), args.max_prev_node)
+            # adj_error = adj_real-adj_raw
+            # print(np.amin(adj_error),np.amax(adj_error))
+            G_real = get_graph(adj_real)
+            G_pred = get_graph(adj_pred)
+            # print('real', G_real.number_of_nodes())
+            # print('pred', G_pred.number_of_nodes())
+            G_real_list.append(G_real)
+            G_pred_list.append(G_pred)
+        # save list of objects
+        fname_pred = args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
+                     str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
+            args.bptt_len) + '_' + str(args.gumbel)  + '.dat'
+        save_graph_list(G_pred_list, fname_pred)
+        fname_real = args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
+                     str(epoch) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
+            args.bptt_len) + '_' + str(args.gumbel) + '.dat'
+        save_graph_list(G_real_list, fname_real)
+        # save prediction histograms, plot histogram over each time step, then concate
+        bin_n = 20
+        bin_edge_real = np.linspace(0, 1, bin_n + 1)
+        bin_edge_pred = np.linspace(1e-4, 1, bin_n + 1)
+        output_real = np.zeros((bin_n, y.size(1)))
+        output_pred = np.zeros((bin_n, y.size(1)))
+        for i in range(y.size(1)):
+            y_numpy = y_data.cpu().numpy()
+            y_pred_numpy = y_pred.data.cpu().numpy()
+            output_real[:,i],_ = np.histogram(y_numpy[:,i,:],bins=bin_edge_real,density=False)
+            output_pred[:,i],_ = np.histogram(y_pred_numpy[:,i,:],bins=bin_edge_pred,density=False)
+            # normalize
+            output_real[:,i] /= np.sum(output_real[:,i])
+            output_pred[:,i] /= np.sum(output_pred[:, i])
+            # print(np.amin(output_pred[:,i]),np.amax(output_pred[:,i]))
+        # scipy.misc.toimage(output_real, cmin=0.0, cmax=1).save('figures_prediction/real'+str(epoch)+'.jpg')
+        # scipy.misc.toimage(output_pred, cmin=0.0, cmax=1).save('figures_prediction/pred'+str(epoch)+'.jpg')
+        fname_pred = args.figure_prediction_save_path + args.note + '_' + args.graph_type + '_' + \
+                     str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
+            args.bptt_len) + '_' + str(args.gumbel) + '.jpg'
+        fname_real = args.figure_prediction_save_path + args.note + '_' + args.graph_type + '_' + \
+                     str(epoch) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
+            args.bptt_len) + '_' + str(args.gumbel) + '.jpg'
+        imsave(fname=fname_real, arr=output_real,origin='upper',cmap='Greys_r',vmin=0.0,vmax=3.0/bin_n)
+        imsave(fname=fname_pred, arr=output_pred,origin='upper',cmap='Greys_r',vmin=0.0,vmax=3.0/bin_n)
+
+    if epoch % args.epochs_log == 0 and train == True:
+        print('Epoch: {}/{}, train loss: {:.6f}, graph type: {}, num_layer: {}, bptt: {}, bptt_len:{}, gumbel:{}'.format(
+            epoch, args.epochs,loss.data[0], args.graph_type, args.num_layers, args.bptt, args.bptt_len, args.gumbel))
+    elif epoch % args.epochs_log == 0 and train == False:
+        print('Epoch: {}/{}, test loss: {:.6f}, real mean: {:.4f}, pred mean: {:.4f}, real min: {:.4f}, pred min: {:.4f}, real max: {:.4f}, pred max: {:.4f}'.format(
+            epoch, args.epochs, loss.data[0], real_score_mean, pred_score_mean, real_score_min, pred_score_min, real_score_max, pred_score_max))
+
+    if train:
+        log_value('train_bce_loss_' + args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
+            args.bptt) + '_' + str(args.bptt_len) + '_' + str(args.gumbel) + '_' + str(args.noise_level), loss.data[0],
+                  epoch)
+
+    # log_value('temperature_' + args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
+    #     args.bptt) + '_' + str(args.bptt_len) + '_' + str(args.gumbel), temperature, epoch)
+
+
 
 
 def train_epoch_GCN(epoch, args, encoder, decoder, dataset, optimizer, scheduler, thresh, train=True):
@@ -1622,7 +1872,6 @@ def train_vae(args, dataset_train, lstm, output_vae):
     epoch = 0
     while epoch<=args.epochs:
         # train
-
         train_vae_epoch(epoch, args, lstm, output_vae, dataset_train,
                         optimizer_lstm, optimizer_vae,
                         scheduler_lstm, scheduler_vae, train=True)
@@ -1631,6 +1880,46 @@ def train_vae(args, dataset_train, lstm, output_vae):
             train_vae_epoch(epoch, args, lstm, output_vae, dataset_train,
                             optimizer_lstm, optimizer_vae,
                             scheduler_lstm, scheduler_vae, train=False)
+        # todo: load new model
+        # if args.save:
+        #     if epoch % args.epochs_save == 0:
+        #         fname = args.model_save_path + args.note + '_' + args.graph_type + '_' + \
+        #                 str(epoch) + str(args.num_layers) + '_' + str(args.bptt)+'_'+str(args.bptt_len)+ '.dat'
+        #         torch.save(generator.state_dict(), fname)
+        epoch += 1
+
+########### train function for LSTM + MLP
+def train_mlp(args, dataset_train, lstm, output_mlp):
+    # todo: load new models
+    # if args.load:
+    #     epoch_load = args.load_epoch
+    #     fname = args.model_save_path + args.note + '_' + args.graph_type + '_' + \
+    #     str(epoch_load) + str(args.num_layers) + '_' + str(args.bptt)+'_'+str(args.bptt_len)+ '.dat'
+    #     generator.load_state_dict(torch.load(fname))
+    #     args.lr = 0.00001
+    #     epoch = epoch_load
+    #     print('model loaded!')
+    # else:
+    #     epoch = 0
+
+    # torch.manual_seed(args.seed)
+    optimizer_lstm = optim.Adam(list(lstm.parameters()), lr=args.lr)
+    optimizer_mlp = optim.Adam(list(output_mlp.parameters()), lr=args.lr)
+
+    scheduler_lstm = MultiStepLR(optimizer_lstm, milestones=args.milestones, gamma=args.lr_rate)
+    scheduler_mlp = MultiStepLR(optimizer_mlp, milestones=args.milestones, gamma=args.lr_rate)
+
+    epoch = 0
+    while epoch<=args.epochs:
+        # train
+        train_mlp_epoch(epoch, args, lstm, output_mlp, dataset_train,
+                        optimizer_lstm, optimizer_mlp,
+                        scheduler_lstm, scheduler_mlp, train=True)
+        # test
+        if epoch % args.epochs_test == 0:
+            train_mlp_epoch(epoch, args, lstm, output_mlp, dataset_train,
+                            optimizer_lstm, optimizer_mlp,
+                            scheduler_lstm, scheduler_mlp, train=False)
         # todo: load new model
         # if args.save:
         #     if epoch % args.epochs_save == 0:
@@ -1774,30 +2063,33 @@ if __name__ == '__main__':
         max_num_nodes = G.number_of_nodes()
     if args.graph_type=='tree':
         graphs = []
-        for i in range(2, 5):
-            for j in range(2, 5):
-                graphs.append(nx.balanced_tree(i, j))
-        max_num_nodes = 340
-        args.max_prev_node = 100
+        for i in range(100, 401):
+            for j in range(10):
+                graphs.append(nx.random_tree(i))
+        max_num_nodes = 400
+        args.max_prev_node = 150
     if args.graph_type=='caveman':
         graphs = []
-        for i in range(10,21):
-            for j in range(10,21):
-                graphs.append(nx.connected_caveman_graph(i, j))
+        for i in range(2,11):
+            for j in range(10,41):
+                for k in range(10):
+                    graphs.append(nx.relaxed_caveman_graph(i, j, 0.1))
         max_num_nodes = 400
+        args.max_prev_node = 100
     if args.graph_type=='grid':
         graphs = []
         for i in range(10,21):
             for j in range(10,21):
                 graphs.append(nx.grid_2d_graph(i,j))
         max_num_nodes = 20*20
-        args.max_prev_node = 100
+        args.max_prev_node = 150
     if args.graph_type=='barabasi':
         graphs = []
         for i in range(100,401):
-            graphs.append(nx.barabasi_albert_graph(i,2))
+            for j in range(10):
+                graphs.append(nx.barabasi_albert_graph(i,2))
         max_num_nodes = 400
-        args.max_prev_node = 100
+        args.max_prev_node = 150
 
     # if using a list of graphs
     if args.graph_type == 'enzymes':
@@ -1830,9 +2122,9 @@ if __name__ == '__main__':
     # train_GraphRNN_structure(args,sampler,generator)
 
     ### Graph RNN baseline model
-    # generator = Graph_generator_LSTM(feature_size=x.size(2), input_size=args.input_size,
+    # generator = Graph_generator_LSTM(feature_size=args.max_prev_node, input_size=args.input_size,
     #                                  hidden_size=args.hidden_size,
-    #                                  output_size=y.size(2), batch_size=args.batch_size, num_layers=args.num_layers).cuda(CUDA)
+    #                                  output_size=args.max_prev_node, batch_size=args.batch_size, num_layers=args.num_layers).cuda(CUDA)
     # train(args,sampler,generator)
 
     ### Graph RNN GAN model
@@ -1847,10 +2139,12 @@ if __name__ == '__main__':
     lstm = Graph_generator_LSTM_plain(feature_size=args.max_prev_node, input_size=args.input_size,
                                       hidden_size=args.hidden_size, batch_size=args.batch_size,
                                       num_layers=args.num_layers).cuda(CUDA)
-    output_vae = Graph_generator_LSTM_output_vae(h_size=args.hidden_size, embedding_size=args.embedding_size,
-                                                                         y_size=args.max_prev_node).cuda(CUDA)
-
-    train_vae(args, sampler, lstm, output_vae)
+    ## if using vae
+    # output_vae = Graph_generator_LSTM_output_vae(h_size=args.hidden_size, embedding_size=args.embedding_size, y_size=args.max_prev_node).cuda(CUDA)
+    # train_vae(args, sampler, lstm, output_vae)
+    ## if using baseline comparable with vae
+    output_mlp = Graph_generator_LSTM_output_deterministic_mlp(h_size=args.hidden_size, embedding_size=args.embedding_size, y_size=args.max_prev_node).cuda(CUDA)
+    train_mlp(args, sampler, lstm, output_mlp)
 
     ### auto encoder model
     # encoder = GCN_encoder_graph(feature.size(2),args.hidden_dim,args.input_size,args.num_layers).cuda(CUDA)

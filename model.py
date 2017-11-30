@@ -19,7 +19,7 @@ import numpy as np
 import time
 
 USE_CUDA = torch.cuda.is_available()
-CUDA = 1
+CUDA = 3
 
 
 def sample_tensor(y,sample, thresh=0.5):
@@ -358,24 +358,16 @@ class Graph_generator_LSTM_plain(nn.Module):
 
 # a deterministic linear output (update: add noise)
 class Graph_generator_LSTM_output_deterministic_mlp(nn.Module):
-    def __init__(self,h_size, y_size, has_noise=False, noise_level=1):
+    def __init__(self,h_size, embedding_size, y_size):
         super(Graph_generator_LSTM_output_deterministic_mlp, self).__init__()
-        self.has_noise = has_noise
-        self.noise_level = noise_level
         self.deterministic_output = nn.Sequential(
-            nn.Linear(h_size, 64),
+            nn.Linear(h_size, embedding_size),
             nn.ReLU(),
-            nn.Linear(64, y_size)
+            nn.Linear(embedding_size, y_size),
+            nn.Sigmoid()
         )
-    def forward(self,h,sigmoid=True):
-        if self.has_noise:
-            n = Variable(torch.randn(h.size(0), h.size(1), h.size(2))*self.noise_level).cuda(CUDA)
-            # print('h',torch.min(h).data[0],torch.max(h).data[0],torch.mean(h).data[0])
-            # print('n',torch.min(n).data[0],torch.max(n).data[0],torch.mean(n).data[0])
-            h = h+n
+    def forward(self,h):
         y = self.deterministic_output(h)
-        if sigmoid:
-            y = F.sigmoid(y)
         return y
 
 # a deterministic linear output (update: add noise)
