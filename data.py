@@ -62,7 +62,7 @@ def Graph_load_batch(min_num_nodes = 20, max_num_nodes = 1000, name = 'ENZYMES',
         if node_attributes:
             G.add_node(i+1, feature = data_node_att[i])
         G.add_node(i+1, label = data_node_label[i])
-    G.remove_nodes_from(nx.isolates(G))
+    G.remove_nodes_from(list(nx.isolates(G)))
 
     # print(G.number_of_nodes())
     # print(G.number_of_edges())
@@ -185,14 +185,14 @@ class Graph_sequence_sampler_plain():
 
 
 def bfs_seq(G, start_id):
-    dict = nx.bfs_successors(G, start_id)
+    dictionary = dict(nx.bfs_successors(G, start_id))
     start = [start_id]
     output = [start_id]
     while len(start) > 0:
         next = []
         while len(start) > 0:
             current = start.pop(0)
-            neighbor = dict.get(current)
+            neighbor = dictionary.get(current)
             if neighbor is not None:
                 #### a wrong example, should not permute here!
                 # shuffle(neighbor)

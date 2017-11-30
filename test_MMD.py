@@ -33,17 +33,23 @@ def compute_mmd(x,y):
 
 start = time.time()
 torch.manual_seed(123)
-x = torch.eye(4)
-y = x
+batch = 1000
+x = torch.randn(batch,1)
+y_baseline = torch.randn(batch,1)
+y_pred = torch.zeros(batch,1)
+
+print('MMD baseline', compute_mmd(x,y_baseline))
+print('MMD prediction', compute_mmd(x,y_pred))
 
 
-print('before',x)
-print('MMD', compute_mmd(x,y))
-x_idx = np.random.permutation(x.size(0))
-x = x[x_idx,:]
-print('after',x)
-print('MMD', compute_mmd(x,y))
-
-
-end = time.time()
-print('CPU time:', end-start)
+#
+# print('before',x)
+# print('MMD', compute_mmd(x,y))
+# x_idx = np.random.permutation(x.size(0))
+# x = x[x_idx,:]
+# print('after permutation',x)
+# print('MMD', compute_mmd(x,y))
+#
+#
+# end = time.time()
+# print('CPU time:', end-start)
