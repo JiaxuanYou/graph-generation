@@ -30,10 +30,11 @@ def extract_result_id_and_epoch(name, prefix, after_word):
     epochs = int(name[pos:end_pos])
     return result_id, epochs
 
-def perturb(graph_list, p_add, p_del):
+def perturb(graph_list, p_del, p_add=None):
     ''' Perturb the list of graphs by adding/removing edges.
     Args:
-        p_add: probability of adding edges
+        p_add: probability of adding edges. If None, estimate it according to graph density,
+            such that the expected number of added edges is equal to that of deleted edges.
         p_del: probability of removing edges
     Returns:
         A list of graphs that are perturbed from the original graphs
@@ -52,7 +53,12 @@ def perturb(graph_list, p_add, p_del):
         nodes = G.nodes()
         for i in range(len(nodes)):
             u = nodes[i]
-            trials = np.random.binomial(1, p_add, size=G.number_of_nodes())
+            if p_add is None:
+                num_nodes = G.number_of_nodes()
+                p_add_est = p_del * 2 * G.number_of_edges() / (num_nodes * (num_nodes - 1))
+            else:
+                p_add_est = p_add
+            trials = np.random.binomial(1, p_add_est, size=G.number_of_nodes())
             j = 0
             for v in nodes:
                 if trials[j] == 1 and not i == j:
@@ -87,7 +93,7 @@ def eval_list(real_graphs_filename, pred_graphs_filename, prefix, eval_every):
             pred_g_list = load_graph_list(pred_graphs_dict[result_id][epochs])
             shuffle(real_g_list)
             shuffle(pred_g_list)
-            perturbed_g_list = perturb(real_g_list, 0.001, 0.02)
+            perturbed_g_list = perturb(real_g_list, 0.05)
 
             #dist = eval.stats.degree_stats(real_g_list, pred_g_list)
             dist = eval.stats.clustering_stats(real_g_list, pred_g_list)
@@ -103,34 +109,76 @@ def eval_list(real_graphs_filename, pred_graphs_filename, prefix, eval_every):
             print('dist among real: ', dist)
 
 
-def eval_list_fname(real_graphs_filename, pred_graphs_filename, eval_every):
-    for i in range(len(real_graphs_filename)):
+def eval_list_fname(real_graphs_filename, pred_graphs_filename, eval_every, out_file_prefix=None):
+
+    if out_file_prefix is not None:
+        out_files = {
+                'train': open(out_file_prefix + '_train.txt', 'w'),
+                'compare': open(out_file_prefix + '_compare.txt', 'w')
+        }
+
+    out_files['train'].write('degree,clustering\n')
+    out_files['compare'].write('metric,real,ours,perturbed\n')
+
+    results = {
+            'deg': {
+                    'real': 1,
+                    'ours': 1,
+                    'perturbed': 1},
+            'clustering': {
+                    'real': 1,
+                    'ours': 1,
+                    'perturbed': 1}
+    }
+    num_graphs = len(real_graphs_filename)
+    for i in range(num_graphs):
         real_g_list = load_graph_list(real_graphs_filename[i])
         pred_g_list = load_graph_list(pred_graphs_filename[i])
         shuffle(real_g_list)
         shuffle(pred_g_list)
-        perturbed_g_list = perturb(real_g_list, 0.001, 0.02)
-
-        dist_degree = eval.stats.degree_stats(real_g_list, pred_g_list)
-        dist_clustering = eval.stats.clustering_stats(real_g_list, pred_g_list)
-        print('degree dist between real and pred at epoch ', i*eval_every, ': ', dist_degree)
-        print('clustering dist between real and pred at epoch ', i*eval_every, ': ', dist_clustering)
-
-
-        dist_degree = eval.stats.degree_stats(real_g_list, perturbed_g_list)
-        dist_clustering = eval.stats.clustering_stats(real_g_list, perturbed_g_list)
-        print('degree dist between real and perturbed: ', dist_degree)
-        print('clustering dist between real and perturbed: ', dist_clustering)
-
+        perturbed_g_list = perturb(real_g_list, 0.05)
 
         mid = len(real_g_list) // 2
         dist_degree = eval.stats.degree_stats(real_g_list[:mid], real_g_list[mid:])
         dist_clustering = eval.stats.clustering_stats(real_g_list[:mid], real_g_list[mid:])
-        print('degree dist among real: ', dist_degree)
+        #print('degree dist among real: ', dist_degree)
         print('clustering dist among real: ', dist_clustering)
+        results['deg']['real'] += dist_degree
+        results['clustering']['real'] += dist_clustering
+
+        dist_degree = eval.stats.degree_stats(real_g_list, pred_g_list)
+        dist_clustering = eval.stats.clustering_stats(real_g_list, pred_g_list)
+        #print('degree dist between real and pred at epoch ', i*eval_every, ': ', dist_degree)
+        print('clustering dist between real and pred at epoch ', i*eval_every, ': ', dist_clustering)
+        out_files['train'].write(str(dist_degree) + ',')
+        out_files['train'].write(str(dist_clustering) + ',')
+        results['deg']['ours'] = min(dist_degree, results['deg']['ours'])
+        results['clustering']['ours'] = min(dist_degree, results['clustering']['ours'])
+
+        dist_degree = eval.stats.degree_stats(real_g_list, perturbed_g_list)
+        dist_clustering = eval.stats.clustering_stats(real_g_list, perturbed_g_list)
+        #print('degree dist between real and perturbed: ', dist_degree)
+        print('clustering dist between real and perturbed: ', dist_clustering)
+        results['deg']['perturbed'] += dist_degree
+        results['clustering']['perturbed'] += dist_clustering
+
+        out_files['train'].write('\n')
+
+    for metric, methods in results.items():
+        methods['real'] /= num_graphs
+        methods['perturbed'] /= num_graphs
+
+    for metric, methods in results.items():
+        out_files['compare'].write(metric+','+
+                                   str(methods['real'])+','+
+                                   str(methods['ours'])+','+
+                                   str(methods['perturbed'])+'\n')
+
+    for _, file in out_files.items():
+        file.close()
 
 
-def eval_performance(datadir, prefix, args=None,eval_every=500):
+def eval_performance(datadir, prefix=None, args=None, eval_every=1000, out_file_prefix=None):
     if args is None:
         real_graphs_filename = [datadir + f for f in os.listdir(datadir)
                 if re.match(prefix + '.*real.*\.dat', f)]
@@ -144,28 +192,37 @@ def eval_performance(datadir, prefix, args=None,eval_every=500):
         #              str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(args.bptt_len) + '.dat' for epoch in range(0,50001,eval_every)]
         # pred_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
         #          str(epoch) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(args.bptt_len) + '.dat' for epoch in range(0,50001,eval_every)]
+        vae = 'VAE' in args.note
         # for vae graphrnn
-        real_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
-                     str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
-            args.bptt_len) + '_' + str(args.gumbel) + '.dat' for epoch in range(0, 50001, eval_every)]
-        pred_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
+        if not vae:
+            real_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
+                    str(epoch) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' +
+                    str(args.bptt_len) + '.dat' for epoch in range(0,50001,eval_every)]
+            pred_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
+                    str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' +
+                    str(args.bptt_len) + '.dat' for epoch in range(0,50001,eval_every)]
+        else:
+            real_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
                      str(epoch) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
-            args.bptt_len) + '_' + str(args.gumbel) + '.dat' for epoch in range(0, 50001, eval_every)]
+                     args.bptt_len) + '_' + str(args.gumbel) + '.dat' for epoch in range(0, 50001, eval_every)]
+            pred_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
+                     str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
+                     args.bptt_len) + '_' + str(args.gumbel) + '.dat' for epoch in range(0, 50001, eval_every)]
 
-
-        eval_list_fname(real_graphs_filename, pred_graphs_filename,eval_every=eval_every)
+        eval_list_fname(real_graphs_filename, pred_graphs_filename, eval_every=eval_every,
+                out_file_prefix=out_file_prefix)
 
 
 if __name__ == '__main__':
     #datadir = "/dfs/scratch0/rexy/graph_gen_data/"
-    #prefix = "GraphRNN_enzymes_50_"
     #datadir = "/lfs/local/0/jiaxuany/pycharm/graphs_share/"
     datadir = "/lfs/local/0/jiaxuany/pycharm/"
     #prefix = "GraphRNN_enzymes_50_"
     prefix = "GraphRNN_structure_enzymes_50_"
-    # eval_performance(datadir, prefix)
     args = Args()
     print(args.graph_type)
-    eval_performance(datadir, prefix,args)
-    
+    out_file_prefix = 'eval_results/' + args.graph_type
+    if not os.path.isdir('eval_results'):
+        os.makedirs('eval_results')
+    eval_performance(datadir, args=args, out_file_prefix=out_file_prefix)
 

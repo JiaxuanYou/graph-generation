@@ -58,6 +58,7 @@ def compute_mmd(samples1, samples2, kernel, *args, **kwargs):
     # normalize histograms into pmf
     samples1 = [s1 / np.sum(s1) for s1 in samples1]
     samples2 = [s2 / np.sum(s2) for s2 in samples2]
+    #print('===============================')
     #print(disc(samples1, samples1, kernel, *args, **kwargs))
     #print('--------------------------')
     #print(disc(samples2, samples2, kernel, *args, **kwargs))

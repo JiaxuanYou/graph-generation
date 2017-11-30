@@ -11,5 +11,8 @@ bin/
 model_save/
 logs/
 graphs/
+eval_results/
+
+.idea/
 
 __pycache__
