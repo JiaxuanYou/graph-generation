@@ -3,7 +3,9 @@ from datetime import datetime
 from functools import partial
 import numpy as np
 import networkx as nx
+import os
 import pickle as pkl
+import subprocess as sp
 
 import eval.mmd as mmd
 
@@ -90,7 +92,22 @@ def clustering_stats(graph_ref_list, graph_pred_list, bins=100, is_parallel=True
         print('Time computing clustering mmd: ', elapsed)
     return mmd_dist
 
-def motif_stats(graph_ref_list, graph_pred_list):
+# maps motif/orbit name string to its corresponding list of indices from orca output
+motif_to_indices = {
+        '3path' : [1, 2],
+        '4cycle' : [8],
+}
+
+def orca(graph, indices):
+    output = sp.check_output('./eval/orca/orca', '4', 'eval/orca/test.txt', 'std')
+    print(output)
+
+def motif_stats(graph_ref_list, graph_pred_list, motif_type='4cycle'):
     counts_ref = []
     counts_pred = []
+    graph_pred_list_remove_empty = [G for G in graph_pred_list if not G.number_of_nodes() == 0]
+    indices = motif_to_indices[motif_type]
+
+    for G in graph_ref_list:
+        orca(G, indices)
 

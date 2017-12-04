@@ -297,3 +297,14 @@ def load_graph_list(fname):
         graph_list[i].remove_nodes_from(list(nx.isolates(graph_list[i])))
         graph_list[i] = pick_connected_component(graph_list[i])
     return graph_list
+
+
+def export_graphs_to_txt(filename, output_filename_prefix):
+    g_list = load_graph_list(filename)
+    i = 0
+    for G in g_list:
+        f = open(output_filename_prefix + '_' + str(i) + '.txt', 'w')
+        for (u, v) in G.edges():
+            f.write(str(u) + '\t' + str(v) + '\n')
+        i += 1
+
