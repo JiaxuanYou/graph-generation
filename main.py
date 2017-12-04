@@ -46,8 +46,8 @@ class Args():
         # self.graph_type = 'caveman'
         # self.graph_type = 'grid'
         # self.graph_type = 'barabasi'
-        self.graph_type = 'enzymes'
-        # self.graph_type = 'protein'
+        # self.graph_type = 'enzymes'
+        self.graph_type = 'protein'
         # self.graph_type = 'DD'
 
         # update when initializing dataset
@@ -89,6 +89,7 @@ class Args():
         self.graph_save_path = 'graphs/'
         self.figure_save_path = 'figures/'
         self.figure_prediction_save_path = 'figures_prediction/'
+
 
         self.load = False # if load model, default lr is very low
         self.load_epoch = 100
