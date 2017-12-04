@@ -7,6 +7,9 @@
 *.pickle
 
 figures/
+
+figures_prediction/
+
 **/bin/
 **/build/
 model_save/

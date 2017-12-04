@@ -51,7 +51,7 @@ def gumbel_softmax(logits, temperature, eps=1e-9):
     x = F.softmax(x)
     return x
 
-def gumbel_sigmoid(logits, temperature, eps=1e-6):
+def gumbel_sigmoid(logits, temperature):
     '''
 
     :param logits:
@@ -60,17 +60,207 @@ def gumbel_sigmoid(logits, temperature, eps=1e-6):
     :return:
     '''
     # get gumbel noise
-    noise = torch.rand(logits.size())
-    noise.add_(eps).log_().neg_()
-    noise.add_(eps).log_().neg_()
-    noise = Variable(noise).cuda(CUDA)
+    noise = torch.rand(logits.size()) # uniform(0,1)
+    noise_logistic = torch.log(noise)-torch.log(1-noise) # logistic(0,1)
+    noise = Variable(noise_logistic).cuda(CUDA)
 
     x = (logits + noise) / temperature
     x = F.sigmoid(x)
     return x
 
+# x = Variable(torch.randn(100)).cuda(CUDA)
+# y = gumbel_sigmoid(x,temperature=0.01)
+# print(x)
+# print(y)
+
+def sample_sigmoid(y, sample, thresh=0.5, sampe_time=1):
+    '''
+        do sampling over unnormalized score
+    :param y: input
+    :param sample: Bool
+    :param thresh: if not sample, the threshold
+    :param sampe_time: how many times do we sample, if =1, do single sample
+    :return: sampled result
+    '''
+
+    # do sigmoid first
+    y = F.sigmoid(y)
+    # do sampling
+    if sample:
+        if sampe_time>1:
+            y_result = Variable(torch.rand(y.size(0),y.size(1),y.size(2))).cuda(CUDA)
+            # loop over all batches
+            for i in range(y_result.size(0)):
+                # do 'multi_sample' times sampling
+                for j in range(sampe_time):
+                    y_thresh = Variable(torch.rand(y.size(1), y.size(2))).cuda(CUDA)
+                    y_result[i] = torch.gt(y[i], y_thresh).float()
+                    if (torch.sum(y_result[i]).data>0).any():
+                        break
+                    # else:
+                    #     print('all zero',j)
+        else:
+            y_thresh = Variable(torch.rand(y.size(0),y.size(1),y.size(2))).cuda(CUDA)
+            y_result = torch.gt(y,y_thresh).float()
+    # do max likelihood based on some threshold
+    else:
+        y_thresh = Variable(torch.ones(y.size(0), y.size(1), y.size(2))*thresh).cuda(CUDA)
+        y_result = torch.gt(y, y_thresh).float()
+    return y_result
 
 
+
+################### current adopted model, LSTM+MLP || LSTM+VAE || LSTM+LSTM (where LSTM can be GRU as well)
+#####
+# definition of terms
+# h: hidden state of LSTM
+# y: edge prediction, model output
+# n: noise for generator
+# l: whether an output is real or not, binary
+
+# plain LSTM model
+class LSTM_plain(nn.Module):
+    def __init__(self, input_size, embedding_size, hidden_size, num_layers):
+        super(LSTM_plain, self).__init__()
+        self.num_layers = num_layers
+        self.hidden_size = hidden_size
+        self.linear_input = nn.Linear(input_size, embedding_size)
+        self.lstm = nn.LSTM(input_size=embedding_size, hidden_size=hidden_size, num_layers=num_layers, batch_first=True)
+        self.relu = nn.ReLU()
+        # initialize
+        self.hidden = None # need initialize before forward run
+
+        for name, param in self.lstm.named_parameters():
+            if 'bias' in name:
+                nn.init.constant(param, 0.25)
+            elif 'weight' in name:
+                nn.init.xavier_uniform(param,gain=nn.init.calculate_gain('sigmoid'))
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                m.weight.data = init.xavier_uniform(m.weight.data, gain=nn.init.calculate_gain('relu'))
+
+    def init_hidden(self, batch_size):
+        return (Variable(torch.zeros(self.num_layers, batch_size, self.hidden_size)).cuda(CUDA),
+                Variable(torch.zeros(self.num_layers, batch_size, self.hidden_size)).cuda(CUDA))
+
+    def forward(self, input_raw, pack=False, input_len=None):
+        input = self.linear_input(input_raw)
+        input = self.relu(input)
+        if pack:
+            input = pack_padded_sequence(input, input_len, batch_first=True)
+        output_raw, self.hidden = self.lstm(input, self.hidden)
+        if pack:
+            output_raw = pad_packed_sequence(output_raw, batch_first=True)[0]
+        # return hidden state at each time step
+        return output_raw
+
+# plain GRU model
+class GRU_plain(nn.Module):
+    def __init__(self, input_size, embedding_size, hidden_size, num_layers):
+        super(GRU_plain, self).__init__()
+        self.num_layers = num_layers
+        self.hidden_size = hidden_size
+        self.linear_input = nn.Linear(input_size, embedding_size)
+        self.gru = nn.GRU(input_size=embedding_size, hidden_size=hidden_size, num_layers=num_layers,
+                            batch_first=True)
+        self.relu = nn.ReLU()
+        # initialize
+        self.hidden = None  # need initialize before forward run
+
+        for name, param in self.gru.named_parameters():
+            if 'bias' in name:
+                nn.init.constant(param, 0.25)
+            elif 'weight' in name:
+                nn.init.xavier_uniform(param,gain=nn.init.calculate_gain('sigmoid'))
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                m.weight.data = init.xavier_uniform(m.weight.data, gain=nn.init.calculate_gain('relu'))
+
+    def init_hidden(self, batch_size):
+        return Variable(torch.zeros(self.num_layers, batch_size, self.hidden_size)).cuda(CUDA)
+
+    def forward(self, input_raw, pack=False, input_len=None):
+        input = self.linear_input(input_raw)
+        input = self.relu(input)
+        if pack:
+            input = pack_padded_sequence(input, input_len, batch_first=True)
+        output_raw, self.hidden = self.gru(input, self.hidden)
+        if pack:
+            output_raw = pad_packed_sequence(output_raw, batch_first=True)[0]
+        # return hidden state at each time step
+        return output_raw
+
+
+
+# a deterministic linear output
+class MLP_plain(nn.Module):
+    def __init__(self, h_size, embedding_size, y_size):
+        super(MLP_plain, self).__init__()
+        self.deterministic_output = nn.Sequential(
+            nn.Linear(h_size, embedding_size),
+            nn.ReLU(),
+            nn.Linear(embedding_size, y_size)
+        )
+
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                m.weight.data = init.xavier_uniform(m.weight.data, gain=nn.init.calculate_gain('relu'))
+
+    def forward(self, h):
+        y = self.deterministic_output(h)
+        return y
+
+# a deterministic linear output (update: add noise)
+class MLP_VAE_plain(nn.Module):
+    def __init__(self, h_size, embedding_size, y_size):
+        super(MLP_VAE_plain, self).__init__()
+        self.encode_11 = nn.Linear(h_size, embedding_size) # mu
+        self.encode_12 = nn.Linear(h_size, embedding_size) # lsgms
+
+        self.decode_1 = nn.Linear(embedding_size, embedding_size)
+        self.decode_2 = nn.Linear(embedding_size, y_size) # make edge prediction (reconstruct)
+        self.relu = nn.ReLU()
+
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                m.weight.data = init.xavier_uniform(m.weight.data, gain=nn.init.calculate_gain('relu'))
+
+    def forward(self, h):
+        # encoder
+        z_mu = self.encode_11(h)
+        z_lsgms = self.encode_12(h)
+        # reparameterize
+        z_sgm = z_lsgms.mul(0.5).exp_()
+        eps = Variable(torch.randn(z_sgm.size(0),z_sgm.size(1),z_sgm.size(2))).cuda(CUDA)
+        z = eps*z_sgm + z_mu
+        # decoder
+        y = self.decode_1(z)
+        y = self.relu(y)
+        y = self.decode_2(y)
+        return y, z_mu, z_lsgms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+################################################## code that are NOT used for final version #############
 
 
 # RNN that updates according to graph structure, new proposed model
@@ -310,114 +500,7 @@ class Graph_generator_LSTM(nn.Module):
 
 
 
-# plain LSTM model
-class Graph_generator_LSTM_plain(nn.Module):
-    def __init__(self, feature_size, input_size, hidden_size, batch_size, num_layers):
-        super(Graph_generator_LSTM_plain, self).__init__()
-        self.batch_size = batch_size
-        self.num_layers = num_layers
-        self.hidden_size = hidden_size
-        self.lstm = nn.LSTM(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, batch_first=True)
-        self.linear_input = nn.Linear(feature_size, input_size)
-        self.relu = nn.ReLU()
-        # initialize
-        # self.hidden,self.cell = self.init_hidden()
-        self.hidden = self.init_hidden()
 
-        self.lstm.weight_ih_l0.data = init.xavier_uniform(self.lstm.weight_ih_l0.data,
-                                                          gain=nn.init.calculate_gain('sigmoid'))
-        self.lstm.weight_hh_l0.data = init.xavier_uniform(self.lstm.weight_hh_l0.data,
-                                                          gain=nn.init.calculate_gain('sigmoid'))
-        self.lstm.bias_ih_l0.data = torch.ones(self.lstm.bias_ih_l0.data.size(0)) * 0.25
-        self.lstm.bias_hh_l0.data = torch.ones(self.lstm.bias_hh_l0.data.size(0)) * 0.25
-        for m in self.modules():
-            if isinstance(m, nn.Linear):
-                m.weight.data = init.xavier_uniform(m.weight.data, gain=nn.init.calculate_gain('relu'))
-
-    def init_hidden(self):
-        return (Variable(torch.zeros(self.num_layers, self.batch_size, self.hidden_size)).cuda(CUDA),
-                Variable(torch.zeros(self.num_layers, self.batch_size, self.hidden_size)).cuda(CUDA))
-
-    def forward(self, input_raw, pack=False, input_len=None):
-        input = self.linear_input(input_raw)
-        input = self.relu(input)
-        if pack:
-            input = pack_padded_sequence(input, input_len, batch_first=True)
-        output_raw, self.hidden = self.lstm(input, self.hidden)
-        if pack:
-            output_raw = pad_packed_sequence(output_raw, batch_first=True)[0]
-        # return hidden state at each time step
-        return output_raw
-
-#####
-# definition of terms
-# h: hidden state of LSTM
-# y: edge prediction, model output
-# n: noise for generator
-# l: whether an output is real or not, binary
-
-# a deterministic linear output (update: add noise)
-class Graph_generator_LSTM_output_deterministic_mlp(nn.Module):
-    def __init__(self,h_size, embedding_size, y_size):
-        super(Graph_generator_LSTM_output_deterministic_mlp, self).__init__()
-        self.deterministic_output = nn.Sequential(
-            nn.Linear(h_size, embedding_size),
-            nn.ReLU(),
-            nn.Linear(embedding_size, y_size),
-            nn.Sigmoid()
-        )
-    def forward(self,h):
-        y = self.deterministic_output(h)
-        return y
-
-# a deterministic linear output (update: add noise)
-class Graph_generator_LSTM_output_vae(nn.Module):
-    def __init__(self, h_size, embedding_size, y_size):
-        # todo: try different NN structure (hidden size, depth)
-        super(Graph_generator_LSTM_output_vae, self).__init__()
-        # self.encode_1 = nn.Linear(h_size, embedding_size)
-        # self.encode_1_bn = nn.BatchNorm1d(embedding_size)
-        self.encode_21 = nn.Linear(h_size, embedding_size) # mu
-        self.encode_22 = nn.Linear(h_size, embedding_size) # lsgms
-
-        self.decode_1 = nn.Linear(embedding_size, embedding_size)
-        # self.decode_1_bn = nn.BatchNorm1d(embedding_size)
-        self.decode_2 = nn.Linear(embedding_size, y_size) # make edge prediction (reconstruct)
-
-        self.relu = nn.ReLU()
-        self.sigmoid = nn.Sigmoid()
-
-        for m in self.modules():
-            if isinstance(m, nn.Linear):
-                m.weight.data = init.xavier_uniform(m.weight.data, gain=nn.init.calculate_gain('relu'))
-            if isinstance(m, nn.BatchNorm1d):
-                m.weight.data.fill_(1)
-                m.bias.data.zero_()
-
-    def forward(self, h):
-        # todo: see if this type of batchnorm improves
-        # encoder
-        # h = self.encode_1(h)
-        # h = h.permute(0,2,1) # fit bn
-        # h = self.encode_1_bn(h.contiguous())
-        # h = h.permute(0,2,1)
-        # h = self.relu(h)
-        z_mu = self.encode_21(h)
-        z_lsgms = self.encode_22(h)
-        # reparameterize
-        z_sgm = z_lsgms.mul(0.5).exp_()
-        eps = Variable(torch.randn(z_sgm.size(0),z_sgm.size(1),z_sgm.size(2))).cuda(CUDA)
-        z = eps*z_sgm + z_mu
-        # decoder
-        y = self.decode_1(z)
-        # y = y.permute(0,2,1)  # fit bn
-        # y = self.decode_1_bn(y.contiguous())
-        # y = y.permute(0,2,1)
-        y = self.relu(y)
-        y = self.decode_2(y)
-        y = self.sigmoid(y)
-
-        return y, z_mu, z_lsgms
 
 
 # a simple MLP generator output

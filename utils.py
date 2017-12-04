@@ -13,6 +13,24 @@ from sklearn.decomposition import PCA
 import community
 import pickle
 
+def imsave(fname, arr, vmin=None, vmax=None, cmap=None, format=None, origin=None):
+    from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+    from matplotlib.figure import Figure
+
+    fig = Figure(figsize=arr.shape[::-1], dpi=1, frameon=False)
+    canvas = FigureCanvas(fig)
+    fig.figimage(arr, cmap=cmap, vmin=vmin, vmax=vmax, origin=origin)
+    fig.savefig(fname, dpi=1, format=format)
+
+
+def save_prediction_histogram(y_pred_data, fname_pred, max_num_node, bin_n=20):
+    bin_edge = np.linspace(1e-6, 1, bin_n + 1)
+    output_pred = np.zeros((bin_n, max_num_node))
+    for i in range(max_num_node):
+        output_pred[:, i], _ = np.histogram(y_pred_data[:, i, :], bins=bin_edge, density=False)
+        # normalize
+        output_pred[:, i] /= np.sum(output_pred[:, i])
+    imsave(fname=fname_pred, arr=output_pred, origin='upper', cmap='Greys_r', vmin=0.0, vmax=3.0 / bin_n)
 
 
 # draw a single graph G
@@ -247,8 +265,12 @@ def decode_graph(adj, prefix):
 
 
 
-# get a graph from zero-padded adj
 def get_graph(adj):
+    '''
+    get a graph from zero-padded adj
+    :param adj:
+    :return:
+    '''
     # remove all zeros rows and columns
     adj = adj[~np.all(adj == 0, axis=1)]
     adj = adj[:, ~np.all(adj == 0, axis=0)]
