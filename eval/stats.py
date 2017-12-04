@@ -88,3 +88,7 @@ def clustering_stats(graph_ref_list, graph_pred_list, bins=100, is_parallel=True
         print('Time computing clustering mmd: ', elapsed)
     return mmd_dist
 
+def motif_stats(graph_ref_list, graph_pred_list):
+    counts_ref = []
+    counts_pred = []
+
