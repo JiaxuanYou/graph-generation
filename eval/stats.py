@@ -97,10 +97,15 @@ motif_to_indices = {
         '3path' : [1, 2],
         '4cycle' : [8],
 }
+COUNT_START_STR = 'orbit counts: \n'
 
 def orca(graph, indices):
     output = sp.check_output('./eval/orca/orca', '4', 'eval/orca/test.txt', 'std')
     print(output)
+    
+    idx = output.find(COUNT_START_STR) + len(COUNT_START_STR)
+    return output[idx:].strip('\n')
+    
 
 def motif_stats(graph_ref_list, graph_pred_list, motif_type='4cycle'):
     counts_ref = []
@@ -109,5 +114,6 @@ def motif_stats(graph_ref_list, graph_pred_list, motif_type='4cycle'):
     indices = motif_to_indices[motif_type]
 
     for G in graph_ref_list:
-        orca(G, indices)
+        orbit_counts = orca(G, indices)
+        counts_ref.append(np.sum(orbit_counts[:, indices], axis=1))
 
