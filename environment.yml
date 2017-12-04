@@ -258,6 +258,6 @@ dependencies:
   - tables==3.4.2
   - tensorboard-logger==0.0.4
   - torch==0.2.0.post4
-    pyemd==0.4.4
+  - pyemd==0.4.4
 prefix: /lfs/hyperion/0/rexy/anaconda/envs/
 
