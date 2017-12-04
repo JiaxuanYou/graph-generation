@@ -342,3 +342,26 @@ y = torch.rand(5,1)
 # for i in range(10):
 #     a = torch.randn([2])
 #     print(a)
+
+
+
+#
+# x = np.array([[1,0,0], [0,2,0], [1,1,0]])
+# print(x)
+# print(np.nonzero(x))
+# print(x[np.nonzero(x)])
+
+# G = nx.karate_club_graph()
+# length_all = nx.all_pairs_shortest_path_length(G)
+# width_max = 0
+# for i in range(G.number_of_nodes()):
+#     length = np.array(list(length_all[i].values()))
+#     width = np.amax(np.bincount(length))
+#     if width>width_max:
+#         width_max=width
+# print(width_max)
+
+a = np.ones((5,5))
+print(a)
+a[0,:] = 0
+print(a)

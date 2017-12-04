@@ -4,17 +4,17 @@ from main import *
 args = Args()
 print(args.graph_type, args.note)
 # epoch = 16000
-epoch = 1000
+epoch = 5000
 
 # for baseline model
 for num_layers in range(4,5):
     # give file name and figure name
     fname_pred = args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
-                 str(epoch) + '_pred_' + str(num_layers) + '_' + str(args.bptt) + '_' + str(args.bptt_len)+ '_' + str(args.gumbel)
+                 str(epoch) + '_pred_' + str(num_layers) + '_' + str(args.bptt) + '_' + str(args.bptt_len) + '_' + str(args.gumbel)
     fname_real = args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
-                 str(epoch) + '_real_' + str(num_layers) + '_' + str(args.bptt) + '_' + str(args.bptt_len)+ '_' + str(args.gumbel)
+                 str(epoch) + '_real_' + str(num_layers) + '_' + str(args.bptt) + '_' + str(args.bptt_len) + '_' + str(args.gumbel)
     figname = args.figure_save_path + args.note + '_' + args.graph_type + '_' + \
-                 str(epoch) + str(num_layers) + '_' + str(args.bptt) + '_' + str(args.bptt_len)+ '_' + str(args.gumbel)
+                 str(epoch) + str(num_layers) + '_' + str(args.bptt) + '_' + str(args.bptt_len) + '_' + str(args.gumbel)
 
     # fname_real = args.graph_save_path + args.note + '_' + args.graph_type + '_' + str(args.graph_node_num) + '_' + \
     #              str(epoch) + '_real_' + str(True) + '_' + str(num_layers)
@@ -29,6 +29,8 @@ for num_layers in range(4,5):
     graph_pred_list = load_graph_list(fname_pred + '.dat')
     graph_real_len_list = np.array([len(graph_real_list[i]) for i in range(len(graph_real_list))])
     graph_pred_len_list = np.array([len(graph_pred_list[i]) for i in range(len(graph_pred_list))])
+    # real_order = np.argsort(graph_real_len_list)
+    # pred_order = np.argsort(graph_pred_len_list)
     real_order = np.argsort(graph_real_len_list)[::-1]
     pred_order = np.argsort(graph_pred_len_list)[::-1]
     # print(real_order)
