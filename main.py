@@ -39,7 +39,7 @@ class Args():
 
         ### data config
         # self.graph_type = 'star' # obsolete
-        # self.graph_type = 'karate'
+        # self.graph_type = 'karate' # obsolete
 
         # self.graph_type = 'ladder'
         # self.graph_type = 'tree'
