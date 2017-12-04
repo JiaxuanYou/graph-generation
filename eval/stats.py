@@ -19,6 +19,7 @@ def degree_stats(graph_ref_list, graph_pred_list, is_parallel=False):
     '''
     sample_ref = []
     sample_pred = []
+    # in case an empty graph is generated
     graph_pred_list_remove_empty = [G for G in graph_pred_list if not G.number_of_nodes() == 0]
 
     prev = datetime.now()
@@ -33,7 +34,7 @@ def degree_stats(graph_ref_list, graph_pred_list, is_parallel=False):
     else:
         for i in range(len(graph_ref_list)):
             sample_ref.append(np.array(nx.degree_histogram(graph_ref_list[i])))
-            # in case an empty graph is generated
+        for i in range(len(graph_pred_list_remove_empty)):
             sample_pred.append(np.array(nx.degree_histogram(graph_pred_list_remove_empty[i])))
     mmd_dist = mmd.compute_mmd(sample_ref, sample_pred, kernel=mmd.gaussian_emd)
     elapsed = datetime.now() - prev
@@ -76,7 +77,8 @@ def clustering_stats(graph_ref_list, graph_pred_list, bins=100, is_parallel=True
                     clustering_coeffs_list, bins=bins, range=(0.0, 1.0), density=False)
             sample_ref.append(hist)
 
-            clustering_coeffs_list = list(nx.clustering(graph_pred_list[i]).values())
+        for i in range(len(graph_pred_list_remove_empty)):
+            clustering_coeffs_list = list(nx.clustering(graph_pred_list_remove_empty[i]).values())
             hist, _ = np.histogram(
                     clustering_coeffs_list, bins=bins, range=(0.0, 1.0), density=False)
             sample_pred.append(hist)

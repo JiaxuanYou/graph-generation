@@ -7,7 +7,8 @@
 *.pickle
 
 figures/
-bin/
+**/bin/
+**/build/
 model_save/
 logs/
 graphs/
@@ -16,3 +17,4 @@ eval_results/
 .idea/
 
 __pycache__
+**/__pycache__

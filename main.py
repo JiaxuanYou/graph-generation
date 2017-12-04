@@ -48,8 +48,8 @@ class Args():
         # self.graph_type = 'caveman'
         # self.graph_type = 'grid'
         # self.graph_type = 'barabasi'
-        self.graph_type = 'enzymes'
-        # self.graph_type = 'protein'
+        # self.graph_type = 'enzymes'
+        self.graph_type = 'protein'
         # self.graph_type = 'DD'
 
         #
@@ -104,8 +104,8 @@ class Args():
 
         ### output config
         self.model_save_path = 'model_save_new/'
-        # self.graph_save_path = 'graphs/'
-        self.graph_save_path = 'graphs_new/'
+        self.graph_save_path = 'graphs/'
+        #self.graph_save_path = 'graphs_new/'
         self.figure_save_path = 'figures/'
         self.figure_prediction_save_path = 'figures_prediction/'
         self.load = False
@@ -114,14 +114,14 @@ class Args():
 
         self.save = False
         ######### baseline
-        # self.note = 'GraphRNN'
+        self.note = 'GraphRNN'
 
         ######### vae
         #### baseline
         # self.note = 'GraphRNN_MLP'
         # enzyme running
         #### vae
-        self.note = 'GraphRNN_VAE_simple_newdecoder'
+        #self.note = 'GraphRNN_VAE_simple_newdecoder'
         # enzyme running
         # protein done
         # DD running
