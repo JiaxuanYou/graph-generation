@@ -82,7 +82,6 @@ int getEdgeId(int x, int y) { return inc[x][lower_bound(adj[x],adj[x]+deg[x],y)-
 int64 **orbit; // orbit[x][o] - how many times does node x participate in orbit o
 int64 **eorbit; // eorbit[x][o] - how many times does node x participate in edge orbit o
 
-
 /** count graphlets on max 4 nodes */
 void count4() {
     clock_t startTime, endTime;
@@ -1337,38 +1336,30 @@ void ecount5() {
 
     endTime_all = endTime;
     printf("total: %.2f\n", (double)(endTime_all-startTime_all)/CLOCKS_PER_SEC);
-}
-
+} 
 
 fstream fin, fout; // input and output files
 int GS=5;
 string orbit_type;
 
-int init(int argc, char *argv[]) {
+int motif_counts(char* orbit_type, int graphlet_size, const char* input_filename, const char* output_filename) {
     // open input, output files
-    if (argc!=5) {
-        cerr << "Incorrect number of arguments." << endl;
-        cerr << "Usage: orca.exe [orbit type: node|edge] [graphlet size: 4/5] [graph - input file] [graphlets - output file]" << endl;
+    if (strcmp(orbit_type, "node")!=0 && strcmp(orbit_type, "edge")!=0) {
+        cerr << "Incorrect orbit type '" << orbit_type << "'. Should be 'node' or 'edge'." << endl;
         return 0;
     }
-    orbit_type = argv[1];
-    if (orbit_type!="node" && orbit_type!="edge") {
-        cerr << "Incorrect orbit type '" << argv[1] << "'. Should be 'node' or 'edge'." << endl;
-        return 0;
-    }
-    sscanf(argv[2],"%d",&GS);
     if (GS!=4 && GS!=5) {
-        cerr << "Incorrect graphlet size " << argv[2] << ". Should be 4 or 5." << endl;
+        cerr << "Incorrect graphlet size " << graphlet_size << ". Should be 4 or 5." << endl;
         return 0;
     }
-    fin.open(argv[3], fstream::in);
-    fout.open(argv[4], fstream::out | fstream::binary);
+    fin.open(input_filename, fstream::in);
+    fout.open(output_filename, fstream::out | fstream::binary);
     if (fin.fail()) {
-        cerr << "Failed to open file " << argv[2] << endl;
+        cerr << "Failed to open file " << input_filename << endl;
         return 0;
     }
     if (fout.fail()) {
-        cerr << "Failed to open file " << argv[3] << endl;
+        cerr << "Failed to open file " << output_filename << endl;
         return 0;
     }
     // read input graph
@@ -1436,6 +1427,17 @@ int init(int argc, char *argv[]) {
     return 1;
 }
 
+int init(int argc, char *argv[]) {
+    if (argc!=5) {
+        cerr << "Incorrect number of arguments." << endl;
+        cerr << "Usage: orca.exe [orbit type: node|edge] [graphlet size: 4/5] [graph - input file] [graphlets - output file]" << endl;
+        return 0;
+    }
+    int graphlet_size;
+    sscanf(argv[2],"%d", &graphlet_size);
+    motif_counts(argv[1], graphlet_size, argv[3], argv[4]);
+}
+
 void writeResults(int g=5) {
     int no[] = {0,0,1,4,15,73};
     for (int i=0;i<n;i++) {
@@ -1460,79 +1462,27 @@ void writeEdgeResults(int g=5) {
     fout.close();
 }
 
-static PyObject *
-orca_motifs(PyObject *self, PyObject *args)
-{
-    const char *command;
-    int sts;
 
-    if (!PyArg_ParseTuple(args, "s", &command))
-        return NULL;
-    sts = system(command);
-    return PyLong_FromLong(sts);
-}
-
-static PyMethodDef OrcaMethods[] = {
-    {"motifs",  orca_motifs, METH_VARARGS,
-     "Compute motif counts."},
-};
-
-static struct PyModuleDef orcamodule = {
-   PyModuleDef_HEAD_INIT,
-   "orca",   /* name of module */
-   NULL, /* module documentation, may be NULL */
-   -1,       /* size of per-interpreter state of the module,
-                or -1 if the module keeps state in global variables. */
-   OrcaMethods
-};
-
-PyMODINIT_FUNC
-PyInit_orca(void)
-{
-    return PyModule_Create(&orcamodule);
-}
-
-int main(int argc, char *argv[]) {
-
-    wchar_t *program = Py_DecodeLocale(argv[0], NULL);
-    if (program == NULL) {
-        fprintf(stderr, "Fatal error: cannot decode argv[0]\n");
-        exit(1);
-    }
-
-    /* Add a built-in module, before Py_Initialize */
-    PyImport_AppendInittab("orca", PyInit_orca);
-
-    /* Pass argv[0] to the Python interpreter */
-    Py_SetProgramName(program);
-
-    /* Initialize the Python interpreter.  Required. */
-    Py_Initialize();
-
-    /* Optionally import the module; alternatively,
-       import can be deferred until the embedded script
-       imports it. */
-    PyImport_ImportModule("orca");
-
-
-    if (!init(argc, argv)) {
-        cerr << "Stopping!" << endl;
-        return 0;
-    }
-    if (orbit_type=="node") {
-        printf("Counting NODE orbits of graphlets on %d nodes.\n\n",GS);
-        if (GS==4) count4();
-        if (GS==5) count5();
-        writeResults(GS);
-    } else {
-        printf("Counting EDGE orbits of graphlets on %d nodes.\n\n",GS);
-        if (GS==4) ecount4();
-        if (GS==5) ecount5();
-        writeEdgeResults(GS);
-    }
-
-//    PyMem_RawFree(program);
-
-    return 0;
-}
+//int main(int argc, char *argv[]) {
+//
+//
+//    if (!init(argc, argv)) {
+//        cerr << "Stopping!" << endl;
+//        return 0;
+//    }
+//    if (orbit_type=="node") {
+//        printf("Counting NODE orbits of graphlets on %d nodes.\n\n",GS);
+//        if (GS==4) count4();
+//        if (GS==5) count5();
+//        writeResults(GS);
+//    } else {
+//        printf("Counting EDGE orbits of graphlets on %d nodes.\n\n",GS);
+//        if (GS==4) ecount4();
+//        if (GS==5) ecount5();
+//        writeEdgeResults(GS);
+//    }
+//
+//
+//    return 0;
+//}
 

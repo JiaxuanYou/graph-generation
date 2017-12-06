@@ -5,8 +5,8 @@ import pickle
 import re
 from random import shuffle
 
-
 import eval.stats
+import utils
 # import main.Args
 from main import *
 
@@ -213,14 +213,6 @@ def eval_performance(datadir, prefix=None, args=None, eval_every=1000, out_file_
         eval_list_fname(real_graphs_filename, pred_graphs_filename, eval_every=eval_every,
                 out_file_prefix=out_file_prefix)
 
-def export_graphs_to_txt(filename, output_filename_prefix):
-    g_list = load_graph_list(filename)
-    i = 0
-    for G in g_list:
-        f = open(output_filename_prefix + '_' + str(i) + '.txt', 'w')
-        for (u, v) in G.edges():
-            f.write(str(u) + '\t' + str(v) + '\n')
-        i += 1
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Evaluation arguments.')
@@ -248,7 +240,7 @@ if __name__ == '__main__':
             os.makedirs('eval_results/ground_truth')
         output_prefix = 'eval_results/ground_truth/' + args.graph_type
         print('Export ground truth to ', output_prefix)
-        export_graphs_to_txt(input_path, output_prefix)
+        utils.export_graphs_to_txt(input_path, output_prefix)
     else:
         print(args.graph_type)
         out_file_prefix = 'eval_results/' + args.graph_type + '_' + args.note

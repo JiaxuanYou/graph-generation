@@ -1,7 +1,7 @@
 from distutils.core import setup, Extension
 
 orca_module = Extension('orca',
-                        sources = ['orca.cpp'],
+                        sources = ['orcamodule.cpp'],
                         extra_compile_args=['-std=c++11'],)
 
 setup (name = 'orca',
