@@ -19,7 +19,7 @@ import numpy as np
 import time
 
 USE_CUDA = torch.cuda.is_available()
-CUDA = 3
+CUDA = 1
 
 
 def sample_tensor(y,sample, thresh=0.5):
@@ -239,8 +239,34 @@ class MLP_VAE_plain(nn.Module):
         y = self.decode_2(y)
         return y, z_mu, z_lsgms
 
+# a deterministic linear output (update: add noise)
+class MLP_VAE_conditional_plain(nn.Module):
+    def __init__(self, h_size, embedding_size, y_size):
+        super(MLP_VAE_conditional_plain, self).__init__()
+        self.encode_11 = nn.Linear(h_size, embedding_size)  # mu
+        self.encode_12 = nn.Linear(h_size, embedding_size)  # lsgms
 
+        self.decode_1 = nn.Linear(embedding_size+h_size, embedding_size)
+        self.decode_2 = nn.Linear(embedding_size, y_size)  # make edge prediction (reconstruct)
+        self.relu = nn.ReLU()
 
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                m.weight.data = init.xavier_uniform(m.weight.data, gain=nn.init.calculate_gain('relu'))
+
+    def forward(self, h):
+        # encoder
+        z_mu = self.encode_11(h)
+        z_lsgms = self.encode_12(h)
+        # reparameterize
+        z_sgm = z_lsgms.mul(0.5).exp_()
+        eps = Variable(torch.randn(z_sgm.size(0), z_sgm.size(1), z_sgm.size(2))).cuda(CUDA)
+        z = eps * z_sgm + z_mu
+        # decoder
+        y = self.decode_1(torch.cat((h,z),dim=2))
+        y = self.relu(y)
+        y = self.decode_2(y)
+        return y, z_mu, z_lsgms
 
 
 

@@ -11,7 +11,7 @@ from random import shuffle
 from torch.autograd import Variable
 from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
 import torch.nn as nn
-
+from main import *
 
 CUDA = 2
 # G = nx.ladder_graph(4)
@@ -361,7 +361,79 @@ y = torch.rand(5,1)
 #         width_max=width
 # print(width_max)
 
-a = np.ones((5,5))
-print(a)
-a[0,:] = 0
-print(a)
+# a = np.ones((5,5))
+# print(a)
+# a[0,:] = 0
+# print(a)
+
+# n=23
+# m=1
+# G = nx.barabasi_albert_graph(n,m)
+# degree = np.array(nx.degree_histogram(G))
+# degree_norm = degree/np.sum(degree)
+# print(degree)
+# print(degree_norm)
+#
+# for i in range(10):
+#     print('nodes',G.number_of_nodes())
+#     print('edges',G.number_of_edges())
+#     print('prediction', (n-m)*m)
+
+# for i in range(3):
+#     G = nx.barabasi_albert_graph(5,1)
+#     adj = np.asarray(nx.to_numpy_matrix(G))
+#     print('adj before\n', adj)
+#
+#     x_idx = np.random.permutation(adj.shape[0])
+#     adj = adj[np.ix_(x_idx, x_idx)]
+#     print('adj after\n', adj)
+
+args = Args()
+
+if args.graph_type == 'ladder':
+    graphs = []
+    for i in range(100, 201):
+        graphs.append(nx.ladder_graph(i))
+    args.max_prev_node = 10
+if args.graph_type == 'tree':
+    graphs = []
+    for i in range(2, 5):
+        for j in range(3, 5):
+            graphs.append(nx.balanced_tree(i, j))
+    args.max_prev_node = 256
+if args.graph_type == 'caveman':
+    graphs = []
+    for i in range(5, 10):
+        for j in range(5, 25):
+            graphs.append(nx.connected_caveman_graph(i, j))
+    args.max_prev_node = 50
+if args.graph_type == 'grid':
+    graphs = []
+    for i in range(10, 20):
+        for j in range(10, 20):
+            graphs.append(nx.grid_2d_graph(i, j))
+    args.max_prev_node = 40
+if args.graph_type == 'barabasi':
+    graphs = []
+    for i in range(100, 200):
+        graphs.append(nx.barabasi_albert_graph(i, 2))
+    args.max_prev_node = 130
+    # real graphs
+if args.graph_type == 'enzymes':
+    graphs = Graph_load_batch(min_num_nodes=10, name='ENZYMES')
+    args.max_prev_node = 25
+if args.graph_type == 'protein':
+    graphs = Graph_load_batch(min_num_nodes=20, name='PROTEINS_full')
+    args.max_prev_node = 80
+if args.graph_type == 'DD':
+    graphs = Graph_load_batch(min_num_nodes=100, max_num_nodes=500, name='DD', node_attributes=False, graph_labels=True)
+    args.max_prev_node = 230
+
+print(args.graph_type)
+print('number of graph', len(graphs))
+print('aver number of node', sum([graphs[i].number_of_nodes() for i in range(len(graphs))])/len(graphs))
+print('aver number of edge', sum([graphs[i].number_of_edges() for i in range(len(graphs))])/len(graphs))
+print('max number of node', max([graphs[i].number_of_nodes() for i in range(len(graphs))]))
+
+
+

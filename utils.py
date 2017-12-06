@@ -102,10 +102,11 @@ def draw_graph_list(G_list, row, col, fname = 'figures/test.png'):
     plt.switch_backend('agg')
     for i,G in enumerate(G_list):
         plt.subplot(row,col,i+1)
-        if i%2==0:
-            plt.title('real nodes: '+str(G.number_of_nodes()), fontsize = 4)
-        else:
-            plt.title('pred nodes: '+str(G.number_of_nodes()), fontsize = 4)
+        # if i%2==0:
+        #     plt.title('real nodes: '+str(G.number_of_nodes()), fontsize = 4)
+        # else:
+        #     plt.title('pred nodes: '+str(G.number_of_nodes()), fontsize = 4)
+        plt.title('num of nodes: '+str(G.number_of_nodes()), fontsize = 4)
         parts = community.best_partition(G)
         values = [parts.get(node) for node in G.nodes()]
         colors = []
@@ -142,10 +143,11 @@ def draw_graph_list(G_list, row, col, fname = 'figures/test.png'):
         plt.xlabel('degree', fontsize = 3)
         plt.ylabel('count', fontsize = 3)
         G_deg_mean = 2*G.number_of_edges()/float(G.number_of_nodes())
-        if i % 2 == 0:
-            plt.title('real average degree: {:.2f}'.format(G_deg_mean), fontsize=4)
-        else:
-            plt.title('pred average degree: {:.2f}'.format(G_deg_mean), fontsize=4)
+        # if i % 2 == 0:
+        #     plt.title('real average degree: {:.2f}'.format(G_deg_mean), fontsize=4)
+        # else:
+        #     plt.title('pred average degree: {:.2f}'.format(G_deg_mean), fontsize=4)
+        plt.title('average degree: {:.2f}'.format(G_deg_mean), fontsize=4)
         plt.tick_params(axis='both', which='major', labelsize=3)
         plt.tick_params(axis='both', which='minor', labelsize=3)
     plt.tight_layout()
@@ -162,10 +164,11 @@ def draw_graph_list(G_list, row, col, fname = 'figures/test.png'):
         plt.xlabel('clustering coefficient', fontsize=3)
         plt.ylabel('count', fontsize=3)
         G_cluster_mean = sum(G_cluster) / len(G_cluster)
-        if i % 2 == 0:
-            plt.title('real average clustering: {:.4f}'.format(G_cluster_mean), fontsize=4)
-        else:
-            plt.title('pred average clustering: {:.4f}'.format(G_cluster_mean), fontsize=4)
+        # if i % 2 == 0:
+        #     plt.title('real average clustering: {:.4f}'.format(G_cluster_mean), fontsize=4)
+        # else:
+        #     plt.title('pred average clustering: {:.4f}'.format(G_cluster_mean), fontsize=4)
+        plt.title('average clustering: {:.4f}'.format(G_cluster_mean), fontsize=4)
         plt.tick_params(axis='both', which='major', labelsize=3)
         plt.tick_params(axis='both', which='minor', labelsize=3)
     plt.tight_layout()
@@ -188,10 +191,11 @@ def draw_graph_list(G_list, row, col, fname = 'figures/test.png'):
         G_cycle_mean = 0
         if len(cycle_len)>0:
             G_cycle_mean = sum(cycle_len) / len(cycle_len)
-        if i % 2 == 0:
-            plt.title('real average cycle: {:.4f}'.format(G_cycle_mean), fontsize=4)
-        else:
-            plt.title('pred average cycle: {:.4f}'.format(G_cycle_mean), fontsize=4)
+        # if i % 2 == 0:
+        #     plt.title('real average cycle: {:.4f}'.format(G_cycle_mean), fontsize=4)
+        # else:
+        #     plt.title('pred average cycle: {:.4f}'.format(G_cycle_mean), fontsize=4)
+        plt.title('average cycle: {:.4f}'.format(G_cycle_mean), fontsize=4)
         plt.tick_params(axis='both', which='major', labelsize=3)
         plt.tick_params(axis='both', which='minor', labelsize=3)
     plt.tight_layout()
@@ -210,10 +214,11 @@ def draw_graph_list(G_list, row, col, fname = 'figures/test.png'):
         plt.xlabel('community ID', fontsize=3)
         plt.ylabel('count', fontsize=3)
         G_community_count = len(counts)
-        if i % 2 == 0:
-            plt.title('real average clustering: {}'.format(G_community_count), fontsize=4)
-        else:
-            plt.title('pred average clustering: {}'.format(G_community_count), fontsize=4)
+        # if i % 2 == 0:
+        #     plt.title('real average clustering: {}'.format(G_community_count), fontsize=4)
+        # else:
+        #     plt.title('pred average clustering: {}'.format(G_community_count), fontsize=4)
+        plt.title('average clustering: {}'.format(G_community_count), fontsize=4)
         plt.tick_params(axis='both', which='major', labelsize=3)
         plt.tick_params(axis='both', which='minor', labelsize=3)
     plt.tight_layout()
@@ -294,6 +299,8 @@ def load_graph_list(fname):
     with open(fname, "rb") as f:
         graph_list = pickle.load(f)
     for i in range(len(graph_list)):
-        graph_list[i].remove_nodes_from(list(nx.isolates(graph_list[i])))
+        graph_list[i] = nx.convert_node_labels_to_integers(graph_list[i])
+        # print(graph_list[i].nodes())
+        # graph_list[i].remove_nodes_from(list(nx.isolates(graph_list[i])))
         graph_list[i] = pick_connected_component(graph_list[i])
     return graph_list

@@ -34,20 +34,18 @@ class Args():
 
         ### model type
         # self.note = 'GraphRNN_MLP'
-        self.note = 'GraphRNN_VAE'
+        # self.note = 'GraphRNN_VAE'
+        self.note = 'GraphRNN_VAE_conditional'
         # self.note = 'GraphRNN_RNN' # todo
 
         ### data config
-        # self.graph_type = 'star' # obsolete
-        # self.graph_type = 'karate' # obsolete
-
         # self.graph_type = 'ladder'
         # self.graph_type = 'tree'
         # self.graph_type = 'caveman'
         # self.graph_type = 'grid'
-        # self.graph_type = 'barabasi'
+        self.graph_type = 'barabasi'
         # self.graph_type = 'enzymes'
-        self.graph_type = 'protein'
+        # self.graph_type = 'protein'
         # self.graph_type = 'DD'
 
         # update when initializing dataset
@@ -57,21 +55,21 @@ class Args():
 
         ### network config
         ## GraphRNN
-        self.hidden_size = 64 # hidden size for main LSTM
+        self.hidden_size = 128 # hidden size for main LSTM
         self.embedding_size_lstm = 64 # the size for LSTM input
         self.embedding_size_output = 64 # the embedding size for output (VAE/MLP)
-        self.batch_size = 128
-        self.test_batch_size = 128
+        self.batch_size = 64
+        self.test_batch_size = 64
         self.test_total_size = 1000
         self.num_layers = 4
         self.bptt = False # if use truncate back propagation (not very stable)
         self.bptt_len = 20
-        self.gumbel = True
+        self.gumbel = False
 
         ### training config
         self.num_workers = 4 # num workers to load data
-        self.batch_ratio = 32 # how many batches per epoch
-        self.epochs = 2000 # now one epoch means 16 x batch_size
+        self.batch_ratio = 16 # how many batches per epoch
+        self.epochs = 3000 # now one epoch means 16 x batch_size
         self.epochs_gumbel_start = 100 # at what time start gumbel training
         self.epochs_test_start = 200
         self.epochs_test = 200
@@ -79,7 +77,7 @@ class Args():
         self.epochs_save = 200
 
         self.lr = 0.003
-        self.milestones = [500, 1000, 2000]
+        self.milestones = [300, 800]
         self.lr_rate = 0.3
 
         self.sample_time = 1 # sample time in each time step, when validating
@@ -95,6 +93,16 @@ class Args():
         self.load_epoch = 100
         self.save = True
 
+
+        ### baseline config
+        self.generator_baseline = 'Gnp'
+        # self.generator_baseline = 'BA'
+
+        # self.metric_baseline = 'general'
+        # self.metric_baseline = 'degree'
+        self.metric_baseline = 'clustering'
+
+
         ### fname
         self.fname = self.note + '_' + self.graph_type + '_' + str(self.num_layers) + '_' + str(self.bptt) + '_' + \
                           str(self.bptt_len) + '_' + str(self.gumbel) + '_'
@@ -102,7 +110,7 @@ class Args():
                         str(self.bptt_len)+'_'+str(self.gumbel)+'_pred_'
         self.fname_real = self.note + '_' + self.graph_type + '_' + str(self.num_layers) + '_' + str(self.bptt) + '_' + \
                           str(self.bptt_len) + '_' + str(self.gumbel) + '_real_'
-
+        self.fname_baseline = self.graph_save_path + self.graph_type + self.generator_baseline+'_'+self.metric_baseline
 
 
 
@@ -245,7 +253,7 @@ def test_vae_epoch(epoch, args, lstm, output, test_batch_size=16, save_histogram
     output.eval()
 
     # generate graphs
-    max_num_node = int(args.max_num_node*1.5) # allowing to generate 1.5x bigger graph
+    max_num_node = int(args.max_num_node)
     y_pred = Variable(torch.zeros(test_batch_size, max_num_node, args.max_prev_node)).cuda(CUDA) # normalized prediction score
     y_pred_long = Variable(torch.zeros(test_batch_size, max_num_node, args.max_prev_node)).cuda(CUDA) # discrete prediction
     x_step = Variable(torch.ones(test_batch_size,1,args.max_prev_node)).cuda(CUDA)
@@ -267,11 +275,11 @@ def test_vae_epoch(epoch, args, lstm, output, test_batch_size=16, save_histogram
         G_pred_list.append(G_pred)
 
 
-    # save list of objects
-    fname_pred = args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
-                 str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
-        args.bptt_len) + '_' + str(args.gumbel) + '.dat'
-    save_graph_list(G_pred_list, fname_pred)
+    # # save list of objects
+    # fname_pred = args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
+    #              str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
+    #     args.bptt_len) + '_' + str(args.gumbel) + '.dat'
+    # save_graph_list(G_pred_list, fname_pred)
 
 
     # save prediction histograms, plot histogram over each time step
@@ -389,7 +397,7 @@ def test_mlp_epoch(epoch, args, lstm, output, test_batch_size=16, save_histogram
     output.eval()
 
     # generate graphs
-    max_num_node = int(args.max_num_node*1.5) # allowing to generate 1.5x bigger graph
+    max_num_node = int(args.max_num_node)
     y_pred = Variable(torch.zeros(test_batch_size, max_num_node, args.max_prev_node)).cuda(CUDA) # normalized prediction score
     y_pred_long = Variable(torch.zeros(test_batch_size, max_num_node, args.max_prev_node)).cuda(CUDA) # discrete prediction
     x_step = Variable(torch.ones(test_batch_size,1,args.max_prev_node)).cuda(CUDA)
@@ -429,7 +437,7 @@ def test_mlp_epoch(epoch, args, lstm, output, test_batch_size=16, save_histogram
 
 
 ########### train function for LSTM + VAE
-def train_vae(args, dataset_train, lstm, output):
+def train(args, dataset_train, lstm, output):
     # check if load existing model
     if args.load:
         fname = args.model_save_path + args.fname + 'lstm_' + str(args.load_epoch) + '.dat'
@@ -453,15 +461,19 @@ def train_vae(args, dataset_train, lstm, output):
     # start main loop
     while epoch<=args.epochs:
         # gradually using gumbel sigmoid to train the model
-        if epoch<args.epochs_gumbel_start:
+        if args.gumbel:
+            if epoch<args.epochs_gumbel_start:
+                gumbel = 0
+                temperature = 1
+            else:
+                gumbel = 1-np.exp((-3e-3)*(epoch-args.epochs_gumbel_start))
+                temperature = np.exp((-3e-3) * (epoch - args.epochs_gumbel_start))
+        else:
             gumbel = 0
             temperature = 1
-        else:
-            gumbel = 1-np.exp((-3e-3)*(epoch-args.epochs_gumbel_start))
-            temperature = np.exp((-3e-3) * (epoch - args.epochs_gumbel_start))
 
         # train
-        if args.note == 'GraphRNN_VAE':
+        if 'GraphRNN_VAE' in args.note:
             train_vae_epoch(epoch, args, lstm, output, dataset_train,
                             optimizer_lstm, optimizer_vae,
                             scheduler_lstm, scheduler_vae, gumbel=gumbel, temperature=temperature)
@@ -474,7 +486,7 @@ def train_vae(args, dataset_train, lstm, output):
         if epoch % args.epochs_test == 0 and epoch>=args.epochs_test_start:
             G_pred = []
             while len(G_pred)<args.test_total_size:
-                if args.note == 'GraphRNN_VAE':
+                if 'GraphRNN_VAE' in args.note:
                     G_pred_step = test_vae_epoch(epoch, args, lstm, output, test_batch_size=args.test_batch_size)
                 elif args.note == 'GraphRNN_MLP':
                     G_pred_step = test_mlp_epoch(epoch, args, lstm, output, test_batch_size=args.test_batch_size)
@@ -508,51 +520,43 @@ if __name__ == '__main__':
     ### load datasets
     graphs=[]
     # synthetic graphs
-    if args.graph_type=='star':
-        G = nx.star_graph(args.graph_node_num)
-        graphs = [G]
     if args.graph_type=='ladder':
         graphs = []
         for i in range(100, 201):
             graphs.append(nx.ladder_graph(i))
         args.max_prev_node = 10
-    if args.graph_type=='karate':
-        G = nx.karate_club_graph()
-        graphs = [G]
     if args.graph_type=='tree':
         graphs = []
-        for i in range(2, 5):
+        for i in range(2,5):
             for j in range(3,5):
                 graphs.append(nx.balanced_tree(i,j))
         args.max_prev_node = 256
     if args.graph_type=='caveman':
         graphs = []
-        for i in range(2,11):
-            for j in range(10,41):
-                for k in range(10):
-                    graphs.append(nx.relaxed_caveman_graph(i, j, 0.1))
-        args.max_prev_node = 340
+        for i in range(5,10):
+            for j in range(5,25):
+                    graphs.append(nx.connected_caveman_graph(i, j))
+        args.max_prev_node = 50
     if args.graph_type=='grid':
         graphs = []
-        for i in range(10,21):
-            for j in range(10,21):
+        for i in range(10,20):
+            for j in range(10,20):
                 graphs.append(nx.grid_2d_graph(i,j))
-        args.max_prev_node = 50
+        args.max_prev_node = 40
     if args.graph_type=='barabasi':
         graphs = []
-        for i in range(100,401):
-            for j in range(10):
-                graphs.append(nx.barabasi_albert_graph(i,2))
-        args.max_prev_node = 250
+        for i in range(100,200):
+            graphs.append(nx.barabasi_albert_graph(i,2))
+        args.max_prev_node = 130
     # real graphs
     if args.graph_type == 'enzymes':
         graphs= Graph_load_batch(min_num_nodes=10, name='ENZYMES')
-        args.max_prev_node = 30
+        args.max_prev_node = 25
     if args.graph_type == 'protein':
         graphs = Graph_load_batch(min_num_nodes=20, name='PROTEINS_full')
         args.max_prev_node = 80
     if args.graph_type == 'DD':
-        graphs = Graph_load_batch(min_num_nodes=50, max_num_nodes=1000, name='DD',node_attributes=False,graph_labels=True)
+        graphs = Graph_load_batch(min_num_nodes=100, max_num_nodes=500, name='DD',node_attributes=False,graph_labels=True)
         args.max_prev_node = 230
 
     args.max_num_node = max([graphs[i].number_of_nodes() for i in range(len(graphs))])
@@ -578,11 +582,11 @@ if __name__ == '__main__':
     ## Graph RNN VAE model
     lstm = LSTM_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_lstm,
                       hidden_size=args.hidden_size, num_layers=args.num_layers).cuda(CUDA)
-    # if using vae
     if args.note == 'GraphRNN_VAE':
         output = MLP_VAE_plain(h_size=args.hidden_size, embedding_size=args.embedding_size_output, y_size=args.max_prev_node).cuda(CUDA)
-        # if using vae
+    elif args.note == 'GraphRNN_VAE_conditional':
+        output = MLP_VAE_conditional_plain(h_size=args.hidden_size, embedding_size=args.embedding_size_output, y_size=args.max_prev_node).cuda(CUDA)
     elif args.note == 'GraphRNN_MLP':
         output = MLP_plain(h_size=args.hidden_size, embedding_size=args.embedding_size_output, y_size=args.max_prev_node).cuda(CUDA)
 
-    train_vae(args, dataset_loader, lstm, output)
+    train(args, dataset_loader, lstm, output)
