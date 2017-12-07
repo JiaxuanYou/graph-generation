@@ -43,8 +43,8 @@ class Args():
         # self.graph_type = 'tree'
         # self.graph_type = 'caveman'
         # self.graph_type = 'grid'
-        self.graph_type = 'barabasi'
-        # self.graph_type = 'enzymes'
+        # self.graph_type = 'barabasi'
+        self.graph_type = 'enzymes'
         # self.graph_type = 'protein'
         # self.graph_type = 'DD'
 
