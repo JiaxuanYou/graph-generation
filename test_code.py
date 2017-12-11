@@ -88,7 +88,7 @@ CUDA = 2
 
 
 ############# test the behaviour of using .long()
-y = torch.rand(5,1)
+# y = torch.rand(5,1)
 
 
 
@@ -112,14 +112,15 @@ y = torch.rand(5,1)
 #
 # print(a)
 
-# x = Variable(torch.randn(10, 20, 3)).cuda()
-# lens = np.arange(1,11)[::-1]
-#
-# # print('x_before', x)
-# x = pack_padded_sequence(x, lens, batch_first=True)
-# # print('x_pack', x)
-# print('x_unpack', pad_packed_sequence(x,batch_first=True)[0])
-#
+x = Variable(torch.randn(5, 20, 3)).cuda()
+# x = torch.randn(5, 20, 3).cuda()
+lens = np.arange(1,6)[::-1]
+
+print('x_before', x)
+x = pack_padded_sequence(x, lens, batch_first=True)
+print('x_pack', x.data)
+print('x_unpack', pad_packed_sequence(x,batch_first=True)[0])
+
 # lstm = nn.LSTM(3, 2, batch_first=True).cuda()
 # h0 = Variable(torch.zeros(1, 10, 2)).cuda()
 # c0 = Variable(torch.zeros(1, 10, 2)).cuda()
@@ -388,52 +389,110 @@ y = torch.rand(5,1)
 #     adj = adj[np.ix_(x_idx, x_idx)]
 #     print('adj after\n', adj)
 
-args = Args()
-
-if args.graph_type == 'ladder':
-    graphs = []
-    for i in range(100, 201):
-        graphs.append(nx.ladder_graph(i))
-    args.max_prev_node = 10
-if args.graph_type == 'tree':
-    graphs = []
-    for i in range(2, 5):
-        for j in range(3, 5):
-            graphs.append(nx.balanced_tree(i, j))
-    args.max_prev_node = 256
-if args.graph_type == 'caveman':
-    graphs = []
-    for i in range(5, 10):
-        for j in range(5, 25):
-            graphs.append(nx.connected_caveman_graph(i, j))
-    args.max_prev_node = 50
-if args.graph_type == 'grid':
-    graphs = []
-    for i in range(10, 20):
-        for j in range(10, 20):
-            graphs.append(nx.grid_2d_graph(i, j))
-    args.max_prev_node = 40
-if args.graph_type == 'barabasi':
-    graphs = []
-    for i in range(100, 200):
-        graphs.append(nx.barabasi_albert_graph(i, 2))
-    args.max_prev_node = 130
-    # real graphs
-if args.graph_type == 'enzymes':
-    graphs = Graph_load_batch(min_num_nodes=10, name='ENZYMES')
-    args.max_prev_node = 25
-if args.graph_type == 'protein':
-    graphs = Graph_load_batch(min_num_nodes=20, name='PROTEINS_full')
-    args.max_prev_node = 80
-if args.graph_type == 'DD':
-    graphs = Graph_load_batch(min_num_nodes=100, max_num_nodes=500, name='DD', node_attributes=False, graph_labels=True)
-    args.max_prev_node = 230
-
-print(args.graph_type)
-print('number of graph', len(graphs))
-print('aver number of node', sum([graphs[i].number_of_nodes() for i in range(len(graphs))])/len(graphs))
-print('aver number of edge', sum([graphs[i].number_of_edges() for i in range(len(graphs))])/len(graphs))
-print('max number of node', max([graphs[i].number_of_nodes() for i in range(len(graphs))]))
 
 
 
+# args = Args()
+#
+# if args.graph_type == 'ladder':
+#     graphs = []
+#     for i in range(100, 201):
+#         graphs.append(nx.ladder_graph(i))
+#     args.max_prev_node = 10
+# if args.graph_type == 'tree':
+#     graphs = []
+#     for i in range(2, 5):
+#         for j in range(3, 5):
+#             graphs.append(nx.balanced_tree(i, j))
+#     args.max_prev_node = 256
+# if args.graph_type == 'caveman':
+#     graphs = []
+#     for i in range(5, 10):
+#         for j in range(5, 25):
+#             graphs.append(nx.connected_caveman_graph(i, j))
+#     args.max_prev_node = 50
+# if args.graph_type == 'grid':
+#     graphs = []
+#     for i in range(10, 20):
+#         for j in range(10, 20):
+#             graphs.append(nx.grid_2d_graph(i, j))
+#     args.max_prev_node = 40
+# if args.graph_type == 'barabasi':
+#     graphs = []
+#     for i in range(100, 200):
+#         graphs.append(nx.barabasi_albert_graph(i, 2))
+#     args.max_prev_node = 130
+#     # real graphs
+# if args.graph_type == 'enzymes':
+#     graphs = Graph_load_batch(min_num_nodes=10, name='ENZYMES')
+#     args.max_prev_node = 25
+# if args.graph_type == 'protein':
+#     graphs = Graph_load_batch(min_num_nodes=20, name='PROTEINS_full')
+#     args.max_prev_node = 80
+# if args.graph_type == 'DD':
+#     graphs = Graph_load_batch(min_num_nodes=100, max_num_nodes=500, name='DD', node_attributes=False, graph_labels=True)
+#     args.max_prev_node = 230
+#
+# print(args.graph_type)
+# print('number of graph', len(graphs))
+# print('aver number of node', sum([graphs[i].number_of_nodes() for i in range(len(graphs))])/len(graphs))
+# print('aver number of edge', sum([graphs[i].number_of_edges() for i in range(len(graphs))])/len(graphs))
+# print('max number of node', max([graphs[i].number_of_nodes() for i in range(len(graphs))]))
+#
+
+
+
+# m = nn.Sigmoid()
+# weight = torch.arange(1,11).view(1,10,1).repeat(5,1,2)
+#
+# # weight[:,-5:,:] *= 5
+# print(weight)
+# loss = nn.BCELoss(size_average=True,weight=weight)
+# input = Variable(torch.ones(5,10,2)*0.8, requires_grad=True)
+# target = Variable(torch.ones(5,10,2)*0.2)
+# output = loss(m(input), target)
+# output.backward()
+# print(output)
+
+
+# a = torch.arange(1,11)
+# print(a)
+# print(a/10*20)
+
+# a = torch.LongTensor([[1,2,3],[4,5,6],[7,8,9]]).view(3,3,1)
+# b = torch.LongTensor([[1,2,3],[4,5,6],[7,8,9]]).view(3,3,1)*2
+# c = torch.LongTensor([[1,2,3],[4,5,6],[7,8,9]]).view(3,3,1)*3
+# all = torch.cat((a,b,c),dim=2)
+# all_vec = all.view(-1,3)
+# all_restore = all.view(3,3,3)
+# print(all)
+# print(all_vec)
+# print(all_restore)
+
+# a = torch.Tensor([1,2,3,4,5])
+# print(a)
+# print(a[0:])
+
+# a = range(10)
+# print(type(list(a)))
+# print(a)
+# print(list(a))
+
+
+# a = list(range(10))
+# print(a)
+# print(a[9:])
+
+# print(np.arange(0,10))
+# print(np.arange(9,-1,-1))
+#
+# y_len = list(range(10))
+# output_y_len = []
+# output_y_len_bin = np.bincount(np.array(y_len))
+# for i in range(len(output_y_len_bin)-1,0,-1):
+#     count_temp = np.sum(output_y_len_bin[i:])
+#     output_y_len.extend([i]*count_temp)
+# print('y_len',y_len)
+# print('output_y_len',output_y_len)
+# print('batch_size_real',len(output_y_len))
+# print('batch_size_pred',sum(y_len))
