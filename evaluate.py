@@ -15,6 +15,10 @@ def load_graph_list(fname):
         list = pickle.load(f)
     return list
 
+def find_nearest_idx(array,value):
+    idx = (np.abs(array-value)).argmin()
+    return idx
+
 def extract_result_id_and_epoch(name, prefix, after_word):
     '''
     Args:
@@ -110,7 +114,17 @@ def eval_list(real_graphs_filename, pred_graphs_filename, prefix, eval_every):
             print('dist among real: ', dist)
 
 
-def eval_list_fname(real_graphs_filename, pred_graphs_filename, eval_every, out_file_prefix=None):
+def compute_all_stats(real_g_list, target_g_list):
+    dist_degree = eval.stats.degree_stats(real_g_list, target_g_list)
+    dist_clustering = eval.stats.clustering_stats(real_g_list, target_g_list)
+    print('degree dist between real and perturbed: ', dist_degree)
+    print('clustering dist between real and perturbed: ', dist_clustering)
+    return dist_degree, dist_clustering
+
+def eval_list_fname(real_graph_filename, pred_graphs_filename, 
+        epoch_range=epoch_range, eval_every=eval_every, out_file_prefix=None):
+    ''' Evaluate list of predicted graphs compared to ground truth, stored in files.
+    '''
 
     if out_file_prefix is not None:
         out_files = {
@@ -131,18 +145,59 @@ def eval_list_fname(real_graphs_filename, pred_graphs_filename, eval_every, out_
                     'ours': 1,
                     'perturbed': 1}
     }
-    num_graphs = len(real_graphs_filename)
+    num_graphs = len(real_graph_filename)
     for i in range(num_graphs):
-        real_g_list = load_graph_list(real_graphs_filename[i])
-        pred_g_list = load_graph_list(pred_graphs_filename[i])
-        shuffle(real_g_list)
-        shuffle(pred_g_list)
-        perturbed_g_list = perturb(real_g_list, 0.05)
+        real_g_list = load_graph_list(real_graph_filename)
+        #pred_g_list = load_graph_list(pred_graphs_filename[i])
 
+        # contains all predicted G
+        pred_g_list_raw = load_graph_list(pred_graphs_filename[i])
+        if len(real_g_list)>200:
+            real_g_list = real_g_list[0:200]
+
+        shuffle(real_g_list)
+        shuffle(pred_g_list_raw)
+
+        # get length
+        real_g_len_list = np.array([len(real_g_list[i]) for i in range(len(real_g_list))])
+        pred_g_len_list_raw = np.array([len(pred_g_list_raw[i]) for i in range(len(pred_g_list_raw))])
+        # get perturb real
+        perturbed_g_list_001 = perturb(real_g_list, 0.01)
+        perturbed_g_list_005 = perturb(real_g_list, 0.05)
+        perturbed_g_list_010 = perturb(real_g_list, 0.10)
+
+
+        # select pred samples
+        # The number of nodes are sampled from the similar distribution as the training set
+        pred_g_list = []
+        pred_g_len_list = []
+        for value in real_g_len_list:
+            pred_idx = find_nearest_idx(pred_g_len_list_raw, value)
+            pred_g_list.append(pred_g_list_raw[pred_idx])
+            pred_g_len_list.append(pred_g_len_list_raw[pred_idx])
+            # delete
+            pred_g_len_list_raw = np.delete(pred_g_len_list_raw, pred_idx)
+            del pred_g_list_raw[pred_idx]
+            if len(pred_g_list) == len(real_g_list):
+                break
+        # pred_g_len_list = np.array(pred_g_len_list)
+        print('################## epoch {} ##################'.format(i*eval_every))
+
+        # info about graph size
+        print('real average nodes',
+              sum([real_g_list[i].number_of_nodes() for i in range(len(real_g_list))]) / len(real_g_list))
+        print('pred average nodes',
+              sum([pred_g_list[i].number_of_nodes() for i in range(len(pred_g_list))]) / len(pred_g_list))
+        print('num of real graphs', len(real_g_list))
+        print('num of pred graphs', len(pred_g_list))
+
+        # ========================================
+        # Evaluation
+        # ========================================
         mid = len(real_g_list) // 2
         dist_degree = eval.stats.degree_stats(real_g_list[:mid], real_g_list[mid:])
         dist_clustering = eval.stats.clustering_stats(real_g_list[:mid], real_g_list[mid:])
-        #print('degree dist among real: ', dist_degree)
+        print('degree dist among real: ', dist_degree)
         print('clustering dist among real: ', dist_clustering)
         results['deg']['real'] += dist_degree
         results['clustering']['real'] += dist_clustering
@@ -156,10 +211,7 @@ def eval_list_fname(real_graphs_filename, pred_graphs_filename, eval_every, out_
         results['deg']['ours'] = min(dist_degree, results['deg']['ours'])
         results['clustering']['ours'] = min(dist_clustering, results['clustering']['ours'])
 
-        dist_degree = eval.stats.degree_stats(real_g_list, perturbed_g_list)
-        dist_clustering = eval.stats.clustering_stats(real_g_list, perturbed_g_list)
-        #print('degree dist between real and perturbed: ', dist_degree)
-        print('clustering dist between real and perturbed: ', dist_clustering)
+        dist_degree, dist_clustering = compute_all_stats(real_g_list, perturbed_g_list_005)
         results['deg']['perturbed'] += dist_degree
         results['clustering']['perturbed'] += dist_clustering
 
@@ -179,7 +231,7 @@ def eval_list_fname(real_graphs_filename, pred_graphs_filename, eval_every, out_
         file.close()
 
 
-def eval_performance(datadir, prefix=None, args=None, eval_every=1000, out_file_prefix=None):
+def eval_performance(datadir, prefix=None, args=None, eval_every=200, out_file_prefix=None):
     if args is None:
         real_graphs_filename = [datadir + f for f in os.listdir(datadir)
                 if re.match(prefix + '.*real.*\.dat', f)]
@@ -203,15 +255,25 @@ def eval_performance(datadir, prefix=None, args=None, eval_every=1000, out_file_
                     str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' +
                     str(args.bptt_len) + '.dat' for epoch in range(0,50001,eval_every)]
         else:
-            real_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
-                     str(epoch) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
-                     args.bptt_len) + '_' + str(args.gumbel) + '.dat' for epoch in range(10000, 50001, eval_every)]
-            pred_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
-                     str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
-                     args.bptt_len) + '_' + str(args.gumbel) + '.dat' for epoch in range(10000, 50001, eval_every)]
+            real_graph_filename = datadir+args.graph_save_path + args.fname_real + '0.dat'
+            # for proposed model
+            end_epoch = 3001
+            epoch_range = range(eval_every, end_epoch, eval_every)
+            pred_graphs_filename = [datadir+args.graph_save_path + args.fname_pred+str(epoch)+'.dat'
+                    for epoch in epoch_range]
+            # for baseline model
+            #pred_graphs_filename = [datadir+args.fname_baseline+'.dat']
 
-        eval_list_fname(real_graphs_filename, pred_graphs_filename, eval_every=eval_every,
-                out_file_prefix=out_file_prefix)
+            #real_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
+            #         str(epoch) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
+            #         args.bptt_len) + '_' + str(args.gumbel) + '.dat' for epoch in range(10000, 50001, eval_every)]
+            #pred_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
+            #         str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
+            #         args.bptt_len) + '_' + str(args.gumbel) + '.dat' for epoch in range(10000, 50001, eval_every)]
+
+            eval_list_fname(real_graph_filename, pred_graphs_filename, epoch_range=epoch_range, 
+                            eval_every=eval_every,
+                            out_file_prefix=out_file_prefix)
 
 
 if __name__ == '__main__':
@@ -222,9 +284,9 @@ if __name__ == '__main__':
     parser.set_defaults(export=False)
     prog_args = parser.parse_args()
 
-    #datadir = "/dfs/scratch0/rexy/graph_gen_data/"
+    datadir = "/dfs/scratch0/rexy/graph_gen_data/"
     #datadir = "/lfs/local/0/jiaxuany/pycharm/graphs_share/"
-    datadir = "/lfs/local/0/jiaxuany/pycharm/"
+    #datadir = "/lfs/local/0/jiaxuany/pycharm/"
     #prefix = "GraphRNN_enzymes_50_"
     prefix = "GraphRNN_structure_enzymes_50_"
     args = Args()
