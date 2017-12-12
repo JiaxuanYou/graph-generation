@@ -36,7 +36,7 @@ class Args():
         self.note = 'GraphRNN_MLP'
         # self.note = 'GraphRNN_VAE'
         # self.note = 'GraphRNN_VAE_conditional'
-        # self.note = 'GraphRNN_RNN' # todo
+        self.note = 'GraphRNN_RNN'
 
         ### data config
         # self.graph_type = 'ladder'
@@ -55,7 +55,7 @@ class Args():
 
         ### network config
         ## GraphRNN
-        self.hidden_size = 128 # hidden size for main LSTM
+        self.hidden_size = 64 # hidden size for main LSTM
         self.embedding_size_lstm = 64 # the size for LSTM input
         self.embedding_size_output = 64 # the embedding size for output (VAE/MLP)
         self.batch_size = 64
@@ -71,16 +71,16 @@ class Args():
         self.batch_ratio = 16 # how many batches per epoch
         self.epochs = 3000 # now one epoch means 16 x batch_size
         self.epochs_gumbel_start = 100 # at what time start gumbel training
-        self.epochs_test_start = 200
-        self.epochs_test = 200
-        self.epochs_log = 200
-        self.epochs_save = 200
+        self.epochs_test_start = 100
+        self.epochs_test = 100
+        self.epochs_log = 100
+        self.epochs_save = 100
 
         self.lr = 0.003
         self.milestones = [300, 800]
         self.lr_rate = 0.3
 
-        self.sample_time = 1 # sample time in each time step, when validating
+        self.sample_time = 2 # sample time in each time step, when validating
 
         ### output config
         self.model_save_path = 'model_save/'
@@ -90,7 +90,7 @@ class Args():
 
 
         self.load = False # if load model, default lr is very low
-        self.load_epoch = 100
+        self.load_epoch = 2800
         self.save = True
 
 
@@ -115,13 +115,13 @@ class Args():
 
 
 
-def train_vae_epoch(epoch, args, lstm, output, data_loader,
-                    optimizer_lstm, optimizer_output,
-                    scheduler_lstm, scheduler_output, gumbel=0, temperature=1):
-    lstm.train()
+def train_vae_epoch(epoch, args, rnn, output, data_loader,
+                    optimizer_rnn, optimizer_output,
+                    scheduler_rnn, scheduler_output, gumbel=0, temperature=1):
+    rnn.train()
     output.train()
     for batch_idx, data in enumerate(data_loader):
-        lstm.zero_grad()
+        rnn.zero_grad()
         output.zero_grad()
         x_unsorted = data['x'].float()
         y_unsorted = data['y'].float()
@@ -130,7 +130,7 @@ def train_vae_epoch(epoch, args, lstm, output, data_loader,
         x_unsorted = x_unsorted[:, 0:y_len_max, :]
         y_unsorted = y_unsorted[:, 0:y_len_max, :]
         # initialize lstm hidden state according to batch size
-        lstm.hidden = lstm.init_hidden(batch_size=x_unsorted.size(0))
+        rnn.hidden = rnn.init_hidden(batch_size=x_unsorted.size(0))
 
         # sort input
         y_len,sort_index = torch.sort(y_len_unsorted,0,descending=True)
@@ -172,7 +172,7 @@ def train_vae_epoch(epoch, args, lstm, output, data_loader,
 
                 x_step = x[:, 0:1, :] # all ones
                 for i in range(x.size(1)):
-                    h = lstm(x_step)
+                    h = rnn(x_step)
                     y_pred_step,z_mu_step,z_lsgms_step = output(h)
                     y_pred[:, i:i + 1, :] = F.sigmoid(y_pred_step) # write down score
                     z_mu[:, i:i + 1, :] = z_mu_step  # write down score
@@ -187,7 +187,7 @@ def train_vae_epoch(epoch, args, lstm, output, data_loader,
                 z_lsgms = pack_padded_sequence(z_lsgms, y_len, batch_first=True)
                 z_lsgms = pad_packed_sequence(z_lsgms, batch_first=True)[0]
                 # use cross entropy loss
-                loss_bce = F.binary_cross_entropy(y_pred, y)
+                loss_bce = binary_cross_entropy_weight(y_pred, y)
                 loss_kl = -0.5 * torch.sum(1 + z_lsgms - z_mu.pow(2) - z_lsgms.exp())
                 loss_kl /= y.size(0) * y.size(1) * sum(y_len)  # normalize
                 loss = loss_bce + loss_kl
@@ -195,12 +195,12 @@ def train_vae_epoch(epoch, args, lstm, output, data_loader,
 
                 # update deterministic and lstm
                 optimizer_output.step()
-                optimizer_lstm.step()
+                optimizer_rnn.step()
                 scheduler_output.step()
-                scheduler_lstm.step()
+                scheduler_rnn.step()
             # if using ground truth to train
             else:
-                h = lstm(x, pack=True, input_len=y_len)
+                h = rnn(x, pack=True, input_len=y_len)
                 y_pred,z_mu,z_lsgms = output(h)
                 y_pred = F.sigmoid(y_pred)
                 # clean
@@ -211,16 +211,16 @@ def train_vae_epoch(epoch, args, lstm, output, data_loader,
                 z_lsgms = pack_padded_sequence(z_lsgms, y_len, batch_first=True)
                 z_lsgms = pad_packed_sequence(z_lsgms, batch_first=True)[0]
                 # use cross entropy loss
-                loss_bce = F.binary_cross_entropy(y_pred, y)
+                loss_bce = binary_cross_entropy_weight(y_pred, y)
                 loss_kl = -0.5 * torch.sum(1 + z_lsgms - z_mu.pow(2) - z_lsgms.exp())
                 loss_kl /= y.size(0)*y.size(1)*sum(y_len) # normalize
                 loss = loss_bce + loss_kl
                 loss.backward()
                 # update deterministic and lstm
                 optimizer_output.step()
-                optimizer_lstm.step()
+                optimizer_rnn.step()
                 scheduler_output.step()
-                scheduler_lstm.step()
+                scheduler_rnn.step()
 
 
             z_mu_mean = torch.mean(z_mu.data)
@@ -247,9 +247,9 @@ def train_vae_epoch(epoch, args, lstm, output, data_loader,
         log_value('z_sgm_max_'+args.fname, z_sgm_max, epoch*args.batch_ratio + batch_idx)
 
 
-def test_vae_epoch(epoch, args, lstm, output, test_batch_size=16, save_histogram=False):
-    lstm.hidden = lstm.init_hidden(test_batch_size)
-    lstm.eval()
+def test_vae_epoch(epoch, args, rnn, output, test_batch_size=16, save_histogram=False):
+    rnn.hidden = rnn.init_hidden(test_batch_size)
+    rnn.eval()
     output.eval()
 
     # generate graphs
@@ -258,19 +258,19 @@ def test_vae_epoch(epoch, args, lstm, output, test_batch_size=16, save_histogram
     y_pred_long = Variable(torch.zeros(test_batch_size, max_num_node, args.max_prev_node)).cuda(CUDA) # discrete prediction
     x_step = Variable(torch.ones(test_batch_size,1,args.max_prev_node)).cuda(CUDA)
     for i in range(max_num_node):
-        h = lstm(x_step)
+        h = rnn(x_step)
         y_pred_step, _, _ = output(h)
         y_pred[:, i:i + 1, :] = F.sigmoid(y_pred_step)
-        x_step = sample_sigmoid(y_pred_step, sample=True)
+        x_step = sample_sigmoid(y_pred_step, sample=True, sample_time=args.sample_time)
         y_pred_long[:, i:i + 1, :] = x_step
-        lstm.hidden = (Variable(lstm.hidden[0].data).cuda(CUDA), Variable(lstm.hidden[1].data).cuda(CUDA))
+        rnn.hidden = Variable(rnn.hidden.data).cuda(CUDA)
     y_pred_data = y_pred.data
     y_pred_long_data = y_pred_long.data.long()
 
     # save graphs as pickle
     G_pred_list = []
     for i in range(test_batch_size):
-        adj_pred = decode_adj(y_pred_long_data[i].cpu().numpy(), args.max_prev_node)
+        adj_pred = decode_adj(y_pred_long_data[i].cpu().numpy())
         G_pred = get_graph(adj_pred) # get a graph from zero-padded adj
         G_pred_list.append(G_pred)
 
@@ -292,13 +292,13 @@ def test_vae_epoch(epoch, args, lstm, output, test_batch_size=16, save_histogram
 
 
 
-def train_mlp_epoch(epoch, args, lstm, output, data_loader,
-                    optimizer_lstm, optimizer_output,
-                    scheduler_lstm, scheduler_output, gumbel=0, temperature=1):
-    lstm.train()
+def train_mlp_epoch(epoch, args, rnn, output, data_loader,
+                    optimizer_rnn, optimizer_output,
+                    scheduler_rnn, scheduler_output, gumbel=0, temperature=1):
+    rnn.train()
     output.train()
     for batch_idx, data in enumerate(data_loader):
-        lstm.zero_grad()
+        rnn.zero_grad()
         output.zero_grad()
         x_unsorted = data['x'].float()
         y_unsorted = data['y'].float()
@@ -307,7 +307,7 @@ def train_mlp_epoch(epoch, args, lstm, output, data_loader,
         x_unsorted = x_unsorted[:, 0:y_len_max, :]
         y_unsorted = y_unsorted[:, 0:y_len_max, :]
         # initialize lstm hidden state according to batch size
-        lstm.hidden = lstm.init_hidden(batch_size=x_unsorted.size(0))
+        rnn.hidden = rnn.init_hidden(batch_size=x_unsorted.size(0))
 
         # sort input
         y_len,sort_index = torch.sort(y_len_unsorted,0,descending=True)
@@ -346,7 +346,7 @@ def train_mlp_epoch(epoch, args, lstm, output, data_loader,
                 y_pred = Variable(torch.zeros(y.size(0), y.size(1), y.size(2))).cuda(CUDA) # normalized score
                 x_step = x[:, 0:1, :] # all ones
                 for i in range(x.size(1)):
-                    h = lstm(x_step)
+                    h = rnn(x_step)
                     y_pred_step = output(h)
                     y_pred[:, i:i + 1, :] = F.sigmoid(y_pred_step) # write down score
                     x_step = gumbel_sigmoid(y_pred_step, temperature=temperature) # do sampling
@@ -355,30 +355,30 @@ def train_mlp_epoch(epoch, args, lstm, output, data_loader,
                 y_pred = pack_padded_sequence(y_pred, y_len, batch_first=True)
                 y_pred = pad_packed_sequence(y_pred, batch_first=True)[0]
                 # use cross entropy loss
-                loss = F.binary_cross_entropy(y_pred, y)
+                loss = binary_cross_entropy_weight(y_pred, y)
                 loss.backward()
 
                 # update deterministic and lstm
                 optimizer_output.step()
-                optimizer_lstm.step()
+                optimizer_rnn.step()
                 scheduler_output.step()
-                scheduler_lstm.step()
+                scheduler_rnn.step()
             # if using ground truth to train
             else:
-                h = lstm(x, pack=True, input_len=y_len)
+                h = rnn(x, pack=True, input_len=y_len)
                 y_pred = output(h)
                 y_pred = F.sigmoid(y_pred)
                 # clean
                 y_pred = pack_padded_sequence(y_pred, y_len, batch_first=True)
                 y_pred = pad_packed_sequence(y_pred, batch_first=True)[0]
                 # use cross entropy loss
-                loss = F.binary_cross_entropy(y_pred, y)
+                loss = binary_cross_entropy_weight(y_pred, y)
                 loss.backward()
                 # update deterministic and lstm
                 optimizer_output.step()
-                optimizer_lstm.step()
+                optimizer_rnn.step()
                 scheduler_output.step()
-                scheduler_lstm.step()
+                scheduler_rnn.step()
 
 
         if epoch % args.epochs_log==0 and batch_idx==0: # only output first batch's statistics
@@ -391,9 +391,9 @@ def train_mlp_epoch(epoch, args, lstm, output, data_loader,
 
 
 
-def test_mlp_epoch(epoch, args, lstm, output, test_batch_size=16, save_histogram=False):
-    lstm.hidden = lstm.init_hidden(test_batch_size)
-    lstm.eval()
+def test_mlp_epoch(epoch, args, rnn, output, test_batch_size=16, save_histogram=False):
+    rnn.hidden = rnn.init_hidden(test_batch_size)
+    rnn.eval()
     output.eval()
 
     # generate graphs
@@ -402,19 +402,19 @@ def test_mlp_epoch(epoch, args, lstm, output, test_batch_size=16, save_histogram
     y_pred_long = Variable(torch.zeros(test_batch_size, max_num_node, args.max_prev_node)).cuda(CUDA) # discrete prediction
     x_step = Variable(torch.ones(test_batch_size,1,args.max_prev_node)).cuda(CUDA)
     for i in range(max_num_node):
-        h = lstm(x_step)
+        h = rnn(x_step)
         y_pred_step = output(h)
         y_pred[:, i:i + 1, :] = F.sigmoid(y_pred_step)
-        x_step = sample_sigmoid(y_pred_step, sample=True)
+        x_step = sample_sigmoid(y_pred_step, sample=True, sample_time=args.sample_time)
         y_pred_long[:, i:i + 1, :] = x_step
-        lstm.hidden = (Variable(lstm.hidden[0].data).cuda(CUDA), Variable(lstm.hidden[1].data).cuda(CUDA))
+        rnn.hidden = Variable(rnn.hidden.data).cuda(CUDA)
     y_pred_data = y_pred.data
     y_pred_long_data = y_pred_long.data.long()
 
     # save graphs as pickle
     G_pred_list = []
     for i in range(test_batch_size):
-        adj_pred = decode_adj(y_pred_long_data[i].cpu().numpy(), args.max_prev_node)
+        adj_pred = decode_adj(y_pred_long_data[i].cpu().numpy())
         G_pred = get_graph(adj_pred) # get a graph from zero-padded adj
         G_pred_list.append(G_pred)
 
@@ -434,14 +434,192 @@ def test_mlp_epoch(epoch, args, lstm, output, test_batch_size=16, save_histogram
     return G_pred_list
 
 
+def train_rnn_epoch(epoch, args, rnn, output, data_loader,
+                    optimizer_rnn, optimizer_output,
+                    scheduler_rnn, scheduler_output, gumbel=0, temperature=1):
+    rnn.train()
+    output.train()
+    for batch_idx, data in enumerate(data_loader):
+        rnn.zero_grad()
+        output.zero_grad()
+        x_unsorted = data['x'].float()
+        y_unsorted = data['y'].float()
+        y_len_unsorted = data['len']
+        y_len_max = max(y_len_unsorted)
+        x_unsorted = x_unsorted[:, 0:y_len_max, :]
+        y_unsorted = y_unsorted[:, 0:y_len_max, :]
+        # initialize lstm hidden state according to batch size
+        rnn.hidden = rnn.init_hidden(batch_size=x_unsorted.size(0))
+        # output.hidden = output.init_hidden(batch_size=x_unsorted.size(0)*x_unsorted.size(1))
+
+        # sort input
+        y_len,sort_index = torch.sort(y_len_unsorted,0,descending=True)
+        y_len = y_len.numpy().tolist()
+        x = torch.index_select(x_unsorted,0,sort_index)
+        y = torch.index_select(y_unsorted,0,sort_index)
+
+        # input, output for output rnn module
+        # a smart use of pytorch builtin function: pack variable--b1_l1,b2_l1,...,b1_l2,b2_l2,...
+        y_reshape = pack_padded_sequence(y,y_len,batch_first=True).data
+        # reverse y_reshape, so that their lengths are sorted, add dimension
+        idx = [i for i in range(y_reshape.size(0)-1, -1, -1)]
+        idx = torch.LongTensor(idx)
+        y_reshape = y_reshape.index_select(0, idx)
+        y_reshape = y_reshape.view(y_reshape.size(0),y_reshape.size(1),1)
+
+        output_x = torch.cat((torch.ones(y_reshape.size(0),1,1),y_reshape[:,0:-1,0:1]),dim=1)
+        output_y = y_reshape
+        # batch size for output module: sum(y_len)
+        output_y_len = []
+        output_y_len_bin = np.bincount(np.array(y_len))
+        for i in range(len(output_y_len_bin)-1,0,-1):
+            count_temp = np.sum(output_y_len_bin[i:]) # count how many y_len is above i
+            output_y_len.extend([min(i,y.size(2))]*count_temp) # put them in output_y_len; max value should not exceed y.size(2)
+        # pack into variable
+        x = Variable(x).cuda(CUDA)
+        y = Variable(y).cuda(CUDA)
+        output_x = Variable(output_x).cuda(CUDA)
+        output_y = Variable(output_y).cuda(CUDA)
+        # print(output_y_len)
+        # print('len',len(output_y_len))
+        # print('y',y.size())
+        # print('output_y',output_y.size())
+
+        # if do truncate backprop
+        # todo: finish a memory efficient bptt
+        if args.bptt:
+            pass
+            # start_id = 0
+            # while start_id < x.size(1):
+            #     print('start id', start_id)
+            #     end_id = min(start_id + args.bptt_len, x.size(1))
+            #     y_pred_temp = generator(x[:, start_id:end_id, :])
+            #     generator.hidden = detach_hidden_lstm(generator.hidden)
+            #     # generator.hidden[0].detach()
+            #     # generator.hidden[1].detach()
+            #
+            #     y_pred[:, start_id:end_id, :] = y_pred_temp
+            #     start_id += args.bptt_len
+            # y_pred_clean = Variable(torch.ones(x.size(0), x.size(1), x.size(2)) * -100).cuda(CUDA)
+            # # before computing loss, cleaning y_pred so that only valid entries are supervised
+            # y_pred = pack_padded_sequence(y_pred, y_len, batch_first=True)
+            # y_pred = pad_packed_sequence(y_pred, batch_first=True)[0]
+            # y_pred_clean[:, 0:y_pred.size(1), :] = y_pred
+            # y_pred = y_pred_clean
+
+        # if backprop through the start
+        else:
+            # if using model's own prediction each time step to train
+            if gumbel>np.random.rand(): # prob of using gumbel
+                pass
+                # y_pred = Variable(torch.zeros(y.size(0), y.size(1), y.size(2))).cuda(CUDA) # normalized score
+                # x_step = x[:, 0:1, :] # all ones
+                # for i in range(x.size(1)):
+                #     h = rnn(x_step)
+                #     y_pred_step = output(h)
+                #     y_pred[:, i:i + 1, :] = F.sigmoid(y_pred_step) # write down score
+                #     x_step = gumbel_sigmoid(y_pred_step, temperature=temperature) # do sampling
+                #
+                # # clean
+                # y_pred = pack_padded_sequence(y_pred, y_len, batch_first=True)
+                # y_pred = pad_packed_sequence(y_pred, batch_first=True)[0]
+                # # use cross entropy loss
+                # loss = binary_cross_entropy_weight(y_pred, y, has_weight=True)
+                # loss.backward()
+                #
+                # # update deterministic and lstm
+                # optimizer_output.step()
+                # optimizer_rnn.step()
+                # scheduler_output.step()
+                # scheduler_rnn.step()
+            # if using ground truth to train
+            else:
+                h = rnn(x, pack=True, input_len=y_len)
+                h = pack_padded_sequence(h,y_len,batch_first=True).data # get packed hidden vector
+                # reverse h
+                idx = [i for i in range(h.size(0) - 1, -1, -1)]
+                idx = Variable(torch.LongTensor(idx)).cuda(CUDA)
+                h = h.index_select(0, idx)
+                output.hidden = h.view(1,h.size(0),h.size(1)) # num_layers, batch_size, hidden_size
+                y_pred = output(output_x, pack=True, input_len=output_y_len)
+                y_pred = F.sigmoid(y_pred)
+                # clean
+                y_pred = pack_padded_sequence(y_pred, output_y_len, batch_first=True)
+                y_pred = pad_packed_sequence(y_pred, batch_first=True)[0]
+                output_y = pack_padded_sequence(output_y,output_y_len,batch_first=True)
+                output_y = pad_packed_sequence(output_y,batch_first=True)[0]
+                # use cross entropy loss
+                loss = binary_cross_entropy_weight(y_pred, output_y)
+                loss.backward()
+                # update deterministic and lstm
+                optimizer_output.step()
+                optimizer_rnn.step()
+                scheduler_output.step()
+                scheduler_rnn.step()
+
+
+        if epoch % args.epochs_log==0 and batch_idx==0: # only output first batch's statistics
+            print('Epoch: {}/{}, train loss: {:.6f}, graph type: {}, num_layer: {}, bptt: {}, bptt_len:{}, gumbel:{}, temperature:{}'.format(
+                epoch, args.epochs,loss.data[0], args.graph_type, args.num_layers, args.bptt, args.bptt_len, args.gumbel, temperature))
+
+        # logging
+        log_value('loss_'+args.fname, loss.data[0], epoch*args.batch_ratio+batch_idx)
+
+
+
+
+def test_rnn_epoch(epoch, args, rnn, output, test_batch_size=16, save_histogram=False):
+    rnn.hidden = rnn.init_hidden(test_batch_size)
+    rnn.eval()
+    output.eval()
+
+    # generate graphs
+    max_num_node = int(args.max_num_node)
+    y_pred_long = Variable(torch.zeros(test_batch_size, max_num_node, args.max_prev_node)).cuda(CUDA) # discrete prediction
+    x_step = Variable(torch.ones(test_batch_size,1,args.max_prev_node)).cuda(CUDA)
+    for i in range(max_num_node):
+        h = rnn(x_step)
+        output.hidden = h.permute(1,0,2)
+        x_step = Variable(torch.zeros(test_batch_size,1,args.max_prev_node)).cuda(CUDA)
+        output_x_step = Variable(torch.ones(test_batch_size,1,1)).cuda(CUDA)
+        for j in range(min(args.max_prev_node,i+1)):
+            output_y_pred_step = output(output_x_step)
+            output_x_step = sample_sigmoid(output_y_pred_step, sample=True, sample_time=1)
+            x_step[:,:,j:j+1] = output_x_step
+            output.hidden = Variable(output.hidden.data).cuda(CUDA)
+        y_pred_long[:, i:i + 1, :] = x_step
+        rnn.hidden = Variable(rnn.hidden.data).cuda(CUDA)
+    y_pred_long_data = y_pred_long.data.long()
+
+    # save graphs as pickle
+    G_pred_list = []
+    for i in range(test_batch_size):
+        adj_pred = decode_adj(y_pred_long_data[i].cpu().numpy())
+        G_pred = get_graph(adj_pred) # get a graph from zero-padded adj
+        G_pred_list.append(G_pred)
+
+
+    # save list of objects
+    fname_pred = args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
+                 str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
+        args.bptt_len) + '_' + str(args.gumbel) + '.dat'
+    save_graph_list(G_pred_list, fname_pred)
+
+
+    # save prediction histograms, plot histogram over each time step
+    # if save_histogram:
+    #     save_prediction_histogram(y_pred_data.cpu().numpy(),
+    #                           fname_pred=args.figure_prediction_save_path+args.fname_pred+str(epoch)+'.jpg',
+    #                           max_num_node=max_num_node)
+    return G_pred_list
 
 
 ########### train function for LSTM + VAE
-def train(args, dataset_train, lstm, output):
+def train(args, dataset_train, rnn, output):
     # check if load existing model
     if args.load:
         fname = args.model_save_path + args.fname + 'lstm_' + str(args.load_epoch) + '.dat'
-        lstm.load_state_dict(torch.load(fname))
+        rnn.load_state_dict(torch.load(fname))
         fname = args.model_save_path + args.fname + 'output_' + str(args.load_epoch) + '.dat'
         output.load_state_dict(torch.load(fname))
 
@@ -452,11 +630,11 @@ def train(args, dataset_train, lstm, output):
         epoch = 0
 
     # initialize optimizer
-    optimizer_lstm = optim.Adam(list(lstm.parameters()), lr=args.lr)
-    optimizer_vae = optim.Adam(list(output.parameters()), lr=args.lr)
+    optimizer_rnn = optim.Adam(list(rnn.parameters()), lr=args.lr)
+    optimizer_output = optim.Adam(list(output.parameters()), lr=args.lr)
 
-    scheduler_lstm = MultiStepLR(optimizer_lstm, milestones=args.milestones, gamma=args.lr_rate)
-    scheduler_vae = MultiStepLR(optimizer_vae, milestones=args.milestones, gamma=args.lr_rate)
+    scheduler_rnn = MultiStepLR(optimizer_rnn, milestones=args.milestones, gamma=args.lr_rate)
+    scheduler_output = MultiStepLR(optimizer_output, milestones=args.milestones, gamma=args.lr_rate)
 
     # start main loop
     while epoch<=args.epochs:
@@ -474,32 +652,39 @@ def train(args, dataset_train, lstm, output):
 
         # train
         if 'GraphRNN_VAE' in args.note:
-            train_vae_epoch(epoch, args, lstm, output, dataset_train,
-                            optimizer_lstm, optimizer_vae,
-                            scheduler_lstm, scheduler_vae, gumbel=gumbel, temperature=temperature)
-        elif args.note == 'GraphRNN_MLP':
-            train_mlp_epoch(epoch, args, lstm, output, dataset_train,
-                            optimizer_lstm, optimizer_vae,
-                            scheduler_lstm, scheduler_vae, gumbel=gumbel, temperature=temperature)
+            train_vae_epoch(epoch, args, rnn, output, dataset_train,
+                            optimizer_rnn, optimizer_output,
+                            scheduler_rnn, scheduler_output, gumbel=gumbel, temperature=temperature)
+        elif 'GraphRNN_MLP' in args.note:
+            train_mlp_epoch(epoch, args, rnn, output, dataset_train,
+                            optimizer_rnn, optimizer_output,
+                            scheduler_rnn, scheduler_output, gumbel=gumbel, temperature=temperature)
+        elif 'GraphRNN_RNN' in args.note:
+            train_rnn_epoch(epoch, args, rnn, output, dataset_train,
+                            optimizer_rnn, optimizer_output,
+                            scheduler_rnn, scheduler_output, gumbel=gumbel, temperature=temperature)
 
         # test
         if epoch % args.epochs_test == 0 and epoch>=args.epochs_test_start:
             G_pred = []
             while len(G_pred)<args.test_total_size:
                 if 'GraphRNN_VAE' in args.note:
-                    G_pred_step = test_vae_epoch(epoch, args, lstm, output, test_batch_size=args.test_batch_size)
-                elif args.note == 'GraphRNN_MLP':
-                    G_pred_step = test_mlp_epoch(epoch, args, lstm, output, test_batch_size=args.test_batch_size)
+                    G_pred_step = test_vae_epoch(epoch, args, rnn, output, test_batch_size=args.test_batch_size)
+                elif 'GraphRNN_MLP' in args.note:
+                    G_pred_step = test_mlp_epoch(epoch, args, rnn, output, test_batch_size=args.test_batch_size)
+                elif 'GraphRNN_RNN' in args.note:
+                    G_pred_step = test_rnn_epoch(epoch, args, rnn, output, test_batch_size=args.test_batch_size)
                 G_pred.extend(G_pred_step)
             # save graphs
             fname = args.graph_save_path + args.fname_pred + str(epoch) + '.dat'
             save_graph_list(G_pred, fname)
+            print('test done, graphs saved')
 
         # save model checkpoint
         if args.save:
             if epoch % args.epochs_save == 0:
                 fname = args.model_save_path + args.fname + 'lstm_' + str(epoch) + '.dat'
-                torch.save(lstm.state_dict(), fname)
+                torch.save(rnn.state_dict(), fname)
                 fname = args.model_save_path + args.fname + 'output_' + str(epoch) + '.dat'
                 torch.save(output.state_dict(), fname)
         epoch += 1
@@ -570,7 +755,7 @@ if __name__ == '__main__':
         args.max_prev_node = 230
 
     args.max_num_node = max([graphs[i].number_of_nodes() for i in range(len(graphs))])
-
+    # args.max_num_node = 2000
     # show graphs statistics
     print('total graph num: {}'.format(len(graphs)))
     print('max number node: {}'.format(args.max_num_node))
@@ -581,7 +766,7 @@ if __name__ == '__main__':
 
 
     ### dataset initialization
-    dataset = Graph_sequence_sampler_truncate_pytorch(graphs, max_prev_node=args.max_prev_node)
+    dataset = Graph_sequence_sampler_pytorch(graphs, max_prev_node=args.max_prev_node)
     sample_strategy = torch.utils.data.sampler.WeightedRandomSampler([1.0 / len(dataset) for i in range(len(dataset))],
                                                                      num_samples=args.batch_size*args.batch_ratio, replacement=True)
     dataset_loader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers,
@@ -590,13 +775,29 @@ if __name__ == '__main__':
 
     ### model initialization
     ## Graph RNN VAE model
-    lstm = LSTM_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_lstm,
-                      hidden_size=args.hidden_size, num_layers=args.num_layers).cuda(CUDA)
+    # lstm = LSTM_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_lstm,
+    #                   hidden_size=args.hidden_size, num_layers=args.num_layers).cuda(CUDA)
+
     if args.note == 'GraphRNN_VAE':
+        rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_lstm,
+                        hidden_size=args.hidden_size, num_layers=args.num_layers, has_input=True,
+                        has_output=False).cuda(CUDA)
         output = MLP_VAE_plain(h_size=args.hidden_size, embedding_size=args.embedding_size_output, y_size=args.max_prev_node).cuda(CUDA)
     elif args.note == 'GraphRNN_VAE_conditional':
+        rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_lstm,
+                        hidden_size=args.hidden_size, num_layers=args.num_layers, has_input=True,
+                        has_output=False).cuda(CUDA)
         output = MLP_VAE_conditional_plain(h_size=args.hidden_size, embedding_size=args.embedding_size_output, y_size=args.max_prev_node).cuda(CUDA)
     elif args.note == 'GraphRNN_MLP':
+        rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_lstm,
+                        hidden_size=args.hidden_size, num_layers=args.num_layers, has_input=True,
+                        has_output=False).cuda(CUDA)
         output = MLP_plain(h_size=args.hidden_size, embedding_size=args.embedding_size_output, y_size=args.max_prev_node).cuda(CUDA)
+    elif args.note == 'GraphRNN_RNN':
+        rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_lstm,
+                        hidden_size=args.hidden_size, num_layers=args.num_layers, has_input=True,
+                        has_output=True,output_size=16).cuda(CUDA)
+        output = GRU_plain(input_size=1,embedding_size=4,hidden_size=16,num_layers=1,has_input=False,has_output=True,output_size=1).cuda(CUDA)
 
-    train(args, dataset_loader, lstm, output)
+
+    train(args, dataset_loader, rnn, output)

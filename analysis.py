@@ -4,7 +4,7 @@ from main import *
 args = Args()
 print(args.graph_type, args.note)
 # epoch = 16000
-epoch = 2800
+epoch = 600
 
 
 def find_nearest_idx(array,value):
