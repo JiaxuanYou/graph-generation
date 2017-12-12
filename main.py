@@ -33,20 +33,20 @@ class Args():
         self.clean_tensorboard = False
 
         ### model type
-        # self.note = 'GraphRNN_MLP'
+        self.note = 'GraphRNN_MLP'
         # self.note = 'GraphRNN_VAE'
-        self.note = 'GraphRNN_VAE_conditional'
+        # self.note = 'GraphRNN_VAE_conditional'
         # self.note = 'GraphRNN_RNN' # todo
 
         ### data config
         # self.graph_type = 'ladder'
         # self.graph_type = 'tree'
         # self.graph_type = 'caveman'
-        # self.graph_type = 'grid'
+        self.graph_type = 'grid'
         # self.graph_type = 'barabasi'
         # self.graph_type = 'enzymes'
         # self.graph_type = 'protein'
-        self.graph_type = 'DD'
+        # self.graph_type = 'DD'
 
         # update when initializing dataset
         self.max_num_node = None # max number of nodes in a graph

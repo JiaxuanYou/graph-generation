@@ -26,6 +26,10 @@ def gaussian_emd(x, y, sigma=1.0, distance_scaling=1.0):
     emd = pyemd.emd(x, y, distance_mat)
     return np.exp(-emd * emd / (2 * sigma * sigma))
 
+def gaussian(x, y, sigma=1.0):
+    dist = np.linalg.norm(x - y)
+    return np.exp(-dist * dist / (2 * sigma * sigma))
+
 def kernel_parallel_unpacked(x, samples2, kernel):
     d = 0
     for s2 in samples2:
@@ -52,12 +56,13 @@ def disc(samples1, samples2, kernel, is_parallel=True, *args, **kwargs):
     return d
 
 
-def compute_mmd(samples1, samples2, kernel, *args, **kwargs):
+def compute_mmd(samples1, samples2, kernel, is_hist=True, *args, **kwargs):
     ''' MMD between two samples
     '''
     # normalize histograms into pmf
-    samples1 = [s1 / np.sum(s1) for s1 in samples1]
-    samples2 = [s2 / np.sum(s2) for s2 in samples2]
+    if is_hist:
+        samples1 = [s1 / np.sum(s1) for s1 in samples1]
+        samples2 = [s2 / np.sum(s2) for s2 in samples2]
     #print('===============================')
     #print(disc(samples1, samples1, kernel, *args, **kwargs))
     #print('--------------------------')

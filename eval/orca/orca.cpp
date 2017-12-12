@@ -1400,7 +1400,8 @@ string writeEdgeResultsString(int g) {
     return ss.str();
 }
 
-int motif_counts(const char* orbit_type, int graphlet_size, const char* input_filename, const char* output_filename) {
+int motif_counts(const char* orbit_type, int graphlet_size, 
+        const char* input_filename, const char* output_filename, string &out_str) {
     fstream fin; // input and output files
     // open input, output files
     if (strcmp(orbit_type, "node")!=0 && strcmp(orbit_type, "edge")!=0) {
@@ -1486,7 +1487,7 @@ int motif_counts(const char* orbit_type, int graphlet_size, const char* input_fi
         if (strcmp(output_filename, "std") == 0) {
             cout << "orbit counts: \n" << writeResultsString(graphlet_size) << endl;
         } else {
-            return writeResults(graphlet_size, output_filename);
+            out_str = writeResults(graphlet_size, output_filename);
         }
     } else {
         printf("Counting EDGE orbits of graphlets on %d nodes.\n\n",graphlet_size);
@@ -1495,11 +1496,11 @@ int motif_counts(const char* orbit_type, int graphlet_size, const char* input_fi
         if (strcmp(output_filename, "std") == 0) {
             cout << "orbit counts: \n" << writeEdgeResultsString(graphlet_size) << endl;
         } else {
-            return writeEdgeResults(graphlet_size, output_filename);
+            out_str = writeEdgeResults(graphlet_size, output_filename);
         }
     }
 
-    return 0;
+    return 1;
 }
 
 int init(int argc, char *argv[]) {
@@ -1510,9 +1511,10 @@ int init(int argc, char *argv[]) {
     }
     int graphlet_size;
     sscanf(argv[2],"%d", &graphlet_size);
-    motif_counts(argv[1], graphlet_size, argv[3], argv[4]);
+    string out;
+    motif_counts(argv[1], graphlet_size, argv[3], argv[4], out);
 
-
+    return 1;
 }
 
 
@@ -1521,7 +1523,7 @@ int main(int argc, char *argv[]) {
 
     if (!init(argc, argv)) {
         cerr << "Stopping!" << endl;
-        return 0;
+        return 1;
     }
     
 
