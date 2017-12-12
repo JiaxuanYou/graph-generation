@@ -19,7 +19,7 @@ import numpy as np
 import time
 
 USE_CUDA = torch.cuda.is_available()
-CUDA = 2
+CUDA = 1
 
 
 def binary_cross_entropy_weight(y_pred, y,has_weight=False, weight_length=1, weight_max=10):
@@ -140,22 +140,30 @@ def sample_sigmoid(y, sample, thresh=0.5, sample_time=3):
 
 # plain LSTM model
 class LSTM_plain(nn.Module):
-    def __init__(self, input_size, embedding_size, hidden_size, num_layers, has_linear_input=True):
+    def __init__(self, input_size, embedding_size, hidden_size, num_layers, has_input=True, has_output=False, output_size=None):
         super(LSTM_plain, self).__init__()
         self.num_layers = num_layers
         self.hidden_size = hidden_size
-        self.has_linear_input = has_linear_input
-        self.linear_input = nn.Linear(input_size, embedding_size)
-        # if do a linear then input to LSTM
-        if has_linear_input:
-            self.lstm = nn.LSTM(input_size=embedding_size, hidden_size=hidden_size, num_layers=num_layers, batch_first=True)
+        self.has_input = has_input
+        self.has_output = has_output
+
+        if has_input:
+            self.input = nn.Linear(input_size, embedding_size)
+            self.rnn = nn.LSTM(input_size=embedding_size, hidden_size=hidden_size, num_layers=num_layers, batch_first=True)
         else:
-            self.lstm = nn.LSTM(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, batch_first=True)
+            self.rnn = nn.LSTM(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, batch_first=True)
+        if has_output:
+            self.output = nn.Sequential(
+                nn.Linear(hidden_size, embedding_size),
+                nn.ReLU(),
+                nn.Linear(embedding_size, output_size)
+            )
+
         self.relu = nn.ReLU()
         # initialize
         self.hidden = None # need initialize before forward run
 
-        for name, param in self.lstm.named_parameters():
+        for name, param in self.rnn.named_parameters():
             if 'bias' in name:
                 nn.init.constant(param, 0.25)
             elif 'weight' in name:
@@ -169,33 +177,48 @@ class LSTM_plain(nn.Module):
                 Variable(torch.zeros(self.num_layers, batch_size, self.hidden_size)).cuda(CUDA))
 
     def forward(self, input_raw, pack=False, input_len=None):
-        if self.has_linear_input:
-            input = self.linear_input(input_raw)
+        if self.has_input:
+            input = self.input(input_raw)
             input = self.relu(input)
         else:
             input = input_raw
         if pack:
             input = pack_padded_sequence(input, input_len, batch_first=True)
-        output_raw, self.hidden = self.lstm(input, self.hidden)
+        output_raw, self.hidden = self.rnn(input, self.hidden)
         if pack:
             output_raw = pad_packed_sequence(output_raw, batch_first=True)[0]
+        if self.has_output:
+            output_raw = self.output(output_raw)
         # return hidden state at each time step
         return output_raw
 
 # plain GRU model
 class GRU_plain(nn.Module):
-    def __init__(self, input_size, embedding_size, hidden_size, num_layers):
+    def __init__(self, input_size, embedding_size, hidden_size, num_layers, has_input=True, has_output=False, output_size=None):
         super(GRU_plain, self).__init__()
         self.num_layers = num_layers
         self.hidden_size = hidden_size
-        self.linear_input = nn.Linear(input_size, embedding_size)
-        self.gru = nn.GRU(input_size=embedding_size, hidden_size=hidden_size, num_layers=num_layers,
-                            batch_first=True)
+        self.has_input = has_input
+        self.has_output = has_output
+
+        if has_input:
+            self.input = nn.Linear(input_size, embedding_size)
+            self.rnn = nn.GRU(input_size=embedding_size, hidden_size=hidden_size, num_layers=num_layers,
+                              batch_first=True)
+        else:
+            self.rnn = nn.GRU(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, batch_first=True)
+        if has_output:
+            self.output = nn.Sequential(
+                nn.Linear(hidden_size, embedding_size),
+                nn.ReLU(),
+                nn.Linear(embedding_size, output_size)
+            )
+
         self.relu = nn.ReLU()
         # initialize
         self.hidden = None  # need initialize before forward run
 
-        for name, param in self.gru.named_parameters():
+        for name, param in self.rnn.named_parameters():
             if 'bias' in name:
                 nn.init.constant(param, 0.25)
             elif 'weight' in name:
@@ -208,13 +231,18 @@ class GRU_plain(nn.Module):
         return Variable(torch.zeros(self.num_layers, batch_size, self.hidden_size)).cuda(CUDA)
 
     def forward(self, input_raw, pack=False, input_len=None):
-        input = self.linear_input(input_raw)
-        input = self.relu(input)
+        if self.has_input:
+            input = self.input(input_raw)
+            input = self.relu(input)
+        else:
+            input = input_raw
         if pack:
             input = pack_padded_sequence(input, input_len, batch_first=True)
-        output_raw, self.hidden = self.gru(input, self.hidden)
+        output_raw, self.hidden = self.rnn(input, self.hidden)
         if pack:
             output_raw = pad_packed_sequence(output_raw, batch_first=True)[0]
+        if self.has_output:
+            output_raw = self.output(output_raw)
         # return hidden state at each time step
         return output_raw
 

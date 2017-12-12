@@ -163,13 +163,16 @@ def bfs_seq(G, start_id):
 
 
 
-def encode_adj(adj, max_prev_node=10):
+def encode_adj(adj, max_prev_node=10, is_full = False):
     '''
 
     :param adj: n*n, rows means time step, while columns are input dimension
     :param max_degree: we want to keep row number, but truncate column numbers
     :return:
     '''
+    if is_full:
+        max_prev_node = adj.shape[0]-1
+
     # pick up lower tri
     adj = np.tril(adj, k=-1)
     n = adj.shape[0]
@@ -183,22 +186,24 @@ def encode_adj(adj, max_prev_node=10):
         input_end = i + 1
         output_start = max_prev_node + input_start - input_end
         output_end = max_prev_node
-        adj_output[i, output_start:output_end] = adj[i, input_start:input_end][::-1] # reverse order
+        adj_output[i, output_start:output_end] = adj[i, input_start:input_end]
+        adj_output[i,:] = adj_output[i,:][::-1] # reverse order
 
     return adj_output
 
-def decode_adj(adj_output, max_prev_node=10):
+def decode_adj(adj_output):
     '''
         recover to adj from adj_output
         note: here adj_output have shape (n-1)*m
     '''
+    max_prev_node = adj_output.shape[1]
     adj = np.zeros((adj_output.shape[0], adj_output.shape[0]))
     for i in range(adj_output.shape[0]):
         input_start = max(0, i - max_prev_node + 1)
         input_end = i + 1
         output_start = max_prev_node + max(0, i - max_prev_node + 1) - (i + 1)
         output_end = max_prev_node
-        adj[i, input_start:input_end] = adj_output[i, output_start:output_end][::-1] # reverse order
+        adj[i, input_start:input_end] = adj_output[i,::-1][output_start:output_end] # reverse order
     adj_full = np.zeros((adj_output.shape[0]+1, adj_output.shape[0]+1))
     n = adj_full.shape[0]
     adj_full[1:n, 0:n-1] = np.tril(adj, 0)
@@ -255,15 +260,25 @@ def decode_adj_flexible(adj_output):
 # G = nx.ladder_graph(5)
 # G = nx.grid_2d_graph(20,20)
 # G = nx.ladder_graph(200)
-
+# G = nx.karate_club_graph()
+# G = nx.connected_caveman_graph(2,3)
+# print(G.number_of_nodes())
+#
 # adj = np.asarray(nx.to_numpy_matrix(G))
 # G = nx.from_numpy_matrix(adj)
-#
+# #
 # start_idx = np.random.randint(adj.shape[0])
 # x_idx = np.array(bfs_seq(G, start_idx))
 # adj = adj[np.ix_(x_idx, x_idx)]
 #
-# print(adj)
+# print('adj\n',adj)
+# adj_output = encode_adj(adj,max_prev_node=5)
+# print('adj_output\n',adj_output)
+# adj_recover = decode_adj(adj_output,max_prev_node=5)
+# print('adj_recover\n',adj_recover)
+# print('error\n',np.amin(adj_recover-adj),np.amax(adj_recover-adj))
+
+
 # adj_output = encode_adj_flexible(adj)
 # for i in range(len(adj_output)):
 #     print(len(adj_output[i]))
@@ -422,7 +437,7 @@ class Graph_sequence_sampler_pytorch(torch.utils.data.Dataset):
 
 # graphs, max_num_nodes = Graph_load_batch(min_num_nodes=6, name='DD',node_attributes=False)
 # graphs, max_num_nodes = Graph_load_batch(min_num_nodes=20, name='PROTEINS_full')
-# graphs, max_num_nodes = Graph_load_batch(min_num_nodes=10, name='ENZYMES')
+# graphs = Graph_load_batch(min_num_nodes=10, name='ENZYMES')
 # graphs = [nx.karate_club_graph() for i in range(100)]
 
 # print('ladder')
@@ -451,7 +466,8 @@ class Graph_sequence_sampler_pytorch(torch.utils.data.Dataset):
 #     for j in range(10):
 #         graphs.append(nx.barabasi_albert_graph(i,2))
 
-# dataset = Graph_sequence_sampler_truncate_pytorch(graphs,max_prev_node=20)
+# dataset = Graph_sequence_sampler_pytorch(graphs,max_prev_node=20)
+# print(dataset[0])
 # print('dataset len', len(dataset))
 # sample_strategy = torch.utils.data.sampler.WeightedRandomSampler([1.0/len(dataset) for i in range(len(dataset))], num_samples=1024, replacement=True)
 # num_workers = 4
