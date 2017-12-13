@@ -4,7 +4,7 @@ from main import *
 args = Args()
 print(args.graph_type, args.note)
 # epoch = 16000
-epoch = 600
+epoch = 900
 
 
 def find_nearest_idx(array,value):
@@ -101,8 +101,8 @@ for num_layers in range(4,5):
     for iter in range(8):
         print('iter', iter)
         graph_list = []
-        for i in range(10):
-            index = 16 * iter + i
+        for i in range(8):
+            index = 32 * iter + i
             # graph_real_list[index].remove_nodes_from(list(nx.isolates(graph_real_list[index])))
             # graph_pred_list[index].remove_nodes_from(list(nx.isolates(graph_pred_list[index])))
             # graph_list.append(graph_real_list[index])
@@ -116,7 +116,7 @@ for num_layers in range(4,5):
     for iter in range(8):
         print('iter', iter)
         graph_list = []
-        for i in range(10):
+        for i in range(8):
             index = 16 * iter + i
             # graph_real_list[index].remove_nodes_from(list(nx.isolates(graph_real_list[index])))
             # graph_pred_list[index].remove_nodes_from(list(nx.isolates(graph_pred_list[index])))
