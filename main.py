@@ -41,12 +41,12 @@ class Args():
         ### data config
         # self.graph_type = 'ladder'
         # self.graph_type = 'tree'
-        # self.graph_type = 'caveman'
+        self.graph_type = 'caveman'
         # self.graph_type = 'grid'
         # self.graph_type = 'barabasi'
         # self.graph_type = 'enzymes'
         # self.graph_type = 'protein'
-        self.graph_type = 'DD'
+        # self.graph_type = 'DD'
 
         # update when initializing dataset
         self.max_num_node = None # max number of nodes in a graph
@@ -61,8 +61,8 @@ class Args():
         self.embedding_size_rnn_output = 4 # the embedding size for output rnn
         self.embedding_size_output = 64 # the embedding size for output (VAE/MLP)
 
-        self.batch_size = 64
-        self.test_batch_size = 64
+        self.batch_size = 48
+        self.test_batch_size = 48
         self.test_total_size = 1000
         self.num_layers = 4
         self.bptt = False # if use truncate back propagation (not very stable)
