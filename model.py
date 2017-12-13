@@ -22,6 +22,7 @@ USE_CUDA = torch.cuda.is_available()
 CUDA = 1
 
 
+
 def binary_cross_entropy_weight(y_pred, y,has_weight=False, weight_length=1, weight_max=10):
     '''
 
