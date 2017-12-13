@@ -99,21 +99,73 @@ motif_to_indices = {
 }
 COUNT_START_STR = 'orbit counts: \n'
 
-def orca(graph, indices):
-    output = sp.check_output('./eval/orca/orca', '4', 'eval/orca/test.txt', 'std')
-    print(output)
+def edge_list_reindexed(G):
+    idx = 0
+    id2idx = dict()
+    for u in G.nodes():
+        id2idx[str(u)] = idx
+        idx += 1
+
+    edges = []
+    for (u, v) in G.edges():
+        edges.append((id2idx[str(u)], id2idx[str(v)]))
+    return edges
+
+def orca(graph):
+    f = open('eval/orca/tmp.txt', 'w')
+    f.write(str(graph.number_of_nodes()) + ' ' + str(graph.number_of_edges()) + '\n')
+    for (u, v) in edge_list_reindexed(graph):
+        f.write(str(u) + ' ' + str(v) + '\n')
+    f.close()
+
+    output = sp.check_output(['./eval/orca/orca', 'node', '4', 'eval/orca/tmp.txt', 'std'])
+    output = output.decode('utf8').strip()
     
     idx = output.find(COUNT_START_STR) + len(COUNT_START_STR)
-    return output[idx:].strip('\n')
+    output = output[idx:]
+    node_orbit_counts = np.array([list(map(int, node_cnts.strip().split(' ') ))
+          for node_cnts in output.strip('\n').split('\n')])
+    return node_orbit_counts
     
 
-def motif_stats(graph_ref_list, graph_pred_list, motif_type='4cycle'):
-    counts_ref = []
-    counts_pred = []
+def motif_stats(graph_ref_list, graph_pred_list, motif_type='4cycle', ground_truth_match=None, bins=100):
+    # graph motif counts (int for each graph)
+    # normalized by graph size
+    total_counts_ref = []
+    total_counts_pred = []
+
+    num_matches_ref = []
+    num_matches_pred = []
+
     graph_pred_list_remove_empty = [G for G in graph_pred_list if not G.number_of_nodes() == 0]
     indices = motif_to_indices[motif_type]
 
     for G in graph_ref_list:
-        orbit_counts = orca(G, indices)
-        counts_ref.append(np.sum(orbit_counts[:, indices], axis=1))
+        orbit_counts = orca(G)
+        motif_counts = np.sum(orbit_counts[:, indices], axis=1)
 
+        if ground_truth_match is not None:
+            cnt = 0
+            for elem in motif_counts:
+                if elem == ground_truth_match:
+                    cnt += 1
+        #hist, _ = np.histogram(
+        #        motif_counts, bins=bins, density=False)
+        total_counts_ref.append(np.sum(motif_counts) / G.number_of_nodes())
+    
+    for G in graph_pred_list_remove_empty:
+        orbit_counts = orca(G)
+        motif_counts = np.sum(orbit_counts[:, indices], axis=1)
+        total_counts_pred.append(np.sum(motif_counts) / G.number_of_nodes())
+
+    mmd_dist = mmd.compute_mmd(total_counts_ref, total_counts_pred, kernel=mmd.gaussian,
+            is_hist=False)
+    print('-------------------------')
+    print(total_counts_ref)
+    print(np.sum(total_counts_ref) / len(total_counts_ref))
+    print('...')
+    print(total_counts_pred)
+    print(np.sum(total_counts_pred) / len(total_counts_pred))
+    print('-------------------------')
+    return mmd_dist
+ 

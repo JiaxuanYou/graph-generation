@@ -245,11 +245,10 @@ def eval_performance(datadir, prefix=None, args=None, eval_every=200, out_file_p
     else:
         real_graph_filename = datadir+args.graph_save_path + args.fname_real + '0.dat'
         # for proposed model
-        # pred_graphs_filename = [datadir+args.graph_save_path + args.fname_pred+str(epoch)+'.dat' for epoch in range(eval_every,3001,eval_every)]
+        pred_graphs_filename = [datadir+args.graph_save_path + args.fname_pred+str(epoch)+'.dat' for epoch in range(eval_every,3001,eval_every)]
         # for baseline model
-        pred_graphs_filename = [datadir+args.fname_baseline+'.dat']
+        #pred_graphs_filename = [datadir+args.fname_baseline+'.dat']
         print(pred_graphs_filename)
-
 
         eval_list_fname(real_graph_filename, pred_graphs_filename, eval_every=eval_every,
                         out_file_prefix=out_file_prefix)
