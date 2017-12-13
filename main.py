@@ -36,7 +36,7 @@ class Args():
         self.note = 'GraphRNN_MLP'
         # self.note = 'GraphRNN_VAE'
         # self.note = 'GraphRNN_VAE_conditional'
-        self.note = 'GraphRNN_RNN'
+        # self.note = 'GraphRNN_RNN'
 
         ### data config
         # self.graph_type = 'ladder'

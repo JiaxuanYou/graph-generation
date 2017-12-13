@@ -112,7 +112,8 @@ def edge_list_reindexed(G):
     return edges
 
 def orca(graph):
-    f = open('eval/orca/tmp.txt', 'w')
+    tmp_fname = 'eval/orca/tmp.txt'
+    f = open(tmp_fname, 'w')
     f.write(str(graph.number_of_nodes()) + ' ' + str(graph.number_of_edges()) + '\n')
     for (u, v) in edge_list_reindexed(graph):
         f.write(str(u) + ' ' + str(v) + '\n')
@@ -125,6 +126,12 @@ def orca(graph):
     output = output[idx:]
     node_orbit_counts = np.array([list(map(int, node_cnts.strip().split(' ') ))
           for node_cnts in output.strip('\n').split('\n')])
+
+    try:
+        os.remove(tmp_fname)
+    except OSError:
+        pass
+
     return node_orbit_counts
     
 
@@ -145,10 +152,12 @@ def motif_stats(graph_ref_list, graph_pred_list, motif_type='4cycle', ground_tru
         motif_counts = np.sum(orbit_counts[:, indices], axis=1)
 
         if ground_truth_match is not None:
-            cnt = 0
+            match_cnt = 0
             for elem in motif_counts:
                 if elem == ground_truth_match:
-                    cnt += 1
+                    match_cnt += 1
+            num_matches_ref.append(match_cnt / G.number_of_nodes())
+
         #hist, _ = np.histogram(
         #        motif_counts, bins=bins, density=False)
         total_counts_ref.append(np.sum(motif_counts) / G.number_of_nodes())
@@ -156,16 +165,50 @@ def motif_stats(graph_ref_list, graph_pred_list, motif_type='4cycle', ground_tru
     for G in graph_pred_list_remove_empty:
         orbit_counts = orca(G)
         motif_counts = np.sum(orbit_counts[:, indices], axis=1)
+
+        if ground_truth_match is not None:
+            match_cnt = 0
+            for elem in motif_counts:
+                if elem == ground_truth_match:
+                    match_cnt += 1
+            num_matches_pred.append(match_cnt / G.number_of_nodes())
+
         total_counts_pred.append(np.sum(motif_counts) / G.number_of_nodes())
 
     mmd_dist = mmd.compute_mmd(total_counts_ref, total_counts_pred, kernel=mmd.gaussian,
             is_hist=False)
     print('-------------------------')
-    print(total_counts_ref)
     print(np.sum(total_counts_ref) / len(total_counts_ref))
     print('...')
-    print(total_counts_pred)
     print(np.sum(total_counts_pred) / len(total_counts_pred))
     print('-------------------------')
     return mmd_dist
+
+def orbit_stats_all(graph_ref_list, graph_pred_list):
+    total_counts_ref = []
+    total_counts_pred = []
  
+    graph_pred_list_remove_empty = [G for G in graph_pred_list if not G.number_of_nodes() == 0]
+
+    for G in graph_ref_list:
+        orbit_counts = orca(G)
+        orbit_counts_graph = np.sum(orbit_counts, axis=0) / G.number_of_nodes()
+        total_counts_ref.append(orbit_counts_graph)
+
+    for G in graph_pred_list:
+        orbit_counts = orca(G)
+        orbit_counts_graph = np.sum(orbit_counts, axis=0) / G.number_of_nodes()
+        total_counts_pred.append(orbit_counts_graph)
+
+    total_counts_ref = np.array(total_counts_ref)
+    total_counts_pred = np.array(total_counts_pred)
+    mmd_dist = mmd.compute_mmd(total_counts_ref, total_counts_pred, kernel=mmd.gaussian,
+            is_hist=False)
+
+    print('-------------------------')
+    print(np.sum(total_counts_ref, axis=0) / len(total_counts_ref))
+    print('...')
+    print(np.sum(total_counts_pred, axis=0) / len(total_counts_pred))
+    print('-------------------------')
+    return mmd_dist
+
