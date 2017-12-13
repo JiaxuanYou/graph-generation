@@ -33,17 +33,17 @@ class Args():
         self.clean_tensorboard = False
 
         ### model type
-        # self.note = 'GraphRNN_MLP'
+        self.note = 'GraphRNN_MLP'
         # self.note = 'GraphRNN_VAE' # deprecated
-        self.note = 'GraphRNN_VAE_conditional'
+        # self.note = 'GraphRNN_VAE_conditional'
         # self.note = 'GraphRNN_RNN'
 
         ### data config
         # self.graph_type = 'ladder'
         # self.graph_type = 'tree'
-        self.graph_type = 'caveman'
+        # self.graph_type = 'caveman'
         # self.graph_type = 'grid'
-        # self.graph_type = 'barabasi'
+        self.graph_type = 'barabasi'
         # self.graph_type = 'enzymes'
         # self.graph_type = 'protein'
         # self.graph_type = 'DD'
@@ -61,8 +61,8 @@ class Args():
         self.embedding_size_rnn_output = 4 # the embedding size for output rnn
         self.embedding_size_output = 64 # the embedding size for output (VAE/MLP)
 
-        self.batch_size = 48
-        self.test_batch_size = 48
+        self.batch_size = 64
+        self.test_batch_size = 64
         self.test_total_size = 1000
         self.num_layers = 4
         self.bptt = False # if use truncate back propagation (not very stable)
@@ -423,10 +423,10 @@ def test_mlp_epoch(epoch, args, rnn, output, test_batch_size=16, save_histogram=
 
 
     # save list of objects
-    fname_pred = args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
-                 str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
-        args.bptt_len) + '_' + str(args.gumbel) + '.dat'
-    save_graph_list(G_pred_list, fname_pred)
+    # fname_pred = args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
+    #              str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
+    #     args.bptt_len) + '_' + str(args.gumbel) + '.dat'
+    # save_graph_list(G_pred_list, fname_pred)
 
 
     # save prediction histograms, plot histogram over each time step
@@ -603,10 +603,10 @@ def test_rnn_epoch(epoch, args, rnn, output, test_batch_size=16, save_histogram=
 
 
     # save list of objects
-    fname_pred = args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
-                 str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
-        args.bptt_len) + '_' + str(args.gumbel) + '.dat'
-    save_graph_list(G_pred_list, fname_pred)
+    # fname_pred = args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
+    #              str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
+    #     args.bptt_len) + '_' + str(args.gumbel) + '.dat'
+    # save_graph_list(G_pred_list, fname_pred)
 
 
     # save prediction histograms, plot histogram over each time step
@@ -747,8 +747,9 @@ if __name__ == '__main__':
     if args.graph_type=='barabasi':
         graphs = []
         for i in range(100,200):
-             for j in range(10):
-                graphs.append(nx.barabasi_albert_graph(i,2))
+             for j in range(3,6):
+                 for k in range(5):
+                    graphs.append(nx.barabasi_albert_graph(i,j))
         args.max_prev_node = 130
     # real graphs
     if args.graph_type == 'enzymes':
@@ -770,6 +771,7 @@ if __name__ == '__main__':
 
     # save ground truth graphs
     save_graph_list(graphs,args.graph_save_path + args.fname_real + '0.dat')
+    print('real graphs saved')
 
 
     ### dataset initialization
