@@ -35,8 +35,8 @@ class Args():
         ### model type
         # self.note = 'GraphRNN_MLP'
         # self.note = 'GraphRNN_VAE' # deprecated
-        # self.note = 'GraphRNN_VAE_conditional'
-        self.note = 'GraphRNN_RNN'
+        self.note = 'GraphRNN_VAE_conditional'
+        # self.note = 'GraphRNN_RNN'
 
         ### data config
         # self.graph_type = 'ladder'
