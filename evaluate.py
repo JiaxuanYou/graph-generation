@@ -191,28 +191,34 @@ def eval_list_fname(real_graph_filename, pred_graphs_filename,
         # ========================================
         mid = len(real_g_list) // 2
         dist_degree, dist_clustering = compute_all_stats(real_g_list[:mid], real_g_list[mid:])
-        dist_4cycle = eval.stats.motif_stats(real_g_list[:mid], real_g_list[mid:])
+        #dist_4cycle = eval.stats.motif_stats(real_g_list[:mid], real_g_list[mid:])
+        dist_4orbits = eval.stats.orbit_stats_all(real_g_list[:mid], real_g_list[mid:])
         print('degree dist among real: ', dist_degree)
         print('clustering dist among real: ', dist_clustering)
-        print('4 cycle dist among real: ', dist_4cycle)
+        #print('4 cycle dist among real: ', dist_4cycle)
+        print('orbits dist among real: ', dist_4orbits)
         results['deg']['real'] += dist_degree
         results['clustering']['real'] += dist_clustering
 
         dist_degree, dist_clustering = compute_all_stats(real_g_list, pred_g_list)
-        dist_4cycle = eval.stats.motif_stats(real_g_list, pred_g_list)
+        #dist_4cycle = eval.stats.motif_stats(real_g_list, pred_g_list)
+        dist_4orbits = eval.stats.orbit_stats_all(real_g_list, pred_g_list)
         print('degree dist between real and pred at epoch ', epoch_range[i], ': ', dist_degree)
         print('clustering dist between real and pred at epoch ', epoch_range[i], ': ', dist_clustering)
-        print('4 cycle dist between real and pred at epoch: ', epoch_range[i], dist_4cycle)
+        #print('4 cycle dist between real and pred at epoch: ', epoch_range[i], dist_4cycle)
+        print('orbits dist between real and pred at epoch ', epoch_range[i], ': ', dist_4orbits)
         out_files['train'].write(str(dist_degree) + ',')
         out_files['train'].write(str(dist_clustering) + ',')
         results['deg']['ours'] = min(dist_degree, results['deg']['ours'])
         results['clustering']['ours'] = min(dist_clustering, results['clustering']['ours'])
 
         dist_degree, dist_clustering = compute_all_stats(real_g_list, perturbed_g_list_005)
-        dist_4cycle = eval.stats.motif_stats(real_g_list, perturbed_g_list_005)
+        #dist_4cycle = eval.stats.motif_stats(real_g_list, perturbed_g_list_005)
+        dist_4orbits = eval.stats.orbit_stats_all(real_g_list, perturbed_g_list_005)
         print('degree dist between real and perturbed at epoch ', epoch_range[i], ': ', dist_degree)
         print('clustering dist between real and perturbed at epoch ', epoch_range[i], ': ', dist_clustering)
-        print('4 cycle dist between real and perturbed at epoch: ', epoch_range[i], dist_4cycle)
+        #print('4 cycle dist between real and perturbed at epoch: ', epoch_range[i], dist_4cycle)
+        print('orbits dist between real and perturbed at epoch ', epoch_range[i], ': ', dist_4orbits)
         results['deg']['perturbed'] += dist_degree
         results['clustering']['perturbed'] += dist_clustering
 
