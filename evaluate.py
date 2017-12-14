@@ -238,7 +238,7 @@ def eval_list_fname(real_graph_filename, pred_graphs_filename,
         file.close()
 
 
-def eval_performance(datadir, prefix=None, args=None, eval_every=200, out_file_prefix=None):
+def eval_performance(datadir, prefix=None, args=None, eval_every=200, out_file_prefix=None, sample_time = 2):
     if args is None:
         real_graphs_filename = [datadir + f for f in os.listdir(datadir)
                 if re.match(prefix + '.*real.*\.dat', f)]
@@ -257,7 +257,7 @@ def eval_performance(datadir, prefix=None, args=None, eval_every=200, out_file_p
         # for proposed model
         end_epoch = 3001
         epoch_range = range(eval_every, end_epoch, eval_every)
-        pred_graphs_filename = [datadir+args.graph_save_path + args.fname_pred+str(epoch)+'.dat'
+        pred_graphs_filename = [datadir+args.graph_save_path + args.fname_pred+str(epoch)+'_'+str(sample_time)+'.dat'
                 for epoch in epoch_range]
         # for baseline model
         #pred_graphs_filename = [datadir+args.fname_baseline+'.dat']
@@ -282,7 +282,11 @@ if __name__ == '__main__':
     parser.set_defaults(export=False)
     prog_args = parser.parse_args()
 
-    datadir = "/dfs/scratch0/rexy/graph_gen_data/"
+    # datadir = "/dfs/scratch0/rexy/graph_gen_data/"
+    ## the following dir has all experiment data, including 1-3 sample times that you can choose from
+    datadir = "/dfs/scratch0/jiaxuany0/graphs/"
+
+
     #datadir = "/lfs/local/0/jiaxuany/pycharm/graphs_share/"
     #datadir = "/lfs/local/0/jiaxuany/pycharm/"
     #prefix = "GraphRNN_enzymes_50_"
@@ -306,5 +310,5 @@ if __name__ == '__main__':
         out_file_prefix = 'eval_results/' + args.graph_type + '_' + args.note
         if not os.path.isdir('eval_results'):
             os.makedirs('eval_results')
-        eval_performance(datadir, args=args, out_file_prefix=out_file_prefix)
+        eval_performance(datadir, args=args, out_file_prefix=out_file_prefix,sample_time=args.sample_time)
 
