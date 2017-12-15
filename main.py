@@ -35,7 +35,7 @@ class Args():
         ### model type
         # self.note = 'GraphRNN_MLP'
         # self.note = 'GraphRNN_VAE' # deprecated
-        # self.note = 'GraphRNN_VAE_conditional'
+        self.note = 'GraphRNN_VAE_conditional'
         # self.note = 'GraphRNN_RNN'
 
         ### data config
@@ -112,7 +112,7 @@ class Args():
         self.fname_pred=self.note+'_'+self.graph_type+'_'+str(self.num_layers)+'_'+str(self.bptt)+'_'+\
                         str(self.bptt_len)+'_'+str(self.gumbel)+'_pred_'
         self.fname_real = self.note + '_' + self.graph_type + '_' + str(self.num_layers) + '_' + str(self.bptt) + '_' + \
-                          str(self.bptt_len) + '_' + str(self.gumbel)+ '_' + '_real_'
+                          str(self.bptt_len) + '_' + str(self.gumbel)+ '_real_'
         self.fname_baseline = self.graph_save_path + self.graph_type + self.generator_baseline+'_'+self.metric_baseline
 
 
