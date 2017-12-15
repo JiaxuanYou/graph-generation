@@ -4,7 +4,8 @@ from main import *
 args = Args()
 print(args.graph_type, args.note)
 # epoch = 16000
-epoch = 900
+epoch = 3000
+sample_time = 3
 
 
 def find_nearest_idx(array,value):
@@ -15,8 +16,8 @@ def find_nearest_idx(array,value):
 for num_layers in range(4,5):
     # give file name and figure name
     fname_real = args.graph_save_path + args.fname_real + str(0)
-    fname_pred = args.graph_save_path + args.fname_pred + str(epoch)
-    figname = args.figure_save_path + args.fname + str(epoch)
+    fname_pred = args.graph_save_path + args.fname_pred + str(epoch) +'_'+str(sample_time)
+    figname = args.figure_save_path + args.fname + str(epoch) +'_'+str(sample_time)
 
     # fname_real = args.graph_save_path + args.note + '_' + args.graph_type + '_' + str(args.graph_node_num) + '_' + \
     #              str(epoch) + '_real_' + str(True) + '_' + str(num_layers)
