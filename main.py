@@ -35,7 +35,7 @@ class Args():
         ### model type
         self.note = 'GraphRNN_MLP'
         # self.note = 'GraphRNN_VAE' # deprecated
-        self.note = 'GraphRNN_VAE_conditional'
+        # self.note = 'GraphRNN_VAE_conditional'
         # self.note = 'GraphRNN_RNN'
 
         ### data config
@@ -43,10 +43,10 @@ class Args():
         # self.graph_type = 'tree'
         # self.graph_type = 'caveman'
         # self.graph_type = 'grid'
-        self.graph_type = 'barabasi'
+        # self.graph_type = 'barabasi'
         # self.graph_type = 'enzymes'
         # self.graph_type = 'protein'
-        # self.graph_type = 'DD'
+        self.graph_type = 'DD'
 
         # update when initializing dataset
         self.max_num_node = None # max number of nodes in a graph
@@ -83,7 +83,7 @@ class Args():
         self.milestones = [300, 800]
         self.lr_rate = 0.3
 
-        self.sample_time = 2 # sample time in each time step, when validating
+        self.sample_time = 1 # sample time in each time step, when validating
 
         ### output config
         self.model_save_path = 'model_save/'
