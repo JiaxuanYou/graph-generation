@@ -177,11 +177,11 @@ def motif_stats(graph_ref_list, graph_pred_list, motif_type='4cycle', ground_tru
 
     mmd_dist = mmd.compute_mmd(total_counts_ref, total_counts_pred, kernel=mmd.gaussian,
             is_hist=False)
-    print('-------------------------')
-    print(np.sum(total_counts_ref) / len(total_counts_ref))
-    print('...')
-    print(np.sum(total_counts_pred) / len(total_counts_pred))
-    print('-------------------------')
+    #print('-------------------------')
+    #print(np.sum(total_counts_ref) / len(total_counts_ref))
+    #print('...')
+    #print(np.sum(total_counts_pred) / len(total_counts_pred))
+    #print('-------------------------')
     return mmd_dist
 
 def orbit_stats_all(graph_ref_list, graph_pred_list):
@@ -203,7 +203,7 @@ def orbit_stats_all(graph_ref_list, graph_pred_list):
     total_counts_ref = np.array(total_counts_ref)
     total_counts_pred = np.array(total_counts_pred)
     mmd_dist = mmd.compute_mmd(total_counts_ref, total_counts_pred, kernel=mmd.gaussian,
-            is_hist=False)
+            is_hist=False, sigma=30.0)
 
     print('-------------------------')
     print(np.sum(total_counts_ref, axis=0) / len(total_counts_ref))

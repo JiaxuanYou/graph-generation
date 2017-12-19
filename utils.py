@@ -320,7 +320,11 @@ def snap_txt_output_to_nx(in_fname):
         for line in f:
             if not line[0] == '#':
                 splitted = re.split('[ \t]', line)
-                print(int(splitted[1]))
-                G.add_edge(int(splitted[0]), int(splitted[1]))
+
+                # self loop might be generated, but should be removed
+                u = int(splitted[0])
+                v = int(splitted[1])
+                if not u == v:
+                    G.add_edge(int(u), int(v))
     return G
 
