@@ -136,6 +136,25 @@ def Graph_load(dataset = 'cora'):
 # print(adj)
 # print(G.number_of_nodes(), G.number_of_edges())
 
+# _,_,G = Graph_load(dataset='citeseer')
+# G = max(nx.connected_component_subgraphs(G), key=len)
+# G = nx.convert_node_labels_to_integers(G)
+#
+# count = 0
+# max_node = 0
+# for i in range(G.number_of_nodes()):
+#     G_ego = nx.ego_graph(G, i, radius=3)
+#     # draw_graph(G_ego,prefix='test'+str(i))
+#     m = G_ego.number_of_nodes()
+#     if m>max_node:
+#         max_node = m
+#     if m>=50:
+#         print(i, G_ego.number_of_nodes(), G_ego.number_of_edges())
+#         count += 1
+# print('count', count)
+# print('max_node', max_node)
+
+
 
 
 def bfs_seq(G, start_id):
