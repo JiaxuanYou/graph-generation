@@ -12,6 +12,7 @@ import node2vec.src.main as nv
 from sklearn.decomposition import PCA
 import community
 import pickle
+import re
 
 def imsave(fname, arr, vmin=None, vmax=None, cmap=None, format=None, origin=None):
     from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
@@ -268,8 +269,6 @@ def decode_graph(adj, prefix):
     draw_graph(G, prefix=prefix)
 
 
-
-
 def get_graph(adj):
     '''
     get a graph from zero-padded adj
@@ -314,4 +313,18 @@ def export_graphs_to_txt(filename, output_filename_prefix):
         for (u, v) in G.edges():
             f.write(str(u) + '\t' + str(v) + '\n')
         i += 1
+
+def snap_txt_output_to_nx(in_fname):
+    G = nx.Graph()
+    with open(in_fname, 'r') as f:
+        for line in f:
+            if not line[0] == '#':
+                splitted = re.split('[ \t]', line)
+
+                # self loop might be generated, but should be removed
+                u = int(splitted[0])
+                v = int(splitted[1])
+                if not u == v:
+                    G.add_edge(int(u), int(v))
+    return G
 

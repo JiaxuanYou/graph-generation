@@ -43,7 +43,7 @@ class Args():
         # self.graph_type = 'tree'
         # self.graph_type = 'caveman'
         # self.graph_type = 'grid'
-        # self.graph_type = 'barabasi'
+        self.graph_type = 'barabasi'
         # self.graph_type = 'enzymes'
         # self.graph_type = 'protein'
         # self.graph_type = 'DD'
@@ -762,16 +762,6 @@ if __name__ == '__main__':
     if args.graph_type == 'DD':
         graphs = Graph_load_batch(min_num_nodes=100, max_num_nodes=500, name='DD',node_attributes=False,graph_labels=True)
         args.max_prev_node = 230
-    if args.graph_type == 'citeseer':
-        _, _, G = Graph_load(dataset='citeseer')
-        G = max(nx.connected_component_subgraphs(G), key=len)
-        G = nx.convert_node_labels_to_integers(G)
-        graphs = []
-        for i in range(G.number_of_nodes()):
-            G_ego = nx.ego_graph(G, i, radius=3)
-            if G_ego.number_of_nodes()>=50:
-                graphs.append(G_ego)
-        args.max_prev_node = 50
 
     args.max_num_node = max([graphs[i].number_of_nodes() for i in range(len(graphs))])
     # args.max_num_node = 2000

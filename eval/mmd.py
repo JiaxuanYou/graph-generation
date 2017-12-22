@@ -27,7 +27,7 @@ def gaussian_emd(x, y, sigma=1.0, distance_scaling=1.0):
     return np.exp(-emd * emd / (2 * sigma * sigma))
 
 def gaussian(x, y, sigma=1.0):
-    dist = np.linalg.norm(x - y)
+    dist = np.linalg.norm(x - y, 2)
     return np.exp(-dist * dist / (2 * sigma * sigma))
 
 def kernel_parallel_unpacked(x, samples2, kernel):
@@ -63,12 +63,13 @@ def compute_mmd(samples1, samples2, kernel, is_hist=True, *args, **kwargs):
     if is_hist:
         samples1 = [s1 / np.sum(s1) for s1 in samples1]
         samples2 = [s2 / np.sum(s2) for s2 in samples2]
-    #print('===============================')
-    #print(disc(samples1, samples1, kernel, *args, **kwargs))
-    #print('--------------------------')
-    #print(disc(samples2, samples2, kernel, *args, **kwargs))
-    #print('--------------------------')
-    #print(disc(samples1, samples2, kernel, *args, **kwargs))
+    print('===============================')
+    print('s1: ', disc(samples1, samples1, kernel, *args, **kwargs))
+    print('--------------------------')
+    print('s2: ', disc(samples2, samples2, kernel, *args, **kwargs))
+    print('--------------------------')
+    print('cross: ', disc(samples1, samples2, kernel, *args, **kwargs))
+    print('===============================')
     return disc(samples1, samples1, kernel, *args, **kwargs) + \
             disc(samples2, samples2, kernel, *args, **kwargs) - \
             2 * disc(samples1, samples2, kernel, *args, **kwargs)

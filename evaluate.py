@@ -109,14 +109,16 @@ def eval_list(real_graphs_filename, pred_graphs_filename, prefix, eval_every):
             print('dist among real: ', dist)
 
 
-def compute_all_stats(real_g_list, target_g_list):
+def compute_basic_stats(real_g_list, target_g_list):
     dist_degree = eval.stats.degree_stats(real_g_list, target_g_list)
     dist_clustering = eval.stats.clustering_stats(real_g_list, target_g_list)
     return dist_degree, dist_clustering
 
-def eval_list_fname(real_graph_filename, pred_graphs_filename, 
+def eval_list_fname(real_graph_filename, pred_graphs_filename, baselines,
         eval_every, epoch_range=None, out_file_prefix=None):
     ''' Evaluate list of predicted graphs compared to ground truth, stored in files.
+    Args:
+        baselines: dict mapping name of the baseline to list of generated graphs.
     '''
 
     if out_file_prefix is not None:
@@ -125,22 +127,31 @@ def eval_list_fname(real_graph_filename, pred_graphs_filename,
                 'compare': open(out_file_prefix + '_compare.txt', 'w')
         }
 
-    out_files['train'].write('degree,clustering\n')
+    out_files['train'].write('degree,clustering,orbits4\n')
     out_files['compare'].write('metric,real,ours,perturbed\n')
 
     results = {
             'deg': {
-                    'real': 1,
-                    'ours': 1,
-                    'perturbed': 1},
+                    'real': 0,
+                    'ours': 0,
+                    'perturbed': 0,
+                    'kron': 0},
             'clustering': {
-                    'real': 1,
-                    'ours': 1,
-                    'perturbed': 1}
+                    'real': 0,
+                    'ours': 0,
+                    'perturbed': 0,
+                    'kron': 0},
+            'orbits4': {
+                    'real': 0,
+                    'ours': 0,
+                    'perturbed': 0,
+                    'kron': 0}
     }
+
+
     num_evals = len(pred_graphs_filename)
     if epoch_range is None:
-        epoch_range = [i * eval_every for i in range(num_evals)]
+        epoch_range = [i * eval_every for i in range(num_evals)] 
     for i in range(num_evals):
         real_g_list = utils.load_graph_list(real_graph_filename)
         #pred_g_list = utils.load_graph_list(pred_graphs_filename[i])
@@ -190,7 +201,7 @@ def eval_list_fname(real_graph_filename, pred_graphs_filename,
         # Evaluation
         # ========================================
         mid = len(real_g_list) // 2
-        dist_degree, dist_clustering = compute_all_stats(real_g_list[:mid], real_g_list[mid:])
+        dist_degree, dist_clustering = compute_basic_stats(real_g_list[:mid], real_g_list[mid:])
         #dist_4cycle = eval.stats.motif_stats(real_g_list[:mid], real_g_list[mid:])
         dist_4orbits = eval.stats.orbit_stats_all(real_g_list[:mid], real_g_list[mid:])
         print('degree dist among real: ', dist_degree)
@@ -199,20 +210,25 @@ def eval_list_fname(real_graph_filename, pred_graphs_filename,
         print('orbits dist among real: ', dist_4orbits)
         results['deg']['real'] += dist_degree
         results['clustering']['real'] += dist_clustering
+        results['orbits4']['real'] += dist_4orbits
 
-        dist_degree, dist_clustering = compute_all_stats(real_g_list, pred_g_list)
+        dist_degree, dist_clustering = compute_basic_stats(real_g_list, pred_g_list)
         #dist_4cycle = eval.stats.motif_stats(real_g_list, pred_g_list)
         dist_4orbits = eval.stats.orbit_stats_all(real_g_list, pred_g_list)
         print('degree dist between real and pred at epoch ', epoch_range[i], ': ', dist_degree)
         print('clustering dist between real and pred at epoch ', epoch_range[i], ': ', dist_clustering)
         #print('4 cycle dist between real and pred at epoch: ', epoch_range[i], dist_4cycle)
         print('orbits dist between real and pred at epoch ', epoch_range[i], ': ', dist_4orbits)
-        out_files['train'].write(str(dist_degree) + ',')
-        out_files['train'].write(str(dist_clustering) + ',')
         results['deg']['ours'] = min(dist_degree, results['deg']['ours'])
         results['clustering']['ours'] = min(dist_clustering, results['clustering']['ours'])
+        results['orbits4']['ours'] = min(dist_4orbits, results['orbits4']['ours'])
 
-        dist_degree, dist_clustering = compute_all_stats(real_g_list, perturbed_g_list_005)
+        # performance at training time
+        out_files['train'].write(str(dist_degree) + ',')
+        out_files['train'].write(str(dist_clustering) + ',')
+        out_files['train'].write(str(dist_4orbits) + ',')
+
+        dist_degree, dist_clustering = compute_basic_stats(real_g_list, perturbed_g_list_005)
         #dist_4cycle = eval.stats.motif_stats(real_g_list, perturbed_g_list_005)
         dist_4orbits = eval.stats.orbit_stats_all(real_g_list, perturbed_g_list_005)
         print('degree dist between real and perturbed at epoch ', epoch_range[i], ': ', dist_degree)
@@ -221,24 +237,42 @@ def eval_list_fname(real_graph_filename, pred_graphs_filename,
         print('orbits dist between real and perturbed at epoch ', epoch_range[i], ': ', dist_4orbits)
         results['deg']['perturbed'] += dist_degree
         results['clustering']['perturbed'] += dist_clustering
+        results['orbits4']['perturbed'] += dist_4orbits
+
+        if i == 0:
+            # Baselines
+            for baseline in baselines:
+                dist_degree, dist_clustering = compute_basic_stats(real_g_list, baselines[baseline])
+                dist_4orbits = eval.stats.orbit_stats_all(real_g_list, baselines[baseline])
+                results['deg'][baseline] = dist_degree
+                results['clustering'][baseline] = dist_clustering
+                results['orbits4'][baseline] = dist_4orbits
+                print('Kron: deg=', dist_degree, ', clustering=', dist_clustering, 
+                        ', orbits4=', dist_4orbits)
 
         out_files['train'].write('\n')
 
     for metric, methods in results.items():
-        methods['real'] /= num_graphs
-        methods['perturbed'] /= num_graphs
+        methods['real'] /= num_evals
+        methods['perturbed'] /= num_evals
 
+    # Write results
     for metric, methods in results.items():
-        out_files['compare'].write(metric+','+
-                                   str(methods['real'])+','+
-                                   str(methods['ours'])+','+
-                                   str(methods['perturbed'])+'\n')
+        line = metric+','+ \
+                str(methods['real'])+','+ \
+                str(methods['ours'])+','+ \
+                str(methods['perturbed'])
+        for baseline in baselines:
+            line += ',' + str(methods[baseline])
+
+        out_files['compare'].write(line)
 
     for _, file in out_files.items():
         file.close()
 
 
-def eval_performance(datadir, prefix=None, args=None, eval_every=200, out_file_prefix=None, sample_time = 2):
+def eval_performance(datadir, prefix=None, args=None, eval_every=200, out_file_prefix=None,
+        sample_time = 2, baselines={}):
     if args is None:
         real_graphs_filename = [datadir + f for f in os.listdir(datadir)
                 if re.match(prefix + '.*real.*\.dat', f)]
@@ -269,22 +303,43 @@ def eval_performance(datadir, prefix=None, args=None, eval_every=200, out_file_p
         #         str(epoch) + '_pred_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
         #         args.bptt_len) + '_' + str(args.gumbel) + '.dat' for epoch in range(10000, 50001, eval_every)]
 
-        eval_list_fname(real_graph_filename, pred_graphs_filename, epoch_range=epoch_range, 
+        eval_list_fname(real_graph_filename, pred_graphs_filename, baselines,
+                        epoch_range=epoch_range, 
                         eval_every=eval_every,
                         out_file_prefix=out_file_prefix)
 
+def process_kron(kron_dir):
+    txt_files = []
+    for f in os.listdir(kron_dir):
+        filename = os.fsdecode(f)
+        if filename.endswith('.txt'):
+            txt_files.append(filename)
+        elif filename.endswith('.dat'):
+            return utils.load_graph_list(os.path.join(kron_dir, filename))
+    G_list = []
+    for filename in txt_files:
+        G_list.append(utils.snap_txt_output_to_nx(os.path.join(kron_dir, filename)))
+
+    out_fname = kron_dir + 'kron.dat'
+    with open(out_fname, 'wb') as out_f:
+        pickle.dump(G_list, out_f)
+    return G_list
+ 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Evaluation arguments.')
     feature_parser = parser.add_mutually_exclusive_group(required=False)
     feature_parser.add_argument('--export-real', dest='export', action='store_true')
     feature_parser.add_argument('--no-export-real', dest='export', action='store_false')
-    parser.set_defaults(export=False)
+    feature_parser.add_argument('--kron-dir', dest='kron_dir', 
+            help='Directory where graphs generated by kronecker method is stored.')
+    
+    parser.set_defaults(export=False, kron_dir='')
     prog_args = parser.parse_args()
 
     # datadir = "/dfs/scratch0/rexy/graph_gen_data/"
     ## the following dir has all experiment data, including 1-3 sample times that you can choose from
-    datadir = "/dfs/scratch0/jiaxuany0/graphs/"
+    datadir = "/dfs/scratch0/jiaxuany0/"
 
 
     #datadir = "/lfs/local/0/jiaxuany/pycharm/graphs_share/"
@@ -306,9 +361,15 @@ if __name__ == '__main__':
         print('Export ground truth to ', output_prefix)
         utils.export_graphs_to_txt(input_path, output_prefix)
     else:
+        baselines = {}
+        if not prog_args.kron_dir == '':
+            baselines['kron'] = process_kron(prog_args.kron_dir)
+
         print(args.graph_type)
         out_file_prefix = 'eval_results/' + args.graph_type + '_' + args.note
         if not os.path.isdir('eval_results'):
             os.makedirs('eval_results')
-        eval_performance(datadir, args=args, out_file_prefix=out_file_prefix,sample_time=args.sample_time)
+        eval_performance(datadir, args=args,
+                out_file_prefix=out_file_prefix,sample_time=args.sample_time,
+                baselines=baselines)
 
