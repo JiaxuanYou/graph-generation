@@ -46,9 +46,10 @@ class Args():
         # self.graph_type = 'enzymes'
         # self.graph_type = 'caveman'
         # self.graph_type = 'caveman_small'
-        # run in hyperion2: icml2018_part2
         self.graph_type = 'grid'
         # self.graph_type = 'grid_small'
+
+        # run in hyperion2: icml2018_part2
         # self.graph_type = 'barabasi'
         # self.graph_type = 'barabasi_small'
         # self.graph_type = 'citeseer'
@@ -95,6 +96,7 @@ class Args():
         self.model_save_path = 'model_save/'
         self.graph_save_path = 'graphs/'
         self.figure_save_path = 'figures/'
+        self.timing_save_path = 'timing/'
         self.figure_prediction_save_path = 'figures_prediction/'
 
 
@@ -519,7 +521,7 @@ def train(args, dataset_train, rnn, output):
                 fname = args.model_save_path + args.fname + 'output_' + str(epoch) + '.dat'
                 torch.save(output.state_dict(), fname)
         epoch += 1
-
+    np.save(args.timing_save_path+args.fname,time_all)
 
 
 
@@ -535,6 +537,8 @@ if __name__ == '__main__':
         os.makedirs(args.graph_save_path)
     if not os.path.isdir(args.figure_save_path):
         os.makedirs(args.figure_save_path)
+    if not os.path.isdir(args.timing_save_path):
+        os.makedirs(args.timing_save_path)
     if not os.path.isdir(args.figure_prediction_save_path):
         os.makedirs(args.figure_prediction_save_path)
 
