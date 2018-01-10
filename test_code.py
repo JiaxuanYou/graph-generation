@@ -501,3 +501,10 @@ CUDA = 2
 # check networkit package usage
 # import networkit as nt
 # g = nt.generators.DynamicForestFireGenerator(p=0.3,False,r=0.3).generate()
+
+# for i in range(10):
+#     pass
+# print(i)
+
+a = np.zeros(10)
+print(a)

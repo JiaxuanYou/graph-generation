@@ -491,6 +491,7 @@ class Graph_sequence_sampler_pytorch(torch.utils.data.Dataset):
 # sample_strategy = torch.utils.data.sampler.WeightedRandomSampler([1.0/len(dataset) for i in range(len(dataset))], num_samples=1024, replacement=True)
 # num_workers = 4
 # train_loader = torch.utils.data.DataLoader(dataset, batch_size=128, num_workers=num_workers,sampler=sample_strategy)
+# print(len(train_loader))
 #
 # for i in range(10):
 #     print('start loading, num_workers:{}'.format(num_workers))
