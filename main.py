@@ -23,6 +23,7 @@ from random import shuffle
 import pickle
 from tensorboard_logger import configure, log_value
 import scipy.misc
+import time
 
 
 ### program configuration
