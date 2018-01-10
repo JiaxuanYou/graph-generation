@@ -635,10 +635,10 @@ if __name__ == '__main__':
         G = nx.convert_node_labels_to_integers(G)
         graphs = []
         for i in range(G.number_of_nodes()):
-            G_ego = nx.ego_graph(G, i, radius=2)
-            if G_ego.number_of_nodes() >= 50:
+            G_ego = nx.ego_graph(G, i, radius=1)
+            if G_ego.number_of_nodes() >= 9:
                 graphs.append(G_ego)
-        args.max_prev_node = 50
+        args.max_prev_node = 30
 
     args.max_num_node = max([graphs[i].number_of_nodes() for i in range(len(graphs))])
     # args.max_num_node = 2000
