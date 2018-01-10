@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import torch.nn.functional as F
 from torch import optim
 from torch.optim.lr_scheduler import MultiStepLR
-import node2vec.src.main as nv
+# import node2vec.src.main as nv
 from sklearn.decomposition import PCA
 import logging
 from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
@@ -40,13 +40,13 @@ class Args():
 
         ### data config
         ## used for paper
-        # run in hyperion
+        # run in hyperion: icml2018_part1
         # self.graph_type = 'DD'
         # self.graph_type = 'enzymes'
         # self.graph_type = 'caveman'
         # self.graph_type = 'caveman_small'
-        # run in hyperion2
-        # self.graph_type = 'grid'
+        # run in hyperion2: icml2018_part2
+        self.graph_type = 'grid'
         # self.graph_type = 'grid_small'
         # self.graph_type = 'barabasi'
         # self.graph_type = 'barabasi_small'
@@ -60,11 +60,15 @@ class Args():
 
         ### network config
         ## GraphRNN
-        self.hidden_size_rnn = 128 # hidden size for main RNN
+        if 'small' in self.graph_type:
+            self.parameter_shrink = 2
+        else:
+            self.parameter_shrink = 1
+        self.hidden_size_rnn = 128/self.parameter_shrink # hidden size for main RNN
         self.hidden_size_rnn_output = 16 # hidden size for output RNN
-        self.embedding_size_rnn = 64 # the size for LSTM input
+        self.embedding_size_rnn = 64/self.parameter_shrink # the size for LSTM input
         self.embedding_size_rnn_output = 4 # the embedding size for output rnn
-        self.embedding_size_output = 64 # the embedding size for output (VAE/MLP)
+        self.embedding_size_output = 64/self.parameter_shrink # the embedding size for output (VAE/MLP)
 
         self.batch_size = 32 # normal: 64, and the rest should be changed accordingly
         self.test_batch_size = 32
