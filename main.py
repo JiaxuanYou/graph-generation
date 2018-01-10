@@ -594,7 +594,7 @@ if __name__ == '__main__':
                  for k in range(5):
                     graphs.append(nx.barabasi_albert_graph(i,j))
         args.max_prev_node = 130
-    if args.graph_type=='barabasi':
+    if args.graph_type=='barabasi_small':
         graphs = []
         for i in range(9,51):
              for j in range(3,6):
