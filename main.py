@@ -180,8 +180,8 @@ def train_vae_epoch(epoch, args, rnn, output, data_loader,
 
 
         if epoch % args.epochs_log==0 and batch_idx==0: # only output first batch's statistics
-            print('Epoch: {}/{}, train bce loss: {:.6f}, train kl loss: {:.6f}, graph type: {}, num_layer: {}, bptt: {}, bptt_len:{}, gumbel:{}, temperature:{}'.format(
-                epoch, args.epochs,loss_bce.data[0], loss_kl.data[0], args.graph_type, args.num_layers, args.bptt, args.bptt_len, args.gumbel, temperature))
+            print('Epoch: {}/{}, train bce loss: {:.6f}, train kl loss: {:.6f}, graph type: {}, num_layer: {}, hidden: {}'.format(
+                epoch, args.epochs,loss_bce.data[0], loss_kl.data[0], args.graph_type, args.num_layers, args.hidden_size_rnn))
             print('z_mu_mean', z_mu_mean, 'z_mu_min', z_mu_min, 'z_mu_max', z_mu_max, 'z_sgm_mean', z_sgm_mean, 'z_sgm_min', z_sgm_min, 'z_sgm_max', z_sgm_max)
 
         # logging
@@ -279,8 +279,8 @@ def train_mlp_epoch(epoch, args, rnn, output, data_loader,
 
 
         if epoch % args.epochs_log==0 and batch_idx==0: # only output first batch's statistics
-            print('Epoch: {}/{}, train loss: {:.6f}, graph type: {}, num_layer: {}, bptt: {}, bptt_len:{}, gumbel:{}, temperature:{}'.format(
-                epoch, args.epochs,loss.data[0], args.graph_type, args.num_layers, args.bptt, args.bptt_len, args.gumbel, temperature))
+            print('Epoch: {}/{}, train loss: {:.6f}, graph type: {}, num_layer: {}, hidden: {}'.format(
+                epoch, args.epochs,loss.data[0], args.graph_type, args.num_layers, args.hidden_size_rnn))
 
         # logging
         log_value('loss_'+args.fname, loss.data[0], epoch*args.batch_ratio+batch_idx)
@@ -405,8 +405,8 @@ def train_rnn_epoch(epoch, args, rnn, output, data_loader,
 
 
         if epoch % args.epochs_log==0 and batch_idx==0: # only output first batch's statistics
-            print('Epoch: {}/{}, train loss: {:.6f}, graph type: {}, num_layer: {}, bptt: {}, bptt_len:{}, gumbel:{}, temperature:{}'.format(
-                epoch, args.epochs,loss.data[0], args.graph_type, args.num_layers, args.bptt, args.bptt_len, args.gumbel, temperature))
+            print('Epoch: {}/{}, train loss: {:.6f}, graph type: {}, num_layer: {}, hidden: {}'.format(
+                epoch, args.epochs,loss.data[0], args.graph_type, args.num_layers, args.hidden_size_rnn))
 
         # logging
         log_value('loss_'+args.fname, loss.data[0], epoch*args.batch_ratio+batch_idx)
