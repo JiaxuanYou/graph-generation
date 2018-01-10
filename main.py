@@ -636,7 +636,7 @@ if __name__ == '__main__':
         graphs = []
         for i in range(G.number_of_nodes()):
             G_ego = nx.ego_graph(G, i, radius=1)
-            if G_ego.number_of_nodes() >= 9:
+            if (G_ego.number_of_nodes() >= 9) and (G_ego.number_of_nodes() <= 50):
                 graphs.append(G_ego)
         args.max_prev_node = 30
 
