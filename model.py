@@ -19,7 +19,7 @@ import numpy as np
 import time
 
 USE_CUDA = torch.cuda.is_available()
-CUDA = 1
+CUDA = 3
 
 
 
