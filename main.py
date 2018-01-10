@@ -23,7 +23,7 @@ from random import shuffle
 import pickle
 from tensorboard_logger import configure, log_value
 import scipy.misc
-import time
+import time as tm
 
 
 ### program configuration
@@ -475,7 +475,7 @@ def train(args, dataset_train, rnn, output):
     # start main loop
     time_all = np.zeros(args.epochs)
     while epoch<=args.epochs:
-        time_start = time.time()
+        time_start = tm.time()
         # train
         if 'GraphRNN_VAE' in args.note:
             train_vae_epoch(epoch, args, rnn, output, dataset_train,
@@ -489,7 +489,8 @@ def train(args, dataset_train, rnn, output):
             train_rnn_epoch(epoch, args, rnn, output, dataset_train,
                             optimizer_rnn, optimizer_output,
                             scheduler_rnn, scheduler_output)
-
+        time_end = tm.time()
+        time_all[epoch - 1] = time_end - time_start
         # test
         if epoch % args.epochs_test == 0 and epoch>=args.epochs_test_start:
             for sample_time in range(1,4):
@@ -517,8 +518,6 @@ def train(args, dataset_train, rnn, output):
                 torch.save(rnn.state_dict(), fname)
                 fname = args.model_save_path + args.fname + 'output_' + str(epoch) + '.dat'
                 torch.save(output.state_dict(), fname)
-        time_end = time.time()
-        time_all[epoch-1]=time_end-time_start
         epoch += 1
 
 
