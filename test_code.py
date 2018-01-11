@@ -112,14 +112,14 @@ CUDA = 2
 #
 # print(a)
 
-x = Variable(torch.randn(5, 20, 3)).cuda()
-# x = torch.randn(5, 20, 3).cuda()
-lens = np.arange(1,6)[::-1]
-
-print('x_before', x)
-x = pack_padded_sequence(x, lens, batch_first=True)
-print('x_pack', x.data)
-print('x_unpack', pad_packed_sequence(x,batch_first=True)[0])
+# x = Variable(torch.randn(5, 20, 3)).cuda()
+# # x = torch.randn(5, 20, 3).cuda()
+# lens = np.arange(1,6)[::-1]
+#
+# print('x_before', x)
+# x = pack_padded_sequence(x, lens, batch_first=True)
+# print('x_pack', x.data)
+# print('x_unpack', pad_packed_sequence(x,batch_first=True)[0])
 
 # lstm = nn.LSTM(3, 2, batch_first=True).cuda()
 # h0 = Variable(torch.zeros(1, 10, 2)).cuda()
@@ -496,3 +496,15 @@ print('x_unpack', pad_packed_sequence(x,batch_first=True)[0])
 # print('output_y_len',output_y_len)
 # print('batch_size_real',len(output_y_len))
 # print('batch_size_pred',sum(y_len))
+
+
+# check networkit package usage
+# import networkit as nt
+# g = nt.generators.DynamicForestFireGenerator(p=0.3,False,r=0.3).generate()
+
+# for i in range(10):
+#     pass
+# print(i)
+
+a = np.zeros(10)
+print(a)

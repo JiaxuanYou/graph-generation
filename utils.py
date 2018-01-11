@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import torch.nn.functional as F
 from torch import optim
 from torch.optim.lr_scheduler import MultiStepLR
-import node2vec.src.main as nv
+# import node2vec.src.main as nv
 from sklearn.decomposition import PCA
 import community
 import pickle
