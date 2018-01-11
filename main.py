@@ -43,17 +43,17 @@ class Args():
         ## used for paper
         # run in hyperion: icml2018_part1
         # self.graph_type = 'DD'
-        # self.graph_type = 'enzymes'
         # self.graph_type = 'caveman'
         # self.graph_type = 'caveman_small'
         # self.graph_type = 'grid'
         # self.graph_type = 'grid_small'
 
         # run in hyperion2: icml2018_part2
+        self.graph_type = 'enzymes'
         # self.graph_type = 'barabasi'
         # self.graph_type = 'barabasi_small'
         # self.graph_type = 'citeseer'
-        self.graph_type = 'citeseer_small'
+        # self.graph_type = 'citeseer_small'
         # self.graph_type = 'barabasi_noise'
 
         # update when initializing dataset
@@ -692,11 +692,11 @@ if __name__ == '__main__':
         for i in range(10):
             print('training loop',i)
             args.fname = args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
-                args.hidden_size_rnn) + '_'  + i + '_'
+                args.hidden_size_rnn) + '_'  + str(i) + '_'
             args.fname_pred = args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
-                args.hidden_size_rnn) + '_pred_' + i + '_'
+                args.hidden_size_rnn) + '_pred_' + str(i) + '_'
             args.fname_real = args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
-                args.hidden_size_rnn) + '_real_' + i + '_'
+                args.hidden_size_rnn) + '_real_' + str(i) + '_'
             train(args, dataset_loader, rnn, output)
             if args.note == 'GraphRNN_VAE':
                 rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_rnn,
