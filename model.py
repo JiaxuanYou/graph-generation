@@ -94,7 +94,7 @@ def gumbel_sigmoid(logits, temperature):
 # print(x)
 # print(y)
 
-def sample_sigmoid(y, sample, thresh=0.5, sample_time=3):
+def sample_sigmoid(y, sample, thresh=0.5, sample_time=2):
     '''
         do sampling over unnormalized score
     :param y: input
@@ -127,6 +127,42 @@ def sample_sigmoid(y, sample, thresh=0.5, sample_time=3):
     else:
         y_thresh = Variable(torch.ones(y.size(0), y.size(1), y.size(2))*thresh).cuda(CUDA)
         y_result = torch.gt(y, y_thresh).float()
+    return y_result
+
+
+def sample_sigmoid_supervised(y_pred, y, current, y_len, sample_time=2):
+    '''
+        do sampling over unnormalized score
+    :param y_pred: input
+    :param y: supervision
+    :param sample: Bool
+    :param thresh: if not sample, the threshold
+    :param sampe_time: how many times do we sample, if =1, do single sample
+    :return: sampled result
+    '''
+
+    # do sigmoid first
+    y_pred = F.sigmoid(y_pred)
+    # do sampling
+    y_result = Variable(torch.rand(y_pred.size(0), y_pred.size(1), y_pred.size(2))).cuda(CUDA)
+    # loop over all batches
+    for i in range(y_result.size(0)):
+        # using supervision
+        if current<y_len[i]:
+            while True:
+                y_thresh = Variable(torch.rand(y_pred.size(1), y_pred.size(2))).cuda(CUDA)
+                y_result[i] = torch.gt(y_pred[i], y_thresh).float()
+                y_diff = y_result[i]-y[i]
+                if (y_diff>0).all():
+                    break
+        # supervision done
+        else:
+            # do 'multi_sample' times sampling
+            for j in range(sample_time):
+                y_thresh = Variable(torch.rand(y_pred.size(1), y_pred.size(2))).cuda(CUDA)
+                y_result[i] = torch.gt(y_pred[i], y_thresh).float()
+                if (torch.sum(y_result[i]).data>0).any():
+                    break
     return y_result
 
 

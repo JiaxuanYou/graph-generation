@@ -458,10 +458,11 @@ class Graph_sequence_sampler_pytorch(torch.utils.data.Dataset):
 # graphs, max_num_nodes = Graph_load_batch(min_num_nodes=20, name='PROTEINS_full')
 # graphs = Graph_load_batch(min_num_nodes=10, name='ENZYMES')
 # graphs = [nx.karate_club_graph() for i in range(100)]
+# graphs = [nx.ladder_graph(5) for i in range(10)]
 
 # print('ladder')
 # graphs = []
-# for i in range(100, 201):
+# for i in range(2, 6):
 #     graphs.append(nx.ladder_graph(i))
 # print('tree')
 # graphs = []
@@ -485,8 +486,8 @@ class Graph_sequence_sampler_pytorch(torch.utils.data.Dataset):
 #     for j in range(10):
 #         graphs.append(nx.barabasi_albert_graph(i,2))
 
-# dataset = Graph_sequence_sampler_pytorch(graphs,max_prev_node=20)
-# print(dataset[0])
+# dataset = Graph_sequence_sampler_pytorch(graphs,max_prev_node=10)
+# print(dataset[0]['x'])
 # print('dataset len', len(dataset))
 # sample_strategy = torch.utils.data.sampler.WeightedRandomSampler([1.0/len(dataset) for i in range(len(dataset))], num_samples=1024, replacement=True)
 # num_workers = 4
@@ -507,10 +508,40 @@ class Graph_sequence_sampler_pytorch(torch.utils.data.Dataset):
 
 
 
+########## use pytorch dataloader
+class Graph_sequence_sampler_pytorch_nobfs(torch.utils.data.Dataset):
+    def __init__(self, G_list, max_num_node=None):
+        self.adj_all = []
+        self.len_all = []
+        for G in G_list:
+            self.adj_all.append(np.asarray(nx.to_numpy_matrix(G)))
+            self.len_all.append(G.number_of_nodes())
+        if max_num_node is None:
+            self.n = max(self.len_all)
+        else:
+            self.n = max_num_node
+    def __len__(self):
+        return len(self.adj_all)
+    def __getitem__(self, idx):
+        adj_copy = self.adj_all[idx].copy()
+        x_batch = np.zeros((self.n, self.n-1))  # here zeros are padded for small graph
+        x_batch[0,:] = 1 # the first input token is all ones
+        y_batch = np.zeros((self.n, self.n-1))  # here zeros are padded for small graph
+        # generate input x, y pairs
+        len_batch = adj_copy.shape[0]
+        x_idx = np.random.permutation(adj_copy.shape[0])
+        adj_copy = adj_copy[np.ix_(x_idx, x_idx)]
+        adj_encoded = encode_adj(adj_copy.copy(), max_prev_node=self.n-1)
+        # get x and y and adj
+        # for small graph the rest are zero padded
+        y_batch[0:adj_encoded.shape[0], :] = adj_encoded
+        x_batch[1:adj_encoded.shape[0] + 1, :] = adj_encoded
+        return {'x':x_batch,'y':y_batch, 'len':len_batch}
 
-
-
-
+# dataset = Graph_sequence_sampler_pytorch_nobfs(graphs)
+# print(dataset[1]['x'])
+# print(dataset[1]['y'])
+# print(dataset[1]['len'])
 
 
 
