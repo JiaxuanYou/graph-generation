@@ -123,27 +123,32 @@ def eval_list_fname(real_graph_filename, pred_graphs_filename, baselines,
 
     if out_file_prefix is not None:
         out_files = {
-                'train': open(out_file_prefix + '_train.txt', 'w'),
-                'compare': open(out_file_prefix + '_compare.txt', 'w')
+                'train': open(out_file_prefix + '_train.txt', 'w+'),
+                'compare': open(out_file_prefix + '_compare.txt', 'w+')
         }
 
     out_files['train'].write('degree,clustering,orbits4\n')
-    out_files['compare'].write('metric,real,ours,perturbed\n')
+    
+    line = 'metric,real,ours,perturbed'
+    for bl in baselines:
+        line += ',' + bl
+    line += '\n'
+    out_files['compare'].write(line)
 
     results = {
             'deg': {
                     'real': 0,
-                    'ours': 0,
+                    'ours': 100, # take min over all training epochs
                     'perturbed': 0,
                     'kron': 0},
             'clustering': {
                     'real': 0,
-                    'ours': 0,
+                    'ours': 100,
                     'perturbed': 0,
                     'kron': 0},
             'orbits4': {
                     'real': 0,
-                    'ours': 0,
+                    'ours': 100,
                     'perturbed': 0,
                     'kron': 0}
     }
@@ -264,11 +269,12 @@ def eval_list_fname(real_graph_filename, pred_graphs_filename, baselines,
                 str(methods['perturbed'])
         for baseline in baselines:
             line += ',' + str(methods[baseline])
+        line += '\n'
 
         out_files['compare'].write(line)
 
-    for _, file in out_files.items():
-        file.close()
+    for _, out_f in out_files.items():
+        out_f.close()
 
 
 def eval_performance(datadir, prefix=None, args=None, eval_every=200, out_file_prefix=None,
@@ -344,20 +350,23 @@ if __name__ == '__main__':
 
     #datadir = "/lfs/local/0/jiaxuany/pycharm/graphs_share/"
     #datadir = "/lfs/local/0/jiaxuany/pycharm/"
-    #prefix = "GraphRNN_enzymes_50_"
     prefix = "GraphRNN_structure_enzymes_50_"
     args = Args()
 
     if prog_args.export:
-        filename = args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
-                     str(0) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(
-                     args.bptt_len) + '_' + str(args.gumbel) 
-        input_path = datadir + filename + '.dat'
+        real_graph_filename = args.graph_save_path + args.fname_real + '0.dat'
+        #filename = args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
+        #             str(0) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + \
+        #             str(args.bptt_len) + '_' + str(args.gumbel) 
+        input_path = datadir + real_graph_filename
         if not os.path.isdir('eval_results'):
             os.makedirs('eval_results')
         if not os.path.isdir('eval_results/ground_truth'):
             os.makedirs('eval_results/ground_truth')
-        output_prefix = 'eval_results/ground_truth/' + args.graph_type
+        out_dir = os.path.join('eval_results/ground_truth', args.graph_type)
+        if not os.path.isdir(out_dir):
+            os.makedirs(out_dir)
+        output_prefix = os.path.join(out_dir, args.graph_type)
         print('Export ground truth to ', output_prefix)
         utils.export_graphs_to_txt(input_path, output_prefix)
     else:

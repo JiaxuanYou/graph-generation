@@ -309,7 +309,7 @@ def export_graphs_to_txt(filename, output_filename_prefix):
     g_list = load_graph_list(filename)
     i = 0
     for G in g_list:
-        f = open(output_filename_prefix + '_' + str(i) + '.txt', 'w')
+        f = open(output_filename_prefix + '_' + str(i) + '.txt', 'w+')
         for (u, v) in G.edges():
             f.write(str(u) + '\t' + str(v) + '\n')
         i += 1
