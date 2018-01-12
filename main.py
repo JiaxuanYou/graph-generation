@@ -34,10 +34,13 @@ class Args():
         self.clean_tensorboard = False
 
         ### model type
-        self.note = 'GraphRNN_MLP'
-        # self.note = 'GraphRNN_VAE' # deprecated
+        # self.note = 'GraphRNN_MLP'
         # self.note = 'GraphRNN_VAE_conditional'
         # self.note = 'GraphRNN_RNN'
+        ## for comparison
+        # self.note = 'GraphRNN_MLP_nobfs'
+        # self.note = 'GraphRNN_VAE_conditional_nobfs'
+        self.note = 'GraphRNN_RNN_nobfs'
 
         ### data config
         ## used for paper
@@ -78,8 +81,8 @@ class Args():
         self.num_layers = 4
 
         ### training config
-        self.num_workers = 8 # num workers to load data
-        self.batch_ratio = 32 # how many batches per epoch
+        self.num_workers = 4 # num workers to load data, default 8
+        self.batch_ratio = 32 # how many batches per epoch, default 32
         self.epochs = 3000 # now one epoch means self.batch_ratio x batch_size
         self.epochs_test_start = 100
         self.epochs_test = 100
@@ -236,6 +239,40 @@ def test_vae_epoch(epoch, args, rnn, output, test_batch_size=16, save_histogram=
     return G_pred_list
 
 
+def test_vae_partial_epoch(epoch, args, rnn, output, data_loader, save_histogram=False,sample_time=1):
+    rnn.eval()
+    output.eval()
+    G_pred_list = []
+    for batch_idx, data in enumerate(data_loader):
+        x = data['x'].float()
+        y = data['y'].float()
+        y_len = data['len']
+        test_batch_size = x.size(0)
+        rnn.hidden = rnn.init_hidden(test_batch_size)
+        # generate graphs
+        max_num_node = int(args.max_num_node)
+        y_pred = Variable(torch.zeros(test_batch_size, max_num_node, args.max_prev_node)).cuda(CUDA) # normalized prediction score
+        y_pred_long = Variable(torch.zeros(test_batch_size, max_num_node, args.max_prev_node)).cuda(CUDA) # discrete prediction
+        x_step = Variable(torch.ones(test_batch_size,1,args.max_prev_node)).cuda(CUDA)
+        for i in range(max_num_node):
+            print('finish node',i)
+            h = rnn(x_step)
+            y_pred_step, _, _ = output(h)
+            y_pred[:, i:i + 1, :] = F.sigmoid(y_pred_step)
+            x_step = sample_sigmoid_supervised(y_pred_step, y[:,i:i+1,:].cuda(CUDA), current=i, y_len=y_len, sample_time=sample_time)
+
+            y_pred_long[:, i:i + 1, :] = x_step
+            rnn.hidden = Variable(rnn.hidden.data).cuda(CUDA)
+        y_pred_data = y_pred.data
+        y_pred_long_data = y_pred_long.data.long()
+
+        # save graphs as pickle
+        for i in range(test_batch_size):
+            adj_pred = decode_adj(y_pred_long_data[i].cpu().numpy())
+            G_pred = get_graph(adj_pred) # get a graph from zero-padded adj
+            G_pred_list.append(G_pred)
+    return G_pred_list
+
 
 
 def train_mlp_epoch(epoch, args, rnn, output, data_loader,
@@ -344,10 +381,11 @@ def test_mlp_partial_epoch(epoch, args, rnn, output, data_loader, save_histogram
         y_pred_long = Variable(torch.zeros(test_batch_size, max_num_node, args.max_prev_node)).cuda(CUDA) # discrete prediction
         x_step = Variable(torch.ones(test_batch_size,1,args.max_prev_node)).cuda(CUDA)
         for i in range(max_num_node):
+            print('finish node',i)
             h = rnn(x_step)
             y_pred_step = output(h)
             y_pred[:, i:i + 1, :] = F.sigmoid(y_pred_step)
-            x_step = sample_sigmoid_supervised(y_pred_step, y[:,i:i+1,:], current=i, y_len=y_len, sample_time=sample_time)
+            x_step = sample_sigmoid_supervised(y_pred_step, y[:,i:i+1,:].cuda(CUDA), current=i, y_len=y_len, sample_time=sample_time)
 
             y_pred_long[:, i:i + 1, :] = x_step
             rnn.hidden = Variable(rnn.hidden.data).cuda(CUDA)
@@ -361,6 +399,44 @@ def test_mlp_partial_epoch(epoch, args, rnn, output, data_loader, save_histogram
             G_pred_list.append(G_pred)
     return G_pred_list
 
+
+## too complicated, deprecated
+# def test_mlp_partial_bfs_epoch(epoch, args, rnn, output, data_loader, save_histogram=False,sample_time=1):
+#     rnn.eval()
+#     output.eval()
+#     G_pred_list = []
+#     for batch_idx, data in enumerate(data_loader):
+#         x = data['x'].float()
+#         y = data['y'].float()
+#         y_len = data['len']
+#         test_batch_size = x.size(0)
+#         rnn.hidden = rnn.init_hidden(test_batch_size)
+#         # generate graphs
+#         max_num_node = int(args.max_num_node)
+#         y_pred = Variable(torch.zeros(test_batch_size, max_num_node, args.max_prev_node)).cuda(CUDA) # normalized prediction score
+#         y_pred_long = Variable(torch.zeros(test_batch_size, max_num_node, args.max_prev_node)).cuda(CUDA) # discrete prediction
+#         x_step = Variable(torch.ones(test_batch_size,1,args.max_prev_node)).cuda(CUDA)
+#         for i in range(max_num_node):
+#             # 1 back up hidden state
+#             hidden_prev = Variable(rnn.hidden.data).cuda(CUDA)
+#             h = rnn(x_step)
+#             y_pred_step = output(h)
+#             y_pred[:, i:i + 1, :] = F.sigmoid(y_pred_step)
+#             x_step = sample_sigmoid_supervised(y_pred_step, y[:,i:i+1,:].cuda(CUDA), current=i, y_len=y_len, sample_time=sample_time)
+#             y_pred_long[:, i:i + 1, :] = x_step
+#
+#             rnn.hidden = Variable(rnn.hidden.data).cuda(CUDA)
+#
+#             print('finish node', i)
+#         y_pred_data = y_pred.data
+#         y_pred_long_data = y_pred_long.data.long()
+#
+#         # save graphs as pickle
+#         for i in range(test_batch_size):
+#             adj_pred = decode_adj(y_pred_long_data[i].cpu().numpy())
+#             G_pred = get_graph(adj_pred) # get a graph from zero-padded adj
+#             G_pred_list.append(G_pred)
+#     return G_pred_list
 
 
 def train_rnn_epoch(epoch, args, rnn, output, data_loader,
@@ -567,11 +643,13 @@ def train_graph_completion(args, dataset_test, rnn, output):
     output.load_state_dict(torch.load(fname))
 
     epoch = args.load_epoch
-    print('model loaded!, epoch: {}'.format(args.epoch))
+    print('model loaded!, epoch: {}'.format(args.load_epoch))
 
     for sample_time in range(1,4):
         if 'GraphRNN_MLP' in args.note:
             G_pred = test_mlp_partial_epoch(epoch, args, rnn, output, dataset_test,sample_time=sample_time)
+        if 'GraphRNN_VAE' in args.note:
+            G_pred = test_vae_partial_epoch(epoch, args, rnn, output, dataset_test,sample_time=sample_time)
         # save graphs
         fname = args.graph_save_path + args.fname_pred + str(epoch) +'_'+str(sample_time) + 'graph_completion.dat'
         save_graph_list(G_pred, fname)
@@ -702,13 +780,30 @@ if __name__ == '__main__':
 
 
     ### uncomment when training
-    # # save ground truth graphs
-    # save_graph_list(graphs,args.graph_save_path + args.fname_real + '0.dat')
-    # print('real graphs saved')
+    # save ground truth graphs
+    save_graph_list(graphs,args.graph_save_path + args.fname_real + '0.dat')
+    print('real graphs saved')
+
+    ### comment when training
+    # p = 0.5
+    # for graph in graphs:
+    #     for node in list(graph.nodes()):
+    #         # print('node',node)
+    #         if np.random.rand()>p:
+    #             graph.remove_node(node)
+    #     for edge in list(graph.edges()):
+    #         # print('edge',edge)
+    #         if np.random.rand()>p:
+    #             graph.remove_edge(edge[0],edge[1])
 
 
     ### dataset initialization
-    dataset = Graph_sequence_sampler_pytorch(graphs,max_prev_node=args.max_prev_node)
+    if 'nobfs' in args.note:
+        print('nobfs')
+        dataset = Graph_sequence_sampler_pytorch_nobfs(graphs, max_num_node=args.max_num_node)
+        args.max_prev_node = args.max_num_node-1
+    else:
+        dataset = Graph_sequence_sampler_pytorch(graphs,max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
     sample_strategy = torch.utils.data.sampler.WeightedRandomSampler([1.0 / len(dataset) for i in range(len(dataset))],
                                                                      num_samples=args.batch_size*args.batch_ratio, replacement=True)
     dataset_loader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers,
@@ -720,67 +815,62 @@ if __name__ == '__main__':
     # lstm = LSTM_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_lstm,
     #                   hidden_size=args.hidden_size, num_layers=args.num_layers).cuda(CUDA)
 
-    if args.note == 'GraphRNN_VAE':
-        rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_rnn,
-                        hidden_size=args.hidden_size_rnn, num_layers=args.num_layers, has_input=True,
-                        has_output=False).cuda(CUDA)
-        output = MLP_VAE_plain(h_size=args.hidden_size_rnn, embedding_size=args.embedding_size_output, y_size=args.max_prev_node).cuda(CUDA)
-    elif args.note == 'GraphRNN_VAE_conditional':
+    if 'GraphRNN_VAE_conditional' in args.note:
         rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_rnn,
                         hidden_size=args.hidden_size_rnn, num_layers=args.num_layers, has_input=True,
                         has_output=False).cuda(CUDA)
         output = MLP_VAE_conditional_plain(h_size=args.hidden_size_rnn, embedding_size=args.embedding_size_output, y_size=args.max_prev_node).cuda(CUDA)
-    elif args.note == 'GraphRNN_MLP':
+    elif 'GraphRNN_MLP' in args.note:
         rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_rnn,
                         hidden_size=args.hidden_size_rnn, num_layers=args.num_layers, has_input=True,
                         has_output=False).cuda(CUDA)
         output = MLP_plain(h_size=args.hidden_size_rnn, embedding_size=args.embedding_size_output, y_size=args.max_prev_node).cuda(CUDA)
-    elif args.note == 'GraphRNN_RNN':
+    elif 'GraphRNN_RNN' in args.note:
         rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_rnn,
                         hidden_size=args.hidden_size_rnn, num_layers=args.num_layers, has_input=True,
                         has_output=True, output_size=args.hidden_size_rnn_output).cuda(CUDA)
         output = GRU_plain(input_size=1,embedding_size=args.embedding_size_rnn_output,hidden_size=args.hidden_size_rnn_output,num_layers=1,has_input=False,has_output=True,output_size=1).cuda(CUDA)
 
     ### start training
-    # # for enzyme, train 10 times; otherwise train 1 time
-    # if args.graph_type=='enzymes':
-    #     for i in range(10):
-    #         print('training loop',i)
-    #         args.fname = args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
-    #             args.hidden_size_rnn) + '_'  + str(i) + '_'
-    #         args.fname_pred = args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
-    #             args.hidden_size_rnn) + '_pred_' + str(i) + '_'
-    #         args.fname_real = args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
-    #             args.hidden_size_rnn) + '_real_' + str(i) + '_'
-    #         train(args, dataset_loader, rnn, output)
-    #         if args.note == 'GraphRNN_VAE':
-    #             rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_rnn,
-    #                             hidden_size=args.hidden_size_rnn, num_layers=args.num_layers, has_input=True,
-    #                             has_output=False).cuda(CUDA)
-    #             output = MLP_VAE_plain(h_size=args.hidden_size_rnn, embedding_size=args.embedding_size_output,
-    #                                    y_size=args.max_prev_node).cuda(CUDA)
-    #         elif args.note == 'GraphRNN_VAE_conditional':
-    #             rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_rnn,
-    #                             hidden_size=args.hidden_size_rnn, num_layers=args.num_layers, has_input=True,
-    #                             has_output=False).cuda(CUDA)
-    #             output = MLP_VAE_conditional_plain(h_size=args.hidden_size_rnn,
-    #                                                embedding_size=args.embedding_size_output,
-    #                                                y_size=args.max_prev_node).cuda(CUDA)
-    #         elif args.note == 'GraphRNN_MLP':
-    #             rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_rnn,
-    #                             hidden_size=args.hidden_size_rnn, num_layers=args.num_layers, has_input=True,
-    #                             has_output=False).cuda(CUDA)
-    #             output = MLP_plain(h_size=args.hidden_size_rnn, embedding_size=args.embedding_size_output,
-    #                                y_size=args.max_prev_node).cuda(CUDA)
-    #         elif args.note == 'GraphRNN_RNN':
-    #             rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_rnn,
-    #                             hidden_size=args.hidden_size_rnn, num_layers=args.num_layers, has_input=True,
-    #                             has_output=True, output_size=args.hidden_size_rnn_output).cuda(CUDA)
-    #             output = GRU_plain(input_size=1, embedding_size=args.embedding_size_rnn_output,
-    #                                hidden_size=args.hidden_size_rnn_output, num_layers=1, has_input=False,
-    #                                has_output=True, output_size=1).cuda(CUDA)
-    # else:
-    #     train(args, dataset_loader, rnn, output)
+    # for enzyme, train 10 times; otherwise train 1 time
+    if args.graph_type=='enzymes':
+        for i in range(10):
+            print('training loop',i)
+            args.fname = args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
+                args.hidden_size_rnn) + '_'  + str(i) + '_'
+            args.fname_pred = args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
+                args.hidden_size_rnn) + '_pred_' + str(i) + '_'
+            args.fname_real = args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
+                args.hidden_size_rnn) + '_real_' + str(i) + '_'
+            train(args, dataset_loader, rnn, output)
+            if args.note == 'GraphRNN_VAE':
+                rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_rnn,
+                                hidden_size=args.hidden_size_rnn, num_layers=args.num_layers, has_input=True,
+                                has_output=False).cuda(CUDA)
+                output = MLP_VAE_plain(h_size=args.hidden_size_rnn, embedding_size=args.embedding_size_output,
+                                       y_size=args.max_prev_node).cuda(CUDA)
+            elif args.note == 'GraphRNN_VAE_conditional':
+                rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_rnn,
+                                hidden_size=args.hidden_size_rnn, num_layers=args.num_layers, has_input=True,
+                                has_output=False).cuda(CUDA)
+                output = MLP_VAE_conditional_plain(h_size=args.hidden_size_rnn,
+                                                   embedding_size=args.embedding_size_output,
+                                                   y_size=args.max_prev_node).cuda(CUDA)
+            elif args.note == 'GraphRNN_MLP':
+                rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_rnn,
+                                hidden_size=args.hidden_size_rnn, num_layers=args.num_layers, has_input=True,
+                                has_output=False).cuda(CUDA)
+                output = MLP_plain(h_size=args.hidden_size_rnn, embedding_size=args.embedding_size_output,
+                                   y_size=args.max_prev_node).cuda(CUDA)
+            elif args.note == 'GraphRNN_RNN':
+                rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_rnn,
+                                hidden_size=args.hidden_size_rnn, num_layers=args.num_layers, has_input=True,
+                                has_output=True, output_size=args.hidden_size_rnn_output).cuda(CUDA)
+                output = GRU_plain(input_size=1, embedding_size=args.embedding_size_rnn_output,
+                                   hidden_size=args.hidden_size_rnn_output, num_layers=1, has_input=False,
+                                   has_output=True, output_size=1).cuda(CUDA)
+    else:
+        train(args, dataset_loader, rnn, output)
 
     ### graph completion
-    train_graph_completion(args,dataset_loader,rnn,output)
+    # train_graph_completion(args,dataset_loader,rnn,output)

@@ -12,6 +12,7 @@ from torch.autograd import Variable
 from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
 import torch.nn as nn
 from main import *
+from utils import *
 
 CUDA = 2
 # G = nx.ladder_graph(4)
@@ -506,5 +507,14 @@ CUDA = 2
 #     pass
 # print(i)
 
-a = np.zeros(10)
-print(a)
+# a = np.zeros(10)
+# print(a)
+args = Args()
+epoch = 3000
+sample_time = 2
+graph_pred = load_graph_list(args.graph_save_path + args.fname_pred + str(epoch) +'_'+str(sample_time) + 'graph_completion.dat')
+shuffle(graph_pred)
+draw_graph_list(graph_pred[0:16], row=4, col=4, fname=args.figure_save_path + 'test_pred')
+graph_real = load_graph_list(args.graph_save_path + args.fname_real + str(0) + '.dat')
+shuffle(graph_real)
+draw_graph_list(graph_real[0:16], row=4, col=4, fname=args.figure_save_path + 'test_real')

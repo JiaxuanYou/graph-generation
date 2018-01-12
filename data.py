@@ -486,7 +486,7 @@ class Graph_sequence_sampler_pytorch(torch.utils.data.Dataset):
 #     for j in range(10):
 #         graphs.append(nx.barabasi_albert_graph(i,2))
 
-# dataset = Graph_sequence_sampler_pytorch(graphs,max_prev_node=10)
+# dataset = Graph_sequence_sampler_pytorch(graphs,max_prev_node=17)
 # print(dataset[0]['x'])
 # print('dataset len', len(dataset))
 # sample_strategy = torch.utils.data.sampler.WeightedRandomSampler([1.0/len(dataset) for i in range(len(dataset))], num_samples=1024, replacement=True)

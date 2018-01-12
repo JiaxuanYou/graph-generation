@@ -152,8 +152,11 @@ def sample_sigmoid_supervised(y_pred, y, current, y_len, sample_time=2):
             while True:
                 y_thresh = Variable(torch.rand(y_pred.size(1), y_pred.size(2))).cuda(CUDA)
                 y_result[i] = torch.gt(y_pred[i], y_thresh).float()
-                y_diff = y_result[i]-y[i]
-                if (y_diff>0).all():
+                # print('current',current)
+                # print('y_result',y_result[i].data)
+                # print('y',y[i])
+                y_diff = y_result[i].data-y[i]
+                if (y_diff>=0).all():
                     break
         # supervision done
         else:

@@ -245,6 +245,7 @@ def draw_graph_list(G_list, row, col, fname = 'figures/test.png'):
     # plt.close()
 
 
+
 # directly get graph statistics from adj, obsoleted
 def decode_graph(adj, prefix):
     adj = np.asmatrix(adj)
