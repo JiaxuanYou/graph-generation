@@ -345,6 +345,7 @@ if __name__ == '__main__':
 
     # datadir = "/dfs/scratch0/rexy/graph_gen_data/"
     ## the following dir has all experiment data, including 1-3 sample times that you can choose from
+    # datadir = ''
     datadir = "/dfs/scratch0/jiaxuany0/"
 
 

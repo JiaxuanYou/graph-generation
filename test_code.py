@@ -509,12 +509,18 @@ CUDA = 2
 
 # a = np.zeros(10)
 # print(a)
-args = Args()
-epoch = 3000
-sample_time = 2
-graph_pred = load_graph_list(args.graph_save_path + args.fname_pred + str(epoch) +'_'+str(sample_time) + 'graph_completion.dat')
-shuffle(graph_pred)
-draw_graph_list(graph_pred[0:16], row=4, col=4, fname=args.figure_save_path + 'test'+ args.fname_pred + str(epoch) +'_'+str(sample_time))
-graph_real = load_graph_list(args.graph_save_path + args.fname_real + str(0) + '.dat')
-shuffle(graph_real)
-draw_graph_list(graph_real[0:16], row=4, col=4, fname=args.figure_save_path + 'test'+ args.fname_real + str(epoch) +'_'+str(sample_time))
+
+######## view graph completion
+# args = Args()
+# epoch = 3000
+# sample_time = 2
+# graph_pred = load_graph_list(args.graph_save_path + args.fname_pred + str(epoch) +'_'+str(sample_time) + 'graph_completion.dat')
+# shuffle(graph_pred)
+# draw_graph_list(graph_pred[0:16], row=4, col=4, fname=args.figure_save_path + 'test'+ args.fname_pred + str(epoch) +'_'+str(sample_time))
+# graph_real = load_graph_list(args.graph_save_path + args.fname_real + str(0) + '.dat')
+# shuffle(graph_real)
+# draw_graph_list(graph_real[0:16], row=4, col=4, fname=args.figure_save_path + 'test'+ args.fname_real + str(epoch) +'_'+str(sample_time))
+#
+# a = np.load('timing/GraphRNN_VAE_conditional_barabasi_4_128_.npy')
+# for i in a:
+#     print(i)
