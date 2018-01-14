@@ -36,11 +36,11 @@ class Args():
         ### model type
         # self.note = 'GraphRNN_MLP'
         # self.note = 'GraphRNN_VAE_conditional'
-        # self.note = 'GraphRNN_RNN'
+        self.note = 'GraphRNN_RNN'
         ## for comparison
         # self.note = 'GraphRNN_MLP_nobfs'
         # self.note = 'GraphRNN_VAE_conditional_nobfs'
-        self.note = 'GraphRNN_RNN_nobfs'
+        # self.note = 'GraphRNN_RNN_nobfs'
 
         ### data config
         ## used for paper
@@ -48,13 +48,13 @@ class Args():
         # self.graph_type = 'DD'
         # self.graph_type = 'caveman'
         # self.graph_type = 'caveman_small'
-        # self.graph_type = 'grid'
+        self.graph_type = 'grid'
         # self.graph_type = 'grid_small'
 
         # run in hyperion2: icml2018_part2
         # self.graph_type = 'enzymes'
         # self.graph_type = 'barabasi'
-        self.graph_type = 'barabasi_small'
+        # self.graph_type = 'barabasi_small'
         # self.graph_type = 'citeseer'
         # self.graph_type = 'citeseer_small'
         # self.graph_type = 'barabasi_noise'

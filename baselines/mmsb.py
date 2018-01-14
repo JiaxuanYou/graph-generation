@@ -17,7 +17,13 @@ ed.set_seed(int(time()))
 # DATA
 #X_data, Z_true = karate("data")
 
+def disjoint_cliques_test_graph(num_cliques, clique_size):
+    G = nx.disjoint_union_all([nx.complete_graph(clique_size) for _ in range(num_cliques)])
+    return nx.to_numpy_matrix(G)
+
 def mmsb(N, K, data):
+    # sparsity
+    rho = 0
     # MODEL
     # probability of belonging to each of K blocks for each node
     gamma = Dirichlet(concentration=tf.ones([K]))
@@ -26,29 +32,35 @@ def mmsb(N, K, data):
     # probability of belonging to each of K blocks for all nodes
     Z = Multinomial(total_count=1.0, probs=gamma, sample_shape=N)
     # adjacency
-    X = Bernoulli(probs=tf.matmul(Z, tf.matmul(Pi, tf.transpose(Z))))
+    X = Bernoulli(probs=(1 - rho) * tf.matmul(Z, tf.matmul(Pi, tf.transpose(Z))))
     
     # INFERENCE (EM algorithm)
     qgamma = PointMass(params=tf.nn.softmax(tf.Variable(tf.random_normal([K]))))
+    #qgamma = PointMass(params=tf.nn.softmax(tf.Variable(tf.constant(1.0, shape=[K]))))
     qPi = PointMass(params=tf.nn.sigmoid(tf.Variable(tf.random_normal([K, K]))))
     qZ = PointMass(params=tf.nn.softmax(tf.Variable(tf.random_normal([N, K]))))
+    #qZ = PointMass(params=tf.nn.softmax(tf.Variable(tf.constant(1.0, shape=[N, K]))))
     
     inference = ed.MAP({gamma: qgamma, Pi: qPi, Z: qZ}, data={X: data})
+    #inference = ed.MAP({Pi: qPi, Z: qZ}, data={X: data})
     
-    n_iter = 1000000
-    inference.initialize(optimizer=tf.train.AdamOptimizer(learning_rate=0.01), n_iter=n_iter)
+    n_iter = 20000
+    inference.initialize(optimizer=tf.train.RMSPropOptimizer(learning_rate=0.01), n_iter=n_iter)
     
     tf.global_variables_initializer().run()
+    print(qgamma.mean().eval())
     
     for _ in range(inference.n_iter):
         info_dict = inference.update()
         inference.print_progress(info_dict)
     
     inference.finalize()
+    print('qgamma after: ', qgamma.mean().eval())
     return qZ.mean().eval(), qPi.eval()
 
 if __name__ == '__main__':
-    X_data = nx.to_numpy_matrix(nx.connected_caveman_graph(4, 7))
+    X_data = disjoint_cliques_test_graph(4, 7)
+    #X_data = nx.to_numpy_matrix(nx.connected_caveman_graph(4, 7))
     print(X_data)
     N = X_data.shape[0]  # number of vertices
     K = 4  # number of clusters
