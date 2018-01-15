@@ -8,6 +8,8 @@ from torch import optim
 import torch.nn.functional as F
 import torch.nn.init as init
 
+from model import GraphConv
+
 class GraphVAE(nn.Module):
     def __init__(self, input_dim, hidden_dim, latent_dim, output_dim):
         '''
@@ -19,7 +21,7 @@ class GraphVAE(nn.Module):
         '''
         super(GraphVAE, self).__init__()
         self.conv1 = GraphConv(input_dim=input_dim, output_dim=hidden_dim)
-        self.conv2 = GraphConv(input_dim=hidden_dim, output_dim=output_dim)
+        self.conv2 = GraphConv(input_dim=hidden_dim, output_dim=latent_dim)
         self.act = nn.ReLU()
 
         for m in self.modules():
@@ -29,12 +31,13 @@ class GraphVAE(nn.Module):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
-    def forward(self, x, adj, input_feature):
-        x = self.conv1(x, adj)
+    def forward(self, input_features, adj):
+        x = self.conv1(input_features, adj)
         x = self.act(x)
         x = self.conv2(x, adj)
 
-        out,_ = torch.max(x, dim=0, keepdim = True)
+        # pool over all nodes
+        out,_ = torch.max(x, dim=1, keepdim = False)
         return out
 
 

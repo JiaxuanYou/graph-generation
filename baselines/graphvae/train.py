@@ -7,19 +7,40 @@ import os
 from random import shuffle
 import torch
 import torch.nn as nn
-import torch.nn.init as init
-from torch.autograd import Variable
+import torch.nn.init as init 
+from torch.autograd import Variable 
 import torch.nn.functional as F
 from torch import optim
 from torch.optim.lr_scheduler import MultiStepLR
 
 import data
+from baselines.graphvae.model import GraphVAE
+from baselines.graphvae.data import GraphAdjSampler
 
 CUDA = 2
 
-def train(args):
+LR_milestones = [500, 1000]
+
+def build_model(args, max_num_nodes):
+    out_dim = max_num_nodes * (max_num_nodes + 1) // 2
+    model = GraphVAE(max_num_nodes, 512, 1024, out_dim)
+    return model
+
+def train(args, dataloader, model):
     epoch = 1
-    optimizer = optim.Adam(list(output.parameters()), lr=args.lr)
+    optimizer = optim.Adam(list(model.parameters()), lr=args.lr)
+    scheduler = MultiStepLR(optimizer, milestones=LR_milestones, gamma=args.lr)
+
+    for batch_idx, data in enumerate(dataloader):
+        features = data['features'].float()
+        adj_input = data['adj'].float()
+
+        features = Variable(features).cuda()
+        adj_input = Variable(adj_input).cuda()
+        
+        encoded = model(features, adj_input)
+        print(encoded)
+
 
 def arg_parse():
     parser = argparse.ArgumentParser(description='GraphVAE arguments.')
@@ -29,9 +50,19 @@ def arg_parse():
 
     parser.add_argument('--lr', dest='lr',
             help='Learning rate.')
+    parser.add_argument('--batch_size', dest='batch_size',
+            help='Batch size.')
+    parser.add_argument('--num_workers', dest='num_workers',
+            help='Number of workers to load data.')
+    parser.add_argument('--max_num_nodes', dest='max_num_nodes',
+            help='Predefined maximum number of nodes in train/test graphs. -1 if determined by \
+                  training data.')
 
     parser.set_defaults(dataset='enzymes',
-                        lr=0.001)
+                        lr=0.001,
+                        batch_size=1,
+                        num_workers=4,
+                        max_num_nodes=-1)
     return parser.parse_args()
 
 def main():
@@ -47,14 +78,28 @@ def main():
     graphs_len = len(graphs)
     graphs_test = graphs[int(0.8 * graphs_len):]
     graphs_train = graphs[0:int(0.8*graphs_len)]
-    max_num_node = max([graphs[i].number_of_nodes() for i in range(len(graphs))])
+
+    if prog_args.max_num_nodes == -1:
+        max_num_nodes = max([graphs[i].number_of_nodes() for i in range(len(graphs))])
+    else:
+        max_num_nodes = prog_args.max_num_nodes
 
     print('total graph num: {}, training set: {}'.format(len(graphs),len(graphs_train)))
-    print('max number node: {}'.format(args.max_num_node))
+    print('max number node: {}'.format(max_num_nodes))
 
-    dataset = Graph_sequence_sampler_pytorch(graphs_train,de=args.max_prev_node,max_num_node=args.max_num_node)
+    dataset = GraphAdjSampler(graphs_train, max_num_nodes)
+    sample_strategy = torch.utils.data.sampler.WeightedRandomSampler(
+            [1.0 / len(dataset) for i in range(len(dataset))],
+            num_samples=prog_args.batch_size, 
+            replacement=False)
+    dataset_loader = torch.utils.data.DataLoader(
+            dataset, 
+            batch_size=prog_args.batch_size, 
+            num_workers=prog_args.num_workers,
+            sampler=sample_strategy)
+    model = build_model(prog_args, max_num_nodes)
+    train(prog_args, dataset_loader, model)
 
-    print(graphs)
 
 if __name__ == '__main__':
     main()
