@@ -524,3 +524,31 @@ CUDA = 2
 # a = np.load('timing/GraphRNN_VAE_conditional_barabasi_4_128_.npy')
 # for i in a:
 #     print(i)
+
+
+G = nx.ladder_graph(4)
+adj_list = G.subgraph(0).adjacency_list()
+# adj_list[0].append(101010)
+print(adj_list)
+
+#
+# a = []
+# for i in a:
+#     print(i)
+
+# a = [1,2,3,4,5]
+#
+# b = Variable(torch.Tensor([5,2,2,3]))
+# print(b)
+# print(b.size(0))
+# print(b.expand(10,4))
+
+#
+# m = nn.Softmax()
+# input = Variable(torch.randn(2, 3))
+# print(input)
+# print(m(input))
+
+# print(list(range(1)))
+
+print(nx.complete_graph(1).number_of_nodes())

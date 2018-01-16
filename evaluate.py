@@ -293,7 +293,7 @@ def eval_performance(datadir, prefix=None, args=None, eval_every=200, out_file_p
         # pred_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
         #          str(epoch) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(args.bptt_len) + '.dat' for epoch in range(0,50001,eval_every)]
         
-        real_graph_filename = datadir+args.graph_save_path + args.fname_real + '0.dat'
+        real_graph_filename = datadir+args.graph_save_path + args.fname_test + '0.dat'
         # for proposed model
         end_epoch = 3001
         epoch_range = range(eval_every, end_epoch, eval_every)
@@ -345,8 +345,8 @@ if __name__ == '__main__':
 
     # datadir = "/dfs/scratch0/rexy/graph_gen_data/"
     ## the following dir has all experiment data, including 1-3 sample times that you can choose from
-    # datadir = ''
-    datadir = "/dfs/scratch0/jiaxuany0/"
+    datadir = ''
+    # datadir = "/dfs/scratch0/jiaxuany0/"
 
 
     #datadir = "/lfs/local/0/jiaxuany/pycharm/graphs_share/"
