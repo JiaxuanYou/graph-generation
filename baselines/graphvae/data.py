@@ -10,7 +10,9 @@ class GraphAdjSampler(torch.utils.data.Dataset):
         self.feature_all = []
 
         for G in G_list:
-            self.adj_all.append(np.asarray(nx.to_numpy_matrix(G)))
+            # the diagonal entries are 1 since they denote node probability
+            self.adj_all.append(
+                    np.asarray(nx.to_numpy_matrix(G)) + np.identity(G.number_of_nodes()))
             self.len_all.append(G.number_of_nodes())
             if features == 'id':
                 self.feature_all.append(np.identity(max_num_nodes))
@@ -26,10 +28,13 @@ class GraphAdjSampler(torch.utils.data.Dataset):
 
         adj_decoded = np.zeros(self.max_num_nodes * (self.max_num_nodes + 1) // 2)
         node_idx = 0
+        print(adj_padded)
         for i in range(self.max_num_nodes):
             for j in range(i+1):
                 adj_decoded[node_idx] = adj_padded[i, j]
                 node_idx += 1
+        print(adj_decoded)
+        print(np.tril(adj_padded))
         
         return {'adj':adj_padded,
                 'adj_decoded':adj_decoded, 

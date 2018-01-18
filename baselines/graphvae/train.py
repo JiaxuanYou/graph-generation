@@ -23,7 +23,7 @@ LR_milestones = [500, 1000]
 
 def build_model(args, max_num_nodes):
     out_dim = max_num_nodes * (max_num_nodes + 1) // 2
-    model = GraphVAE(max_num_nodes, 512, 1024, out_dim)
+    model = GraphVAE(max_num_nodes, 512, 256, max_num_nodes)
     return model
 
 def train(args, dataloader, model):
@@ -32,6 +32,7 @@ def train(args, dataloader, model):
     scheduler = MultiStepLR(optimizer, milestones=LR_milestones, gamma=args.lr)
 
     for batch_idx, data in enumerate(dataloader):
+        print(batch_idx)
         features = data['features'].float()
         adj_input = data['adj'].float()
 
@@ -39,7 +40,6 @@ def train(args, dataloader, model):
         adj_input = Variable(adj_input).cuda()
         
         encoded = model(features, adj_input)
-        print(encoded)
 
 
 def arg_parse():
@@ -62,7 +62,7 @@ def arg_parse():
                         lr=0.001,
                         batch_size=1,
                         num_workers=4,
-                        max_num_nodes=-1)
+                        max_num_nodes=50)
     return parser.parse_args()
 
 def main():
@@ -74,15 +74,21 @@ def main():
 
     if prog_args.dataset == 'enzymes':
         graphs= data.Graph_load_batch(min_num_nodes=10, name='ENZYMES')
-
-    graphs_len = len(graphs)
-    graphs_test = graphs[int(0.8 * graphs_len):]
-    graphs_train = graphs[0:int(0.8*graphs_len)]
+        num_graphs_raw = len(graphs)
+    elif prog_ars.dataset == 
 
     if prog_args.max_num_nodes == -1:
         max_num_nodes = max([graphs[i].number_of_nodes() for i in range(len(graphs))])
     else:
         max_num_nodes = prog_args.max_num_nodes
+        # remove graphs with number of nodes greater than max_num_nodes
+        graphs = [g for g in graphs if g.number_of_nodes() <= max_num_nodes]
+
+    graphs_len = len(graphs)
+    print('Number of graphs removed due to upper-limit of number of nodes: ', 
+            num_graphs_raw - graphs_len)
+    graphs_test = graphs[int(0.8 * graphs_len):]
+    graphs_train = graphs[0:int(0.8*graphs_len)]
 
     print('total graph num: {}, training set: {}'.format(len(graphs),len(graphs_train)))
     print('max number node: {}'.format(max_num_nodes))
@@ -97,7 +103,7 @@ def main():
             batch_size=prog_args.batch_size, 
             num_workers=prog_args.num_workers,
             sampler=sample_strategy)
-    model = build_model(prog_args, max_num_nodes)
+    model = build_model(prog_args, max_num_nodes).cuda()
     train(prog_args, dataset_loader, model)
 
 

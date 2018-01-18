@@ -41,8 +41,7 @@ class Args():
         # self.note = 'GraphRNN_VAE_conditional'
         self.note = 'GraphRNN_RNN'
         ## for comparison
-        # self.note = 'GraphRNN_MLP_nobfs'
-        # self.note = 'GraphRNN_VAE_conditional_nobfs'
+        # self.note = 'GraphRNN_MLP_nobfs' # self.note = 'GraphRNN_VAE_conditional_nobfs'
         # self.note = 'GraphRNN_RNN_nobfs'
 
         ### data config
