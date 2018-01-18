@@ -114,6 +114,13 @@ def compute_basic_stats(real_g_list, target_g_list):
     dist_clustering = eval.stats.clustering_stats(real_g_list, target_g_list)
     return dist_degree, dist_clustering
 
+
+
+
+
+
+
+
 def eval_list_fname(real_graph_filename, pred_graphs_filename, baselines,
         eval_every, epoch_range=None, out_file_prefix=None):
     ''' Evaluate list of predicted graphs compared to ground truth, stored in files.
@@ -345,8 +352,8 @@ if __name__ == '__main__':
 
     # datadir = "/dfs/scratch0/rexy/graph_gen_data/"
     ## the following dir has all experiment data, including 1-3 sample times that you can choose from
-    datadir = ''
-    # datadir = "/dfs/scratch0/jiaxuany0/"
+    # datadir = ''
+    datadir = "/dfs/scratch0/jiaxuany0/"
 
 
     #datadir = "/lfs/local/0/jiaxuany/pycharm/graphs_share/"
@@ -382,4 +389,11 @@ if __name__ == '__main__':
         eval_performance(datadir, args=args,
                 out_file_prefix=out_file_prefix,sample_time=args.sample_time,
                 baselines=baselines)
+
+        # loop over all results
+        models_all = ['GraphRNN_MLP', 'GraphRNN_VAE_conditional', 'GraphRNN_RNN']
+        dataset_all = ['DD', 'caveman', 'caveman_small', 'grid', 'grid_small', 'ladder_small',
+                       'enzymes', 'barabasi', 'barabasi_small', 'citeseer', 'citeseer_small']
+
+
 

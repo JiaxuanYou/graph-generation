@@ -43,11 +43,11 @@ def binary_cross_entropy_weight(y_pred, y,has_weight=False, weight_length=1, wei
 def sample_tensor(y,sample=True, thresh=0.5):
     # do sampling
     if sample:
-        y_thresh = Variable(torch.rand(y.size(0),y.size(1),y.size(2))).cuda()
+        y_thresh = Variable(torch.rand(y.size())).cuda()
         y_result = torch.gt(y,y_thresh).float()
     # do max likelihood based on some threshold
     else:
-        y_thresh = Variable(torch.ones(y.size(0), y.size(1), y.size(2))*thresh).cuda()
+        y_thresh = Variable(torch.ones(y.size())*thresh).cuda()
         y_result = torch.gt(y, y_thresh).float()
     return y_result
 

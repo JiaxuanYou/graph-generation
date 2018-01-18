@@ -12,6 +12,7 @@ from torch.autograd import Variable
 from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
 import torch.nn as nn
 from main import *
+from main_DGMG import *
 from utils import *
 
 CUDA = 2
@@ -526,10 +527,10 @@ CUDA = 2
 #     print(i)
 
 
-G = nx.ladder_graph(4)
-adj_list = G.subgraph(0).adjacency_list()
-# adj_list[0].append(101010)
-print(adj_list)
+# G = nx.ladder_graph(4)
+# adj_list = G.subgraph(0).adjacency_list()
+# # adj_list[0].append(101010)
+# print(adj_list)
 
 #
 # a = []
@@ -551,4 +552,58 @@ print(adj_list)
 
 # print(list(range(1)))
 
-print(nx.complete_graph(1).number_of_nodes())
+# print(nx.complete_graph(1).number_of_nodes())
+
+# a = list(range(10))
+# b = list(range(10))
+# shuffle(b)
+# mapping=dict(zip(a, b))
+# print(mapping)
+#
+# G = nx.karate_club_graph()
+# print(G.nodes())
+#
+# adj_list = [[1],[0]]
+# adj_dict = dict(zip(list(range(len(adj_list))), adj_list))
+# dol= {0:[1], 1:[0]} # single edge (0,1)
+#
+# print(adj_dict)
+# print(dol)
+#
+# G=nx.from_dict_of_lists(dol)
+# adj_list = G.adjacency_list()
+# print(adj_list)
+#
+# a = torch.LongTensor([10,1])
+# b = torch.zeros(a.size())
+# print(b)
+
+# a = Variable(torch.Tensor([10])).cuda()
+# print(a)
+# print(type(a.data[0]))
+
+# args = Args_DGMG()
+args = Args()
+
+epoch = 3000
+sample_time = 1
+# graph_pred = load_graph_list(args.graph_save_path + args.fname_pred + str(epoch) + '.dat')
+# shuffle(graph_pred)
+# draw_graph_list(graph_pred[0:16], row=4, col=4, fname=args.figure_save_path + 'test'+ args.fname_pred + str(epoch))
+# graph_real = load_graph_list(args.graph_save_path + args.fname_train + str(0) + '.dat')
+# shuffle(graph_real)
+# draw_graph_list(graph_real[0:16], row=4, col=4, fname=args.figure_save_path + 'test'+ args.fname_train + str(0))
+
+
+# dir = '/dfs/scratch0/jiaxuany0/'
+dir = ''
+graph_pred = load_graph_list(dir+args.graph_save_path + args.fname_pred + str(epoch) +'_'+str(sample_time) + '.dat')
+graph_pred_len_list = np.array([len(graph_pred[i]) for i in range(len(graph_pred))])
+pred_order = np.argsort(graph_pred_len_list)
+graph_pred = [graph_pred[i] for i in pred_order if graph_pred[i].number_of_nodes()>=2]
+for i in range(len(graph_pred)):
+    print(graph_pred[i].number_of_nodes())
+draw_graph_list(graph_pred[0:16], row=4, col=4, fname=args.figure_save_path + 'test'+ args.fname_pred + str(epoch) +'_'+str(sample_time))
+graph_real = load_graph_list(dir+args.graph_save_path + args.fname_train + str(0) + '.dat')
+shuffle(graph_real)
+draw_graph_list(graph_real[0:16], row=4, col=4, fname=args.figure_save_path + 'test'+ args.fname_train + str(epoch) +'_'+str(sample_time))

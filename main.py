@@ -37,9 +37,11 @@ class Args():
         self.cuda = 1
 
         ### model type
-        self.note = 'GraphRNN_MLP'
+        # self.note = 'GraphRNN_MLP'
         # self.note = 'GraphRNN_VAE_conditional'
         # self.note = 'GraphRNN_RNN'
+        self.note = 'GraphRNN_RNN_new'
+
         ## for comparison
         # self.note = 'GraphRNN_MLP_nobfs'
         # self.note = 'GraphRNN_VAE_conditional_nobfs'
@@ -48,7 +50,7 @@ class Args():
         ### data config
         ## used for paper
         # run in hyperion: icml2018_part1
-        # self.graph_type = 'DD'
+        self.graph_type = 'DD'
         # self.graph_type = 'caveman'
         # self.graph_type = 'caveman_small'
         # self.graph_type = 'grid'
@@ -57,11 +59,15 @@ class Args():
 
         # run in hyperion2: icml2018_part2
         # self.graph_type = 'enzymes'
+        # self.graph_type = 'enzymes_small'
         # self.graph_type = 'barabasi'
-        self.graph_type = 'barabasi_small'
+        # self.graph_type = 'barabasi_small'
         # self.graph_type = 'citeseer'
         # self.graph_type = 'citeseer_small'
         # self.graph_type = 'barabasi_noise'
+
+
+        # self.graph_type = 'ladder'
 
         # update when initializing dataset
         self.max_num_node = None # max number of nodes in a graph
@@ -76,7 +82,7 @@ class Args():
         self.hidden_size_rnn = int(128/self.parameter_shrink) # hidden size for main RNN
         self.hidden_size_rnn_output = 16 # hidden size for output RNN
         self.embedding_size_rnn = int(64/self.parameter_shrink) # the size for LSTM input
-        self.embedding_size_rnn_output = 4 # the embedding size for output rnn
+        self.embedding_size_rnn_output = 8 # the embedding size for output rnn
         self.embedding_size_output = int(64/self.parameter_shrink) # the embedding size for output (VAE/MLP)
 
         self.batch_size = 32 # normal: 32, and the rest should be changed accordingly
@@ -504,7 +510,8 @@ def train_rnn_epoch(epoch, args, rnn, output, data_loader,
         idx = [i for i in range(h.size(0) - 1, -1, -1)]
         idx = Variable(torch.LongTensor(idx)).cuda()
         h = h.index_select(0, idx)
-        output.hidden = h.view(1,h.size(0),h.size(1)) # num_layers, batch_size, hidden_size
+        hidden_null = Variable(torch.zeros(args.num_layers-1, h.size(0), h.size(1))).cuda()
+        output.hidden = torch.cat((h.view(1,h.size(0),h.size(1)),hidden_null),dim=0) # num_layers, batch_size, hidden_size
         y_pred = output(output_x, pack=True, input_len=output_y_len)
         y_pred = F.sigmoid(y_pred)
         # clean
@@ -544,7 +551,10 @@ def test_rnn_epoch(epoch, args, rnn, output, test_batch_size=16):
     x_step = Variable(torch.ones(test_batch_size,1,args.max_prev_node)).cuda()
     for i in range(max_num_node):
         h = rnn(x_step)
-        output.hidden = h.permute(1,0,2)
+        # output.hidden = h.permute(1,0,2)
+        hidden_null = Variable(torch.zeros(args.num_layers - 1, h.size(0), h.size(2))).cuda()
+        output.hidden = torch.cat((h.permute(1,0,2), hidden_null),
+                                  dim=0)  # num_layers, batch_size, hidden_size
         x_step = Variable(torch.zeros(test_batch_size,1,args.max_prev_node)).cuda()
         output_x_step = Variable(torch.ones(test_batch_size,1,1)).cuda()
         for j in range(min(args.max_prev_node,i+1)):
@@ -696,7 +706,7 @@ if __name__ == '__main__':
         args.max_prev_node = 10
     if args.graph_type=='ladder_small':
         graphs = []
-        for i in range(10, 26):
+        for i in range(2, 11):
             graphs.append(nx.ladder_graph(i))
         args.max_prev_node = 10
     if args.graph_type=='tree':
@@ -714,9 +724,9 @@ if __name__ == '__main__':
         args.max_prev_node = 80
     if args.graph_type=='caveman_small':
         graphs = []
-        for i in range(3,5):
-            for j in range(3,11):
-                for k in range(30):
+        for i in range(2,5):
+            for j in range(2,6):
+                for k in range(10):
                     graphs.append(nx.relaxed_caveman_graph(i, j, p=0.1))
         args.max_prev_node = 20
     if args.graph_type=='grid':
@@ -727,8 +737,8 @@ if __name__ == '__main__':
         args.max_prev_node = 40
     if args.graph_type=='grid_small':
         graphs = []
-        for i in range(3,7):
-            for j in range(3,7):
+        for i in range(2,5):
+            for j in range(2,6):
                 graphs.append(nx.grid_2d_graph(i,j))
         args.max_prev_node = 15
     if args.graph_type=='barabasi':
@@ -740,9 +750,9 @@ if __name__ == '__main__':
         args.max_prev_node = 130
     if args.graph_type=='barabasi_small':
         graphs = []
-        for i in range(10,51):
+        for i in range(4,21):
              for j in range(3,4):
-                 for k in range(12):
+                 for k in range(10):
                     graphs.append(nx.barabasi_albert_graph(i,j))
         args.max_prev_node = 20
     if args.graph_type=='grid_big':
@@ -757,6 +767,13 @@ if __name__ == '__main__':
     if args.graph_type == 'enzymes':
         graphs= Graph_load_batch(min_num_nodes=10, name='ENZYMES')
         args.max_prev_node = 25
+    if args.graph_type == 'enzymes_small':
+        graphs_raw = Graph_load_batch(min_num_nodes=10, name='ENZYMES')
+        graphs = []
+        for G in graphs_raw:
+            if G.number_of_nodes()<=20:
+                graphs.append(G)
+        args.max_prev_node = 15
     if args.graph_type == 'protein':
         graphs = Graph_load_batch(min_num_nodes=20, name='PROTEINS_full')
         args.max_prev_node = 80
@@ -780,9 +797,9 @@ if __name__ == '__main__':
         graphs = []
         for i in range(G.number_of_nodes()):
             G_ego = nx.ego_graph(G, i, radius=1)
-            if (G_ego.number_of_nodes() >= 9) and (G_ego.number_of_nodes() <= 50):
+            if (G_ego.number_of_nodes() >= 4) and (G_ego.number_of_nodes() <= 20):
                 graphs.append(G_ego)
-        args.max_prev_node = 30
+        args.max_prev_node = 15
 
     # split datasets
     random.seed(123)
@@ -848,7 +865,9 @@ if __name__ == '__main__':
         rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_rnn,
                         hidden_size=args.hidden_size_rnn, num_layers=args.num_layers, has_input=True,
                         has_output=True, output_size=args.hidden_size_rnn_output).cuda()
-        output = GRU_plain(input_size=1,embedding_size=args.embedding_size_rnn_output,hidden_size=args.hidden_size_rnn_output,num_layers=1,has_input=False,has_output=True,output_size=1).cuda()
+        output = GRU_plain(input_size=1, embedding_size=args.embedding_size_rnn_output,
+                           hidden_size=args.hidden_size_rnn_output, num_layers=args.num_layers, has_input=True,
+                           has_output=True, output_size=1).cuda()
 
     ### start training
     # for enzyme, train 10 times; otherwise train 1 time
@@ -881,13 +900,14 @@ if __name__ == '__main__':
                                 has_output=False).cuda()
                 output = MLP_plain(h_size=args.hidden_size_rnn, embedding_size=args.embedding_size_output,
                                    y_size=args.max_prev_node).cuda()
-            elif args.note == 'GraphRNN_RNN':
+            elif 'GraphRNN_RNN' in args.note:
                 rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_rnn,
                                 hidden_size=args.hidden_size_rnn, num_layers=args.num_layers, has_input=True,
                                 has_output=True, output_size=args.hidden_size_rnn_output).cuda()
                 output = GRU_plain(input_size=1, embedding_size=args.embedding_size_rnn_output,
-                                   hidden_size=args.hidden_size_rnn_output, num_layers=1, has_input=False,
+                                   hidden_size=args.hidden_size_rnn_output, num_layers=args.num_layers, has_input=True,
                                    has_output=True, output_size=1).cuda()
+
     else:
         train(args, dataset_loader, rnn, output)
 
