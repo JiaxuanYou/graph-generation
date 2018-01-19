@@ -114,6 +114,13 @@ def compute_basic_stats(real_g_list, target_g_list):
     dist_clustering = eval.stats.clustering_stats(real_g_list, target_g_list)
     return dist_degree, dist_clustering
 
+
+
+
+
+
+
+
 def eval_list_fname(real_graph_filename, pred_graphs_filename, baselines,
         eval_every, epoch_range=None, out_file_prefix=None):
     ''' Evaluate list of predicted graphs compared to ground truth, stored in files.
@@ -293,7 +300,7 @@ def eval_performance(datadir, prefix=None, args=None, eval_every=200, out_file_p
         # pred_graphs_filename = [datadir + args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
         #          str(epoch) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + str(args.bptt_len) + '.dat' for epoch in range(0,50001,eval_every)]
         
-        real_graph_filename = datadir+args.graph_save_path + args.fname_real + '0.dat'
+        real_graph_filename = datadir+args.graph_save_path + args.fname_test + '0.dat'
         # for proposed model
         end_epoch = 3001
         epoch_range = range(eval_every, end_epoch, eval_every)
@@ -382,4 +389,11 @@ if __name__ == '__main__':
         eval_performance(datadir, args=args,
                 out_file_prefix=out_file_prefix,sample_time=args.sample_time,
                 baselines=baselines)
+
+        # loop over all results
+        models_all = ['GraphRNN_MLP', 'GraphRNN_VAE_conditional', 'GraphRNN_RNN']
+        dataset_all = ['DD', 'caveman', 'caveman_small', 'grid', 'grid_small', 'ladder_small',
+                       'enzymes', 'barabasi', 'barabasi_small', 'citeseer', 'citeseer_small']
+
+
 

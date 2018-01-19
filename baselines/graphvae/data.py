@@ -28,15 +28,14 @@ class GraphAdjSampler(torch.utils.data.Dataset):
 
         adj_decoded = np.zeros(self.max_num_nodes * (self.max_num_nodes + 1) // 2)
         node_idx = 0
-        print(adj_padded)
-        for i in range(self.max_num_nodes):
-            for j in range(i+1):
-                adj_decoded[node_idx] = adj_padded[i, j]
-                node_idx += 1
-        print(adj_decoded)
-        print(np.tril(adj_padded))
+        
+        adj_vectorized = adj_padded[np.triu(np.ones((self.max_num_nodes,self.max_num_nodes)) ) == 1]
+        # the following 2 lines recover the upper triangle of the adj matrix
+        #recovered = np.zeros((self.max_num_nodes, self.max_num_nodes))
+        #recovered[np.triu(np.ones((self.max_num_nodes, self.max_num_nodes)) ) == 1] = adj_vectorized
+        #print(recovered)
         
         return {'adj':adj_padded,
-                'adj_decoded':adj_decoded, 
+                'adj_decoded':adj_vectorized, 
                 'features':self.feature_all[idx].copy()}
 

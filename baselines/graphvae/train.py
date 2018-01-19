@@ -31,16 +31,21 @@ def train(args, dataloader, model):
     optimizer = optim.Adam(list(model.parameters()), lr=args.lr)
     scheduler = MultiStepLR(optimizer, milestones=LR_milestones, gamma=args.lr)
 
-    for batch_idx, data in enumerate(dataloader):
-        print(batch_idx)
-        features = data['features'].float()
-        adj_input = data['adj'].float()
+    model.train()
+    for epoch in range(500):
+        for batch_idx, data in enumerate(dataloader):
+            features = data['features'].float()
+            adj_input = data['adj'].float()
 
-        features = Variable(features).cuda()
-        adj_input = Variable(adj_input).cuda()
-        
-        encoded = model(features, adj_input)
+            features = Variable(features).cuda()
+            adj_input = Variable(adj_input).cuda()
+            
+            loss = model(features, adj_input)
+            print('Epoch: ', epoch, ', Iter: ', batch_idx, ', Loss: ', loss)
+            loss.backward()
 
+            optimizer.step()
+            scheduler.step()
 
 def arg_parse():
     parser = argparse.ArgumentParser(description='GraphVAE arguments.')
@@ -58,11 +63,11 @@ def arg_parse():
             help='Predefined maximum number of nodes in train/test graphs. -1 if determined by \
                   training data.')
 
-    parser.set_defaults(dataset='enzymes',
+    parser.set_defaults(dataset='grid',
                         lr=0.001,
                         batch_size=1,
-                        num_workers=4,
-                        max_num_nodes=50)
+                        num_workers=1,
+                        max_num_nodes=-1)
     return parser.parse_args()
 
 def main():
@@ -75,7 +80,12 @@ def main():
     if prog_args.dataset == 'enzymes':
         graphs= data.Graph_load_batch(min_num_nodes=10, name='ENZYMES')
         num_graphs_raw = len(graphs)
-    elif prog_ars.dataset == 
+    elif prog_args.dataset == 'grid':
+        graphs = []
+        for i in range(2,5):
+            for j in range(2,6):
+                graphs.append(nx.grid_2d_graph(i,j))
+        num_graphs_raw = len(graphs)
 
     if prog_args.max_num_nodes == -1:
         max_num_nodes = max([graphs[i].number_of_nodes() for i in range(len(graphs))])
@@ -94,15 +104,14 @@ def main():
     print('max number node: {}'.format(max_num_nodes))
 
     dataset = GraphAdjSampler(graphs_train, max_num_nodes)
-    sample_strategy = torch.utils.data.sampler.WeightedRandomSampler(
-            [1.0 / len(dataset) for i in range(len(dataset))],
-            num_samples=prog_args.batch_size, 
-            replacement=False)
+    #sample_strategy = torch.utils.data.sampler.WeightedRandomSampler(
+    #        [1.0 / len(dataset) for i in range(len(dataset))],
+    #        num_samples=prog_args.batch_size, 
+    #        replacement=False)
     dataset_loader = torch.utils.data.DataLoader(
             dataset, 
             batch_size=prog_args.batch_size, 
-            num_workers=prog_args.num_workers,
-            sampler=sample_strategy)
+            num_workers=prog_args.num_workers)
     model = build_model(prog_args, max_num_nodes).cuda()
     train(prog_args, dataset_loader, model)
 

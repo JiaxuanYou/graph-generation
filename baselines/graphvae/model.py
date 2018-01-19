@@ -113,11 +113,11 @@ class GraphVAE(nn.Module):
         h_decode, z_mu, z_lsgms = self.vae(graph_h)
         out = F.sigmoid(h_decode)
         out_tensor = out.cpu().data
-        recon_adj = self.recover_adj_lower(out_tensor)
+        recon_adj_lower = self.recover_adj_lower(out_tensor)
         #print(recon_adj)
-        
+        recon_adj_tensor = self.recover_full_adj_from_lower(recon_adj_lower)
+
         # set matching features be degree
-        recon_adj_tensor = self.recover_full_adj_from_lower(recon_adj)
         out_features = torch.sum(recon_adj_tensor, 1)
 
         adj_data = adj.cpu().data[0]
@@ -140,12 +140,13 @@ class GraphVAE(nn.Module):
         print('row: ', row_ind)
         print('col: ', col_ind)
         # order row index according to col index
-        permuted_adj = self.permute_adj(adj_data, row_ind, col_ind)
-        permuted_adj = Variable(permuted_adj).cuda()
+        adj_permuted = self.permute_adj(adj_data, row_ind, col_ind)
+        adj_vectorized = adj_permuted[torch.triu(torch.ones(self.max_num_nodes,self.max_num_nodes) )== 1].squeeze_()
+        adj_vectorized_var = Variable(adj_vectorized).cuda()
 
-        adj_recon_loss = self.adj_recon_loss(permuted_adj, recon_adj_tensor)
+        adj_recon_loss = self.adj_recon_loss(adj_vectorized_var, out[0])
 
-        return recon_adj
+        return adj_recon_loss
 
     def forward_test(self, input_features, adj):
         self.max_num_nodes = 4
