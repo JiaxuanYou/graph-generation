@@ -583,27 +583,34 @@ CUDA = 2
 # print(type(a.data[0]))
 
 # args = Args_DGMG()
-args = Args()
-
-epoch = 3000
-sample_time = 1
-# graph_pred = load_graph_list(args.graph_save_path + args.fname_pred + str(epoch) + '.dat')
-# shuffle(graph_pred)
-# draw_graph_list(graph_pred[0:16], row=4, col=4, fname=args.figure_save_path + 'test'+ args.fname_pred + str(epoch))
-# graph_real = load_graph_list(args.graph_save_path + args.fname_train + str(0) + '.dat')
+# args = Args()
+#
+# epoch = 3000
+# sample_time = 1
+# # graph_pred = load_graph_list(args.graph_save_path + args.fname_pred + str(epoch) + '.dat')
+# # shuffle(graph_pred)
+# # draw_graph_list(graph_pred[0:16], row=4, col=4, fname=args.figure_save_path + 'test'+ args.fname_pred + str(epoch))
+# # graph_real = load_graph_list(args.graph_save_path + args.fname_train + str(0) + '.dat')
+# # shuffle(graph_real)
+# # draw_graph_list(graph_real[0:16], row=4, col=4, fname=args.figure_save_path + 'test'+ args.fname_train + str(0))
+#
+#
+# # dir = '/dfs/scratch0/jiaxuany0/'
+# dir = ''
+# graph_pred = load_graph_list(dir+args.graph_save_path + args.fname_pred + str(epoch) +'_'+str(sample_time) + '.dat')
+# graph_pred_len_list = np.array([len(graph_pred[i]) for i in range(len(graph_pred))])
+# pred_order = np.argsort(graph_pred_len_list)
+# graph_pred = [graph_pred[i] for i in pred_order if graph_pred[i].number_of_nodes()>=2]
+# for i in range(len(graph_pred)):
+#     print(graph_pred[i].number_of_nodes())
+# draw_graph_list(graph_pred[0:16], row=4, col=4, fname=args.figure_save_path + 'test'+ args.fname_pred + str(epoch) +'_'+str(sample_time))
+# graph_real = load_graph_list(dir+args.graph_save_path + args.fname_train + str(0) + '.dat')
 # shuffle(graph_real)
-# draw_graph_list(graph_real[0:16], row=4, col=4, fname=args.figure_save_path + 'test'+ args.fname_train + str(0))
+# draw_graph_list(graph_real[0:16], row=4, col=4, fname=args.figure_save_path + 'test'+ args.fname_train + str(epoch) +'_'+str(sample_time))
 
+#
+# a = list(range(1000,3001,100))
+# print(a)
 
-# dir = '/dfs/scratch0/jiaxuany0/'
-dir = ''
-graph_pred = load_graph_list(dir+args.graph_save_path + args.fname_pred + str(epoch) +'_'+str(sample_time) + '.dat')
-graph_pred_len_list = np.array([len(graph_pred[i]) for i in range(len(graph_pred))])
-pred_order = np.argsort(graph_pred_len_list)
-graph_pred = [graph_pred[i] for i in pred_order if graph_pred[i].number_of_nodes()>=2]
-for i in range(len(graph_pred)):
-    print(graph_pred[i].number_of_nodes())
-draw_graph_list(graph_pred[0:16], row=4, col=4, fname=args.figure_save_path + 'test'+ args.fname_pred + str(epoch) +'_'+str(sample_time))
-graph_real = load_graph_list(dir+args.graph_save_path + args.fname_train + str(0) + '.dat')
-shuffle(graph_real)
-draw_graph_list(graph_real[0:16], row=4, col=4, fname=args.figure_save_path + 'test'+ args.fname_train + str(epoch) +'_'+str(sample_time))
+a,b,c = [],[],[]
+print(a,b,c)

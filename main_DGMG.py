@@ -30,7 +30,7 @@ class Args_DGMG():
         self.epochs_log = 20
         self.epochs_save = 20
 
-        self.lr = 0.01
+        self.lr = 0.001
         self.milestones = [200, 400, 800]
         self.lr_rate = 0.3
 
