@@ -43,8 +43,7 @@ class Args():
         self.note = 'GraphRNN_RNN_new'
 
         ## for comparison
-        # self.note = 'GraphRNN_MLP_nobfs'
-        # self.note = 'GraphRNN_VAE_conditional_nobfs'
+        # self.note = 'GraphRNN_MLP_nobfs' # self.note = 'GraphRNN_VAE_conditional_nobfs'
         # self.note = 'GraphRNN_RNN_nobfs'
 
         ### data config
@@ -53,7 +52,7 @@ class Args():
         self.graph_type = 'DD'
         # self.graph_type = 'caveman'
         # self.graph_type = 'caveman_small'
-        # self.graph_type = 'grid'
+        self.graph_type = 'grid'
         # self.graph_type = 'grid_small'
         # self.graph_type = 'ladder_small'
 

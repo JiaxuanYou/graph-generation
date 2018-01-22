@@ -357,7 +357,7 @@ class MLP_VAE_plain(nn.Module):
         z_lsgms = self.encode_12(h)
         # reparameterize
         z_sgm = z_lsgms.mul(0.5).exp_()
-        eps = Variable(torch.randn(z_sgm.size(0),z_sgm.size(1),z_sgm.size(2))).cuda()
+        eps = Variable(torch.randn(z_sgm.size())).cuda()
         z = eps*z_sgm + z_mu
         # decoder
         y = self.decode_1(z)
