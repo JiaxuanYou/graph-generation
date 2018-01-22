@@ -30,43 +30,7 @@ def extract_result_id_and_epoch(name, prefix, after_word):
     epochs = int(name[pos:end_pos])
     return result_id, epochs
 
-def perturb(graph_list, p_del, p_add=None):
-    ''' Perturb the list of graphs by adding/removing edges.
-    Args:
-        p_add: probability of adding edges. If None, estimate it according to graph density,
-            such that the expected number of added edges is equal to that of deleted edges.
-        p_del: probability of removing edges
-    Returns:
-        A list of graphs that are perturbed from the original graphs
-    '''
-    perturbed_graph_list = []
-    for G_original in graph_list:
-        G = G_original.copy()
-        trials = np.random.binomial(1, p_del, size=G.number_of_edges())
-        i = 0
-        edges = list(G.edges())
-        for (u, v) in edges:
-            if trials[i] == 1:
-                G.remove_edge(u, v)
-            i += 1
 
-        nodes = list(G.nodes())
-        for i in range(len(nodes)):
-            u = nodes[i]
-            if p_add is None:
-                num_nodes = G.number_of_nodes()
-                p_add_est = p_del * 2 * G.number_of_edges() / (num_nodes * (num_nodes - 1))
-            else:
-                p_add_est = p_add
-            trials = np.random.binomial(1, p_add_est, size=G.number_of_nodes())
-            j = 0
-            for v in nodes:
-                if trials[j] == 1 and not i == j:
-                    G.add_edge(u, v)
-                j += 1
-
-        perturbed_graph_list.append(G)
-    return perturbed_graph_list
 
 def eval_list(real_graphs_filename, pred_graphs_filename, prefix, eval_every):
     real_graphs_dict = {}
@@ -143,9 +107,16 @@ def evaluation_epoch(dir_input, dir_output, model_name, dataset_name, args):
     else:
         hidden = 64
     # read real graph
-    fname_real = dir_input + model_name + '_' + dataset_name + '_' + str(args.num_layers) + '_' + str(
-        hidden) + '_test_' + str(0) + '.dat'
+    if model_name=='Internal' or model_name=='Noise':
+        fname_real = dir_input + 'GraphRNN_MLP' + '_' + dataset_name + '_' + str(args.num_layers) + '_' + str(
+            hidden) + '_test_' + str(0) + '.dat'
+    else:
+        fname_real = dir_input + model_name + '_' + dataset_name + '_' + str(args.num_layers) + '_' + str(
+            hidden) + '_test_' + str(0) + '.dat'
     graph_real = utils.load_graph_list(fname_real)
+    graph_real_len = len(graph_real)
+    graph_real = graph_real[int(0.8 * graph_real_len):]
+
 
     # get performance for proposed approaches
     if 'GraphRNN' in model_name:
@@ -165,7 +136,9 @@ def evaluation_epoch(dir_input, dir_output, model_name, dataset_name, args):
                     logging.warning('Not found: '+ fname_pred)
                     continue
                 # clean graphs
-                clean_graphs(graph_real,graph_pred)
+                graph_real, graph_pred = clean_graphs(graph_real,graph_pred)
+                print('len graph_real', len(graph_real))
+                print('len graph_pred', len(graph_pred))
                 # evaluate MMD, and get average
                 # print('start')
                 time1 = time.time()
@@ -175,9 +148,9 @@ def evaluation_epoch(dir_input, dir_output, model_name, dataset_name, args):
                 time3 = time.time()
                 mmd_4orbits_temp, average_4orbits_real_temp, average_4orbits_pred_temp = eval.stats.orbit_stats_all(graph_real, graph_pred)
                 time4 = time.time()
-                logging.info('degree run time {}'.format(time2-time1))
-                logging.info('clustering run time {}'.format(time3 - time2))
-                logging.info('4orbits run time {}'.format(time4 - time3))
+                # logging.info('degree run time {}'.format(time2-time1))
+                # logging.info('clustering run time {}'.format(time3 - time2))
+                # logging.info('4orbits run time {}'.format(time4 - time3))
                 # collect data
                 mmd_degree.append(mmd_degree_temp)
                 mmd_clustering.append(mmd_clustering_temp)
@@ -190,14 +163,20 @@ def evaluation_epoch(dir_input, dir_output, model_name, dataset_name, args):
                 average_4orbits_pred.append(average_4orbits_pred_temp)
 
                 data_info.append([epoch, sample_time])
+                logging.info(model_name + '_' + dataset_name + '_' + str(epoch)+'_'+str(sample_time))
+                logging.info('MMD degree:\t{}'.format(mmd_degree_temp))
+                logging.info('MMD clustering:\t{}'.format(mmd_clustering_temp))
+                logging.info('MMD 4orbits:\t{}'.format(mmd_4orbits_temp))
+
+
         # select best performance
         dist_degree_min = min(mmd_degree)
         dist_clustering_min = min(mmd_clustering)
         dist_4orbits_min = min(mmd_4orbits)
         # get best performance id
-        dist_degree_amin = np.amin(np.array(mmd_degree))
-        dist_clustering_amin = np.amin(np.array(mmd_clustering))
-        dist_4orbits_amin = np.amin(np.array(mmd_4orbits))
+        dist_degree_amin = int(np.argmin(np.array(mmd_degree)))
+        dist_clustering_amin = int(np.argmin(np.array(mmd_clustering)))
+        dist_4orbits_amin = int(np.argmin(np.array(mmd_4orbits)))
         # collect relevant info
         dist_degree_info = data_info[dist_degree_amin]
         dist_clustering_info = data_info[dist_clustering_amin]
@@ -210,9 +189,9 @@ def evaluation_epoch(dir_input, dir_output, model_name, dataset_name, args):
         average_4orbits_real_min = average_4orbits_real[dist_4orbits_amin]
         average_4orbits_pred_min = average_4orbits_pred[dist_4orbits_amin]
 
-        logging.info('dist_degree_info: '+model_name+'_'+dataset_name+'_'+str(dist_degree_info[0])+'_'+str(dist_degree_info[1]))
-        logging.info('dist_clustering_info: ' + model_name + '_' + dataset_name + '_' + str(dist_clustering_info[0]) + '_' + str(dist_clustering_info[1]))
-        logging.info('dist_4orbits_info: ' + model_name + '_' + dataset_name + '_' + str(dist_4orbits_info[0]) + '_' + str(dist_4orbits_info[1]))
+        logging.info('---BEST DEGREE INFO: '+model_name+'_'+dataset_name+'_'+str(dist_degree_info[0])+'_'+str(dist_degree_info[1]))
+        logging.info('---BEST CLUSTERING INFO: ' + model_name + '_' + dataset_name + '_' + str(dist_clustering_info[0]) + '_' + str(dist_clustering_info[1]))
+        logging.info('---BEST 4ORBITS: ' + model_name + '_' + dataset_name + '_' + str(dist_4orbits_info[0]) + '_' + str(dist_4orbits_info[1]))
 
         # save
         np.save(dir_output + model_name + '_' + dataset_name + '_average_degree_real.npy', average_degree_real_min)
@@ -237,9 +216,9 @@ def evaluation_epoch(dir_input, dir_output, model_name, dataset_name, args):
         dist_4orbits_min,_,_ = eval.stats.orbit_stats_all(graph_real, graph_real_perturbed)
 
     MMD = [dist_degree_min,dist_clustering_min,dist_4orbits_min]
-    logging.info('MMD degree: {}'.format(MMD[0]))
-    logging.info('MMD clustering: {}'.format(MMD[1]))
-    logging.info('MMD 4orbits: {}'.format(MMD[2]))
+    logging.info('---BEST MMD degree: {}'.format(MMD[0]))
+    logging.info('---BEST MMD clustering: {}'.format(MMD[1]))
+    logging.info('---BEST MMD 4orbits: {}'.format(MMD[2]))
     return MMD
 
 def evaluation(dir_input, dir_output, model_name_all, dataset_name_all, args, overwrite = True):
@@ -538,9 +517,8 @@ if __name__ == '__main__':
         if not os.path.isdir(dir_prefix+'eval_results'):
             os.makedirs(dir_prefix+'eval_results')
         # loop over all results
-        model_name_all = ['GraphRNN_MLP', 'GraphRNN_VAE_conditional', 'GraphRNN_RNN', 'Internal', 'Noise']
-        dataset_name_all = ['DD', 'caveman', 'caveman_small', 'grid', 'grid_small', 'ladder_small',
-                       'enzymes', 'barabasi', 'barabasi_small', 'citeseer', 'citeseer_small']
+        model_name_all = ['GraphRNN_RNN_new']
+        dataset_name_all = ['caveman', 'grid', 'barabasi', 'citeseer']
         evaluation(dir_input=dir_prefix+"graphs/", dir_output=dir_prefix+"eval_results/",
                    model_name_all=model_name_all,dataset_name_all=dataset_name_all,args=args,overwrite=True)
 

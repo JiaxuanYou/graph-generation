@@ -1522,7 +1522,7 @@ int main(int argc, char *argv[]) {
 
 
     if (!init(argc, argv)) {
-        cerr << "Stopping!" << endl;
+//        cerr << "Stopping!" << endl;
         return 1;
     }
     

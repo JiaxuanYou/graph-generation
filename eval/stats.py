@@ -6,6 +6,7 @@ import networkx as nx
 import os
 import pickle as pkl
 import subprocess as sp
+import time
 
 import eval.mmd as mmd
 
@@ -44,13 +45,17 @@ def degree_stats(graph_ref_list, graph_pred_list, is_parallel=False):
     else:
         average_ref, average_pred = np.array([0]), np.array([0])
         for i in range(len(graph_ref_list)):
+            time1 = time.time()
             degree_temp = np.array(nx.degree_histogram(graph_ref_list[i]))
             average_ref = add_tensor(average_ref,degree_temp)
             sample_ref.append(degree_temp)
+            time2 = time.time()
+            # print('add time {}'.format(time2-time1))
         for i in range(len(graph_pred_list_remove_empty)):
             degree_temp = np.array(nx.degree_histogram(graph_pred_list_remove_empty[i]))
             average_pred = add_tensor(average_pred, degree_temp)
             sample_pred.append(degree_temp)
+    print(len(sample_ref),len(sample_pred))
     mmd_dist = mmd.compute_mmd(sample_ref, sample_pred, kernel=mmd.gaussian_emd)
     average_ref /= len(graph_ref_list)
     average_pred /= len(graph_pred_list_remove_empty)

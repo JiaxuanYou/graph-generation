@@ -3,7 +3,7 @@ from main import *
 class Args_DGMG():
     def __init__(self):
         ### CUDA
-        self.cuda = 2
+        self.cuda = 0
 
         ### model type
         self.note = 'Baseline_DGMG'
@@ -20,15 +20,15 @@ class Args_DGMG():
 
         ### network config
         self.node_embedding_size = 64
-        self.test_graph_num = 100
+        self.test_graph_num = 200
 
 
         ### training config
-        self.epochs = 1000  # now one epoch means self.batch_ratio x batch_size
+        self.epochs = 2000  # now one epoch means self.batch_ratio x batch_size
         self.epochs_test_start = 0
-        self.epochs_test = 20
-        self.epochs_log = 20
-        self.epochs_save = 20
+        self.epochs_test = 100
+        self.epochs_log = 100
+        self.epochs_save = 100
 
         self.lr = 0.001
         self.milestones = [200, 400, 800]
@@ -47,7 +47,7 @@ class Args_DGMG():
         self.fname_test = self.note + '_' + self.graph_type + '_' + str(self.node_embedding_size) + '_test_'
 
         self.load = False
-        self.save = False
+        self.save = True
 
 
 def train_DGMG_epoch(epoch, args, model, dataset, optimizer, scheduler):
@@ -65,8 +65,10 @@ def train_DGMG_epoch(epoch, args, model, dataset, optimizer, scheduler):
 
         graph = dataset[i]
         # do random ordering: relabel nodes
-        order_mapping = dict(zip(graph.nodes(), list(range(graph.number_of_nodes()))))
-        graph = nx.relabel_nodes(graph, order_mapping, copy=False)
+        node_order = list(range(graph.number_of_nodes()))
+        shuffle(node_order)
+        order_mapping = dict(zip(graph.nodes(), node_order))
+        graph = nx.relabel_nodes(graph, order_mapping, copy=True)
 
 
         # NOTE: when starting loop, we assume a node has already been generated
@@ -289,7 +291,8 @@ if __name__ == '__main__':
     args = Args_DGMG()
     os.environ['CUDA_VISIBLE_DEVICES'] = str(args.cuda)
     print('CUDA', args.cuda)
-    # print('File name prefix', args.fname)
+    print('File name prefix',args.fname)
+
 
     graphs = []
     for i in range(4, 10):
@@ -341,6 +344,12 @@ if __name__ == '__main__':
                 graphs.append(G_ego)
         args.max_prev_node = 15
 
+    # remove self loops
+    for graph in graphs:
+        edges_with_selfloops = graph.selfloop_edges()
+        if len(edges_with_selfloops) > 0:
+            graph.remove_edges_from(edges_with_selfloops)
+
     # split datasets
     random.seed(123)
     shuffle(graphs)
@@ -361,3 +370,12 @@ if __name__ == '__main__':
     print('train and test graphs saved')
 
     train_DGMG(args,graphs,model)
+
+    # for j in range(1000):
+    #     graph = graphs[0]
+    #     # do random ordering: relabel nodes
+    #     node_order = list(range(graph.number_of_nodes()))
+    #     shuffle(node_order)
+    #     order_mapping = dict(zip(graph.nodes(), node_order))
+    #     graph = nx.relabel_nodes(graph, order_mapping, copy=True)
+    #     print(graph.nodes())

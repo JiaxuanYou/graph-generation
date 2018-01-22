@@ -14,6 +14,45 @@ import community
 import pickle
 import re
 
+def perturb(graph_list, p_del, p_add=None):
+    ''' Perturb the list of graphs by adding/removing edges.
+    Args:
+        p_add: probability of adding edges. If None, estimate it according to graph density,
+            such that the expected number of added edges is equal to that of deleted edges.
+        p_del: probability of removing edges
+    Returns:
+        A list of graphs that are perturbed from the original graphs
+    '''
+    perturbed_graph_list = []
+    for G_original in graph_list:
+        G = G_original.copy()
+        trials = np.random.binomial(1, p_del, size=G.number_of_edges())
+        i = 0
+        edges = list(G.edges())
+        for (u, v) in edges:
+            if trials[i] == 1:
+                G.remove_edge(u, v)
+            i += 1
+
+        nodes = list(G.nodes())
+        for i in range(len(nodes)):
+            u = nodes[i]
+            if p_add is None:
+                num_nodes = G.number_of_nodes()
+                p_add_est = p_del * 2 * G.number_of_edges() / (num_nodes * (num_nodes - 1))
+            else:
+                p_add_est = p_add
+            trials = np.random.binomial(1, p_add_est, size=G.number_of_nodes())
+            j = 0
+            for v in nodes:
+                if trials[j] == 1 and not i == j:
+                    G.add_edge(u, v)
+                j += 1
+
+        perturbed_graph_list.append(G)
+    return perturbed_graph_list
+
+
 def imsave(fname, arr, vmin=None, vmax=None, cmap=None, format=None, origin=None):
     from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
     from matplotlib.figure import Figure
@@ -299,6 +338,9 @@ def load_graph_list(fname):
     with open(fname, "rb") as f:
         graph_list = pickle.load(f)
     for i in range(len(graph_list)):
+        edges_with_selfloops = graph_list[i].selfloop_edges()
+        if len(edges_with_selfloops)>0:
+            graph_list[i].remove_edges_from(edges_with_selfloops)
         graph_list[i] = nx.convert_node_labels_to_integers(graph_list[i])
         graph_list[i] = pick_connected_component(graph_list[i])
     return graph_list

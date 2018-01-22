@@ -612,5 +612,10 @@ CUDA = 2
 # a = list(range(1000,3001,100))
 # print(a)
 
-a,b,c = [],[],[]
-print(a,b,c)
+# a,b,c = [],[],[]
+# print(a,b,c)
+fname = '/lfs/hyperion2/0/jiaxuany/icml2018_part2_new/graph-generation/graphs/temp/GraphRNN_VAE_conditional_enzymes_small_4_64_train_0.dat'
+graphs = load_graph_list(fname)
+print(len(graphs))
+for graph in graphs:
+    print(graph.number_of_nodes())
