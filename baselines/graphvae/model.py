@@ -11,8 +11,9 @@ import torch.nn.init as init
 
 import model
 
+
 class GraphVAE(nn.Module):
-    def __init__(self, input_dim, hidden_dim, latent_dim, max_num_nodes, pool='max'):
+    def __init__(self, input_dim, hidden_dim, latent_dim, max_num_nodes, pool='sum'):
         '''
         Args:
             input_dim: input feature dimension for node.
@@ -21,7 +22,9 @@ class GraphVAE(nn.Module):
         '''
         super(GraphVAE, self).__init__()
         self.conv1 = model.GraphConv(input_dim=input_dim, output_dim=hidden_dim)
+        self.bn1 = nn.BatchNorm1d(input_dim)
         self.conv2 = model.GraphConv(input_dim=hidden_dim, output_dim=hidden_dim)
+        self.bn2 = nn.BatchNorm1d(input_dim)
         self.act = nn.ReLU()
 
         output_dim = max_num_nodes * (max_num_nodes + 1) // 2
@@ -36,10 +39,7 @@ class GraphVAE(nn.Module):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
-        if pool == 'max':
-            self.pool = torch.max
-        elif pool == 'mean':
-            self.pool = torch.mean
+        self.pool = pool
 
     def recover_adj_lower(self, l):
         # NOTE: Assumes 1 per minibatch
@@ -102,19 +102,27 @@ class GraphVAE(nn.Module):
         adj_permuted[:, :] = adj_permuted[:, ind]
         return adj_permuted
 
+    def pool_graph(self, x):
+        if self.pool == 'max':
+            out, _ = torch.max(x, dim=1, keepdim=False)
+        elif self.pool == 'sum':
+            out = torch.sum(x, dim=1, keepdim=False)
+        return out
+
     def forward(self, input_features, adj):
         x = self.conv1(input_features, adj)
+        x = self.bn1(x)
         x = self.act(x)
         x = self.conv2(x, adj)
+        x = self.bn2(x)
 
         # pool over all nodes 
-        graph_h, _ = self.pool(x, dim=1, keepdim = False)
+        graph_h = self.pool_graph(x)
         # vae
         h_decode, z_mu, z_lsgms = self.vae(graph_h)
         out = F.sigmoid(h_decode)
         out_tensor = out.cpu().data
         recon_adj_lower = self.recover_adj_lower(out_tensor)
-        #print(recon_adj)
         recon_adj_tensor = self.recover_full_adj_from_lower(recon_adj_lower)
 
         # set matching features be degree
@@ -140,13 +148,26 @@ class GraphVAE(nn.Module):
         print('row: ', row_ind)
         print('col: ', col_ind)
         # order row index according to col index
-        adj_permuted = self.permute_adj(adj_data, row_ind, col_ind)
+        #adj_permuted = self.permute_adj(adj_data, row_ind, col_ind)
+        adj_permuted = adj_data
         adj_vectorized = adj_permuted[torch.triu(torch.ones(self.max_num_nodes,self.max_num_nodes) )== 1].squeeze_()
         adj_vectorized_var = Variable(adj_vectorized).cuda()
 
+        #print(adj)
+        #print('permuted: ', adj_permuted)
+        #print('recon: ', recon_adj_tensor)
         adj_recon_loss = self.adj_recon_loss(adj_vectorized_var, out[0])
+        print('recon: ', adj_recon_loss)
+        print(adj_vectorized_var)
+        print(out[0])
 
-        return adj_recon_loss
+        loss_kl = -0.5 * torch.sum(1 + z_lsgms - z_mu.pow(2) - z_lsgms.exp())
+        loss_kl /= self.max_num_nodes * self.max_num_nodes # normalize
+        print('kl: ', loss_kl)
+
+        loss = adj_recon_loss + loss_kl
+
+        return loss
 
     def forward_test(self, input_features, adj):
         self.max_num_nodes = 4
