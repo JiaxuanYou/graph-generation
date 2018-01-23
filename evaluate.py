@@ -100,126 +100,85 @@ def clean_graphs(graph_real, graph_pred):
     return graph_real, pred_graph_new
 
 
-def evaluation_epoch(dir_input, dir_output, model_name, dataset_name, args):
-    # read real graph
-    if not 'small' in dataset_name:
-        hidden = 128
-    else:
-        hidden = 64
-    # read real graph
-    if model_name=='Internal' or model_name=='Noise':
-        fname_real = dir_input + 'GraphRNN_MLP' + '_' + dataset_name + '_' + str(args.num_layers) + '_' + str(
-            hidden) + '_test_' + str(0) + '.dat'
-    else:
-        fname_real = dir_input + model_name + '_' + dataset_name + '_' + str(args.num_layers) + '_' + str(
-            hidden) + '_test_' + str(0) + '.dat'
-    graph_real = utils.load_graph_list(fname_real)
-    graph_real_len = len(graph_real)
-    graph_real = graph_real[int(0.8 * graph_real_len):]
+def evaluation_epoch(dir_input, fname_output, model_name, dataset_name, args, is_clean=True, epoch_start=1000,epoch_end=3001,epoch_step=100):
+    with open(fname_output, 'w+') as f:
+        f.write('sample_time,epoch,degree_validate,clustering_validate,orbits4_validate,degree_test,clustering_test,orbits4_test\n')
+        # read real graph
+        if not 'small' in dataset_name:
+            hidden = 128
+        else:
+            hidden = 64
+        # read real graph
+        if model_name=='Internal' or model_name=='Noise':
+            fname_test = dir_input + 'GraphRNN_MLP' + '_' + dataset_name + '_' + str(args.num_layers) + '_' + str(
+                hidden) + '_test_' + str(0) + '.dat'
+        else:
+            fname_test = dir_input + model_name + '_' + dataset_name + '_' + str(args.num_layers) + '_' + str(
+                hidden) + '_test_' + str(0) + '.dat'
+        try:
+            graph_test = utils.load_graph_list(fname_test)
+        except:
+            print('Not found: ' + fname_test)
+            logging.warning('Not found: ' + fname_test)
+            return None
+        graph_test_len = len(graph_test)
+        graph_validate = graph_test[0:int(0.8 * graph_test_len)] # validate
+        graph_test = graph_test[int(0.8 * graph_test_len):] # test on a hold out test set
+
+        # get performance for proposed approaches
+        if 'GraphRNN' in model_name:
+            # read test graph
+            for epoch in range(epoch_start,epoch_end,epoch_step):
+                for sample_time in range(1,4):
+                    # get filename
+                    fname_pred = dir_input + model_name + '_' + dataset_name + '_' + str(args.num_layers) + '_' + str(hidden) + '_pred_' + str(epoch) + '_' + str(sample_time) + '.dat'
+                    # load graphs
+                    try:
+                        graph_pred = utils.load_graph_list(fname_pred)
+                    except:
+                        print('Not found: '+ fname_pred)
+                        logging.warning('Not found: '+ fname_pred)
+                        continue
+                    # clean graphs
+                    if is_clean:
+                        graph_test, graph_pred = clean_graphs(graph_test, graph_pred)
+                    print('len graph_test', len(graph_test))
+                    print('len graph_validate', len(graph_validate))
+                    print('len graph_pred', len(graph_pred))
+                    # evaluate MMD test
+                    mmd_degree = eval.stats.degree_stats(graph_test, graph_pred)
+                    mmd_clustering = eval.stats.clustering_stats(graph_test, graph_pred)
+                    mmd_4orbits = eval.stats.orbit_stats_all(graph_test, graph_pred)
+                    # evaluate MMD validate
+                    mmd_degree_validate = eval.stats.degree_stats(graph_validate, graph_pred)
+                    mmd_clustering_validate = eval.stats.clustering_stats(graph_validate, graph_pred)
+                    mmd_4orbits_validate = eval.stats.orbit_stats_all(graph_validate, graph_pred)
+                    # write results
+                    f.write(str(sample_time)+','+str(epoch)+','+str(mmd_degree_validate)+','+str(mmd_clustering_validate)+','+str(mmd_4orbits_validate)
+                            + ',' + str(mmd_degree)+','+str(mmd_clustering)+','+str(mmd_4orbits)+'\n')
 
 
-    # get performance for proposed approaches
-    if 'GraphRNN' in model_name:
-        # read test graph
-        mmd_degree, mmd_clustering, mmd_4orbits = [], [], []
-        average_degree_real, average_degree_pred, average_clustering_real, average_clustering_pred, average_4orbits_real, average_4orbits_pred = [], [], [], [], [], []
-        data_info = []
-        for epoch in range(1000,3001,100):
-            for sample_time in range(1,4):
-                # get filename
-                fname_pred = dir_input + model_name + '_' + dataset_name + '_' + str(args.num_layers) + '_' + str(hidden) + '_pred_' + str(epoch) + '_' + str(sample_time) + '.dat'
-                # load graphs
-                try:
-                    graph_pred = utils.load_graph_list(fname_pred)
-                except:
-                    print('Not found: '+ fname_pred)
-                    logging.warning('Not found: '+ fname_pred)
-                    continue
-                # clean graphs
-                graph_real, graph_pred = clean_graphs(graph_real,graph_pred)
-                print('len graph_real', len(graph_real))
-                print('len graph_pred', len(graph_pred))
-                # evaluate MMD, and get average
-                # print('start')
-                time1 = time.time()
-                mmd_degree_temp, average_degree_real_temp, average_degree_pred_temp = eval.stats.degree_stats(graph_real, graph_pred)
-                time2 = time.time()
-                mmd_clustering_temp, average_clustering_real_temp, average_clustering_pred_temp = eval.stats.clustering_stats(graph_real, graph_pred)
-                time3 = time.time()
-                mmd_4orbits_temp, average_4orbits_real_temp, average_4orbits_pred_temp = eval.stats.orbit_stats_all(graph_real, graph_pred)
-                time4 = time.time()
-                # logging.info('degree run time {}'.format(time2-time1))
-                # logging.info('clustering run time {}'.format(time3 - time2))
-                # logging.info('4orbits run time {}'.format(time4 - time3))
-                # collect data
-                mmd_degree.append(mmd_degree_temp)
-                mmd_clustering.append(mmd_clustering_temp)
-                mmd_4orbits.append(mmd_4orbits_temp)
-                average_degree_real.append(average_degree_real_temp)
-                average_degree_pred.append(average_degree_pred_temp)
-                average_clustering_real.append(average_clustering_real_temp)
-                average_clustering_pred.append(average_clustering_pred_temp)
-                average_4orbits_real.append(average_4orbits_real_temp)
-                average_4orbits_pred.append(average_4orbits_pred_temp)
-
-                data_info.append([epoch, sample_time])
-                logging.info(model_name + '_' + dataset_name + '_' + str(epoch)+'_'+str(sample_time))
-                logging.info('MMD degree:\t{}'.format(mmd_degree_temp))
-                logging.info('MMD clustering:\t{}'.format(mmd_clustering_temp))
-                logging.info('MMD 4orbits:\t{}'.format(mmd_4orbits_temp))
+        # get internal MMD
+        if model_name == 'Internal':
+            mmd_degree_validate = eval.stats.degree_stats(graph_test, graph_validate)
+            mmd_clustering_validate = eval.stats.clustering_stats(graph_test, graph_validate)
+            mmd_4orbits_validate = eval.stats.orbit_stats_all(graph_test, graph_validate)
+            f.write(str(-1) + ',' + str(-1) + ',' + str(mmd_degree_validate) + ',' + str(
+                mmd_clustering_validate) + ',' + str(mmd_4orbits_validate)
+                    + ',' + str(-1) + ',' + str(-1) + ',' + str(-1) + '\n')
 
 
-        # select best performance
-        dist_degree_min = min(mmd_degree)
-        dist_clustering_min = min(mmd_clustering)
-        dist_4orbits_min = min(mmd_4orbits)
-        # get best performance id
-        dist_degree_amin = int(np.argmin(np.array(mmd_degree)))
-        dist_clustering_amin = int(np.argmin(np.array(mmd_clustering)))
-        dist_4orbits_amin = int(np.argmin(np.array(mmd_4orbits)))
-        # collect relevant info
-        dist_degree_info = data_info[dist_degree_amin]
-        dist_clustering_info = data_info[dist_clustering_amin]
-        dist_4orbits_info = data_info[dist_4orbits_amin]
-        # collect relevant average distribution
-        average_degree_real_min = average_degree_real[dist_degree_amin]
-        average_degree_pred_min = average_degree_pred[dist_degree_amin]
-        average_clustering_real_min = average_clustering_real[dist_clustering_amin]
-        average_clustering_pred_min = average_clustering_pred[dist_clustering_amin]
-        average_4orbits_real_min = average_4orbits_real[dist_4orbits_amin]
-        average_4orbits_pred_min = average_4orbits_pred[dist_4orbits_amin]
+        # get noisy MMD
+        if model_name == 'Noise':
+            graph_validate_perturbed = perturb(graph_validate, 0.05)
+            mmd_degree_validate = eval.stats.degree_stats(graph_test, graph_validate_perturbed)
+            mmd_clustering_validate = eval.stats.clustering_stats(graph_test, graph_validate_perturbed)
+            mmd_4orbits_validate = eval.stats.orbit_stats_all(graph_test, graph_validate_perturbed)
+            f.write(str(-1) + ',' + str(-1) + ',' + str(mmd_degree_validate) + ',' + str(
+                mmd_clustering_validate) + ',' + str(mmd_4orbits_validate)
+                    + ',' + str(-1) + ',' + str(-1) + ',' + str(-1) + '\n')
 
-        logging.info('---BEST DEGREE INFO: '+model_name+'_'+dataset_name+'_'+str(dist_degree_info[0])+'_'+str(dist_degree_info[1]))
-        logging.info('---BEST CLUSTERING INFO: ' + model_name + '_' + dataset_name + '_' + str(dist_clustering_info[0]) + '_' + str(dist_clustering_info[1]))
-        logging.info('---BEST 4ORBITS: ' + model_name + '_' + dataset_name + '_' + str(dist_4orbits_info[0]) + '_' + str(dist_4orbits_info[1]))
-
-        # save
-        np.save(dir_output + model_name + '_' + dataset_name + '_average_degree_real.npy', average_degree_real_min)
-        np.save(dir_output + model_name + '_' + dataset_name + '_average_degree_pred.npy', average_degree_pred_min)
-        np.save(dir_output + model_name + '_' + dataset_name + '_average_clustering_real.npy', average_clustering_real_min)
-        np.save(dir_output + model_name + '_' + dataset_name + '_average_clustering_pred.npy', average_clustering_pred_min)
-        np.save(dir_output + model_name + '_' + dataset_name + '_average_4orbits_real.npy', average_4orbits_real_min)
-        np.save(dir_output + model_name + '_' + dataset_name + '_average_4orbits_pred.npy', average_4orbits_pred_min)
-
-    # get internal MMD
-    if model_name == 'Internal':
-        mid = len(graph_real) // 2
-        dist_degree_min,_,_ = eval.stats.degree_stats(graph_real[:mid], graph_real[mid:])
-        dist_clustering_min,_,_ = eval.stats.clustering_stats(graph_real[:mid], graph_real[mid:])
-        dist_4orbits_min,_,_ = eval.stats.orbit_stats_all(graph_real[:mid], graph_real[mid:])
-
-    # get noisy MMD
-    if model_name == 'Noise':
-        graph_real_perturbed = perturb(graph_real, 0.05)
-        dist_degree_min,_,_ = eval.stats.degree_stats(graph_real, graph_real_perturbed)
-        dist_clustering_min,_,_ = eval.stats.clustering_stats(graph_real, graph_real_perturbed)
-        dist_4orbits_min,_,_ = eval.stats.orbit_stats_all(graph_real, graph_real_perturbed)
-
-    MMD = [dist_degree_min,dist_clustering_min,dist_4orbits_min]
-    logging.info('---BEST MMD degree: {}'.format(MMD[0]))
-    logging.info('---BEST MMD clustering: {}'.format(MMD[1]))
-    logging.info('---BEST MMD 4orbits: {}'.format(MMD[2]))
-    return MMD
+        return True
 
 def evaluation(dir_input, dir_output, model_name_all, dataset_name_all, args, overwrite = True):
     for model_name in model_name_all:
@@ -232,10 +191,8 @@ def evaluation(dir_input, dir_output, model_name_all, dataset_name_all, args, ov
                 print(dir_output+model_name+'_'+dataset_name+'.csv exists!')
                 logging.info(dir_output+model_name+'_'+dataset_name+'.csv exists!')
                 continue
-            MMD = evaluation_epoch(dir_input,dir_output,model_name,dataset_name,args)
-            with open(fname_output, 'w+') as f:
-                f.write('degree,clustering,orbits4\n')
-                f.write(str(MMD[0])+','+str(MMD[1])+','+str(MMD[2]))
+            evaluation_epoch(dir_input,fname_output,model_name,dataset_name,args)
+
 
 
 
@@ -517,8 +474,8 @@ if __name__ == '__main__':
         if not os.path.isdir(dir_prefix+'eval_results'):
             os.makedirs(dir_prefix+'eval_results')
         # loop over all results
-        model_name_all = ['GraphRNN_RNN_new']
-        dataset_name_all = ['caveman', 'grid', 'barabasi', 'citeseer']
+        model_name_all = ['GraphRNN_MLP','GraphRNN_VAE_conditional','GraphRNN_RNN_new','Internal','Noise']
+        dataset_name_all = ['caveman', 'grid', 'barabasi', 'citeseer', 'DD']
         evaluation(dir_input=dir_prefix+"graphs/", dir_output=dir_prefix+"eval_results/",
                    model_name_all=model_name_all,dataset_name_all=dataset_name_all,args=args,overwrite=True)
 

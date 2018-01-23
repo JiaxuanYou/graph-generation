@@ -3,17 +3,18 @@ from main import *
 class Args_DGMG():
     def __init__(self):
         ### CUDA
-        self.cuda = 0
+        self.cuda = 3
 
         ### model type
-        self.note = 'Baseline_DGMG'
+        self.note = 'Baseline_DGMG' # do GCN after adding each edge
+        # self.note = 'Baseline_DGMG_fast' # do GCN only after adding each node
 
         ### data config
         # self.graph_type = 'caveman_small'
         # self.graph_type = 'grid_small'
-        self.graph_type = 'ladder_small'
+        # self.graph_type = 'ladder_small'
         # self.graph_type = 'enzymes_small'
-        # self.graph_type = 'barabasi_small'
+        self.graph_type = 'barabasi_small'
         # self.graph_type = 'citeseer_small'
 
         self.max_num_node = 20
@@ -26,9 +27,13 @@ class Args_DGMG():
         ### training config
         self.epochs = 2000  # now one epoch means self.batch_ratio x batch_size
         self.epochs_test_start = 0
-        self.epochs_test = 100
-        self.epochs_log = 100
-        self.epochs_save = 100
+        self.epochs_test = 10
+        self.epochs_log = 10
+        self.epochs_save = 10
+        if 'fast' in self.note:
+            self.is_fast = True
+        else:
+            self.is_fast = False
 
         self.lr = 0.001
         self.milestones = [200, 400, 800]
@@ -50,7 +55,7 @@ class Args_DGMG():
         self.save = True
 
 
-def train_DGMG_epoch(epoch, args, model, dataset, optimizer, scheduler):
+def train_DGMG_epoch(epoch, args, model, dataset, optimizer, scheduler, is_fast = False):
     model.train()
     graph_num = len(dataset)
     order = list(range(graph_num))
@@ -75,6 +80,8 @@ def train_DGMG_epoch(epoch, args, model, dataset, optimizer, scheduler):
         node_count = 1
         node_embedding = [Variable(torch.ones(1,args.node_embedding_size)).cuda()] # list of torch tensors, each size: 1*hidden
 
+
+        loss = 0
         while node_count<=graph.number_of_nodes():
             node_neighbor = graph.subgraph(list(range(node_count))).adjacency_list()  # list of lists (first node is zero)
             node_neighbor_new = graph.subgraph(list(range(node_count+1))).adjacency_list()[-1] # list of new node's neighbors
@@ -94,22 +101,28 @@ def train_DGMG_epoch(epoch, args, model, dataset, optimizer, scheduler):
                 # add node
                 node_neighbor.append([])
                 node_embedding.append(init_embedding)
+                if is_fast:
+                    node_embedding_cat = torch.cat(node_embedding, dim=0)
                 # calc loss
                 loss_addnode_step = F.binary_cross_entropy(p_addnode,Variable(torch.ones((1,1))).cuda())
-                loss_addnode_step.backward(retain_graph=True)
+                # loss_addnode_step.backward(retain_graph=True)
+                loss += loss_addnode_step
                 loss_addnode += loss_addnode_step.data
             else:
                 # calc loss
                 loss_addnode_step = F.binary_cross_entropy(p_addnode, Variable(torch.zeros((1, 1))).cuda())
-                loss_addnode_step.backward(retain_graph=True)
+                # loss_addnode_step.backward(retain_graph=True)
+                loss += loss_addnode_step
                 loss_addnode += loss_addnode_step.data
                 break
 
+
             edge_count = 0
             while edge_count<=len(node_neighbor_new):
-                node_embedding = message_passing(node_neighbor, node_embedding, model)
-                node_embedding_cat = torch.cat(node_embedding, dim=0)
-                graph_embedding = calc_graph_embedding(node_embedding_cat, model)
+                if not is_fast:
+                    node_embedding = message_passing(node_neighbor, node_embedding, model)
+                    node_embedding_cat = torch.cat(node_embedding, dim=0)
+                    graph_embedding = calc_graph_embedding(node_embedding_cat, model)
 
                 # 4 f_addedge
                 p_addedge = model.f_ae(graph_embedding)
@@ -117,7 +130,8 @@ def train_DGMG_epoch(epoch, args, model, dataset, optimizer, scheduler):
                 if edge_count < len(node_neighbor_new):
                     # calc loss
                     loss_addedge_step = F.binary_cross_entropy(p_addedge, Variable(torch.ones((1, 1))).cuda())
-                    loss_addedge_step.backward(retain_graph=True)
+                    # loss_addedge_step.backward(retain_graph=True)
+                    loss += loss_addedge_step
                     loss_addedge += loss_addedge_step.data
 
                     # 5 f_nodes
@@ -135,13 +149,15 @@ def train_DGMG_epoch(epoch, args, model, dataset, optimizer, scheduler):
                     node_neighbor[node_neighbor_new[edge_count]].append(len(node_neighbor)-1)
                     # calc loss
                     loss_node_step = F.binary_cross_entropy(p_node,a_node)
-                    loss_node_step.backward(retain_graph=True)
+                    # loss_node_step.backward(retain_graph=True)
+                    loss += loss_node_step
                     loss_node += loss_node_step.data
 
                 else:
                     # calc loss
                     loss_addedge_step = F.binary_cross_entropy(p_addedge, Variable(torch.zeros((1, 1))).cuda())
-                    loss_addedge_step.backward(retain_graph=True)
+                    # loss_addedge_step.backward(retain_graph=True)
+                    loss += loss_addedge_step
                     loss_addedge += loss_addedge_step.data
                     break
 
@@ -149,14 +165,15 @@ def train_DGMG_epoch(epoch, args, model, dataset, optimizer, scheduler):
             node_count += 1
 
         # update deterministic and lstm
+        loss.backward()
         optimizer.step()
         scheduler.step()
 
-    loss = loss_addnode + loss_addedge + loss_node
+    loss_all = loss_addnode + loss_addedge + loss_node
 
     if epoch % args.epochs_log==0:
         print('Epoch: {}/{}, train loss: {:.6f}, graph type: {}, hidden: {}'.format(
-            epoch, args.epochs,loss[0], args.graph_type, args.node_embedding_size))
+            epoch, args.epochs,loss_all[0], args.graph_type, args.node_embedding_size))
 
 
     # loss_sum += loss.data[0]*x.size(0)
@@ -165,7 +182,7 @@ def train_DGMG_epoch(epoch, args, model, dataset, optimizer, scheduler):
 
 
 
-def test_DGMG_epoch(args, model):
+def test_DGMG_epoch(args, model, is_fast=False):
     model.eval()
     graph_num = args.test_graph_num
 
@@ -195,14 +212,17 @@ def test_DGMG_epoch(args, model):
                 # add node
                 node_neighbor.append([])
                 node_embedding.append(init_embedding)
+                if is_fast:
+                    node_embedding_cat = torch.cat(node_embedding, dim=0)
             else:
                 break
 
             edge_count = 0
             while edge_count<args.max_num_node:
-                node_embedding = message_passing(node_neighbor, node_embedding, model)
-                node_embedding_cat = torch.cat(node_embedding, dim=0)
-                graph_embedding = calc_graph_embedding(node_embedding_cat, model)
+                if not is_fast:
+                    node_embedding = message_passing(node_neighbor, node_embedding, model)
+                    node_embedding_cat = torch.cat(node_embedding, dim=0)
+                    graph_embedding = calc_graph_embedding(node_embedding_cat, model)
 
                 # 4 f_addedge
                 p_addedge = model.f_ae(graph_embedding)
@@ -268,13 +288,13 @@ def train_DGMG(args, dataset_train, model):
     while epoch <= args.epochs:
         time_start = tm.time()
         # train
-        train_DGMG_epoch(epoch, args, model, dataset_train, optimizer, scheduler)
+        train_DGMG_epoch(epoch, args, model, dataset_train, optimizer, scheduler, is_fast=args.is_fast)
         time_end = tm.time()
         time_all[epoch - 1] = time_end - time_start
         # print('time used',time_all[epoch - 1])
         # test
         if epoch % args.epochs_test == 0 and epoch >= args.epochs_test_start:
-            graphs = test_DGMG_epoch(args,model)
+            graphs = test_DGMG_epoch(args,model, is_fast=args.is_fast)
             fname = args.graph_save_path + args.fname_pred + str(epoch) + '.dat'
             save_graph_list(graphs, fname)
             # print('test done, graphs saved')
@@ -342,6 +362,8 @@ if __name__ == '__main__':
             G_ego = nx.ego_graph(G, i, radius=1)
             if (G_ego.number_of_nodes() >= 4) and (G_ego.number_of_nodes() <= 20):
                 graphs.append(G_ego)
+        shuffle(graphs)
+        graphs = graphs[0:200]
         args.max_prev_node = 15
 
     # remove self loops

@@ -798,6 +798,8 @@ if __name__ == '__main__':
             G_ego = nx.ego_graph(G, i, radius=1)
             if (G_ego.number_of_nodes() >= 4) and (G_ego.number_of_nodes() <= 20):
                 graphs.append(G_ego)
+        shuffle(graphs)
+        graphs = graphs[0:200]
         args.max_prev_node = 15
 
     # split datasets

@@ -43,26 +43,18 @@ def degree_stats(graph_ref_list, graph_pred_list, is_parallel=False):
                 sample_pred.append(deg_hist)
 
     else:
-        average_ref, average_pred = np.array([0]), np.array([0])
         for i in range(len(graph_ref_list)):
-            time1 = time.time()
             degree_temp = np.array(nx.degree_histogram(graph_ref_list[i]))
-            average_ref = add_tensor(average_ref,degree_temp)
             sample_ref.append(degree_temp)
-            time2 = time.time()
-            # print('add time {}'.format(time2-time1))
         for i in range(len(graph_pred_list_remove_empty)):
             degree_temp = np.array(nx.degree_histogram(graph_pred_list_remove_empty[i]))
-            average_pred = add_tensor(average_pred, degree_temp)
             sample_pred.append(degree_temp)
     print(len(sample_ref),len(sample_pred))
     mmd_dist = mmd.compute_mmd(sample_ref, sample_pred, kernel=mmd.gaussian_emd)
-    average_ref /= len(graph_ref_list)
-    average_pred /= len(graph_pred_list_remove_empty)
     elapsed = datetime.now() - prev
     if PRINT_TIME:
         print('Time computing degree mmd: ', elapsed)
-    return mmd_dist, average_ref, average_pred
+    return mmd_dist
 
 def clustering_worker(param):
     G, bins = param
@@ -78,17 +70,14 @@ def clustering_stats(graph_ref_list, graph_pred_list, bins=100, is_parallel=True
 
     prev = datetime.now()
     if is_parallel:
-        average_ref, average_pred = np.array([0]), np.array([0])
         with concurrent.futures.ProcessPoolExecutor() as executor:
             for clustering_hist in executor.map(clustering_worker, 
                     [(G, bins) for G in graph_ref_list]):
                 sample_ref.append(clustering_hist)
-                average_ref = add_tensor(average_ref, clustering_hist)
         with concurrent.futures.ProcessPoolExecutor() as executor:
             for clustering_hist in executor.map(clustering_worker, 
                     [(G, bins) for G in graph_pred_list_remove_empty]):
                 sample_pred.append(clustering_hist)
-                average_pred = add_tensor(average_pred, clustering_hist)
         # check non-zero elements in hist
         #total = 0
         #for i in range(len(sample_pred)):
@@ -110,12 +99,10 @@ def clustering_stats(graph_ref_list, graph_pred_list, bins=100, is_parallel=True
     
     mmd_dist = mmd.compute_mmd(sample_ref, sample_pred, kernel=mmd.gaussian_emd,
                                sigma=1.0/10, distance_scaling=bins)
-    average_ref /= len(graph_ref_list)
-    average_pred /= len(graph_pred_list_remove_empty)
     elapsed = datetime.now() - prev
     if PRINT_TIME:
         print('Time computing clustering mmd: ', elapsed)
-    return mmd_dist, average_ref, average_pred
+    return mmd_dist
 
 # maps motif/orbit name string to its corresponding list of indices from orca output
 motif_to_indices = {
@@ -171,7 +158,6 @@ def motif_stats(graph_ref_list, graph_pred_list, motif_type='4cycle', ground_tru
 
     graph_pred_list_remove_empty = [G for G in graph_pred_list if not G.number_of_nodes() == 0]
     indices = motif_to_indices[motif_type]
-    average_ref, average_pred = 0,0
     for G in graph_ref_list:
         orbit_counts = orca(G)
         motif_counts = np.sum(orbit_counts[:, indices], axis=1)
@@ -187,8 +173,7 @@ def motif_stats(graph_ref_list, graph_pred_list, motif_type='4cycle', ground_tru
         #        motif_counts, bins=bins, density=False)
         motif_temp = np.sum(motif_counts) / G.number_of_nodes()
         total_counts_ref.append(motif_temp)
-        average_ref += motif_temp
-    
+
     for G in graph_pred_list_remove_empty:
         orbit_counts = orca(G)
         motif_counts = np.sum(orbit_counts[:, indices], axis=1)
@@ -202,18 +187,15 @@ def motif_stats(graph_ref_list, graph_pred_list, motif_type='4cycle', ground_tru
 
         motif_temp = np.sum(motif_counts) / G.number_of_nodes()
         total_counts_pred.append(motif_temp)
-        average_pred += motif_temp
 
     mmd_dist = mmd.compute_mmd(total_counts_ref, total_counts_pred, kernel=mmd.gaussian,
             is_hist=False)
-    average_ref /= len(graph_ref_list)
-    average_pred /= len(graph_pred_list_remove_empty)
     #print('-------------------------')
     #print(np.sum(total_counts_ref) / len(total_counts_ref))
     #print('...')
     #print(np.sum(total_counts_pred) / len(total_counts_pred))
     #print('-------------------------')
-    return mmd_dist, average_ref, average_pred
+    return mmd_dist
 
 def orbit_stats_all(graph_ref_list, graph_pred_list):
     total_counts_ref = []
@@ -221,30 +203,25 @@ def orbit_stats_all(graph_ref_list, graph_pred_list):
  
     graph_pred_list_remove_empty = [G for G in graph_pred_list if not G.number_of_nodes() == 0]
 
-    average_ref, average_pred = np.array([0]),np.array([0])
     for G in graph_ref_list:
         orbit_counts = orca(G)
         orbit_counts_graph = np.sum(orbit_counts, axis=0) / G.number_of_nodes()
         total_counts_ref.append(orbit_counts_graph)
-        average_ref = add_tensor(average_ref, orbit_counts_graph)
 
     for G in graph_pred_list:
         orbit_counts = orca(G)
         orbit_counts_graph = np.sum(orbit_counts, axis=0) / G.number_of_nodes()
         total_counts_pred.append(orbit_counts_graph)
-        average_pred = add_tensor(average_pred, orbit_counts_graph)
 
     total_counts_ref = np.array(total_counts_ref)
     total_counts_pred = np.array(total_counts_pred)
     mmd_dist = mmd.compute_mmd(total_counts_ref, total_counts_pred, kernel=mmd.gaussian,
             is_hist=False, sigma=30.0)
-    average_ref /= len(graph_ref_list)
-    average_pred /= len(graph_pred_list_remove_empty)
 
     print('-------------------------')
     print(np.sum(total_counts_ref, axis=0) / len(total_counts_ref))
     print('...')
     print(np.sum(total_counts_pred, axis=0) / len(total_counts_pred))
     print('-------------------------')
-    return mmd_dist, average_ref, average_pred
+    return mmd_dist
 
