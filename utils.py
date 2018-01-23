@@ -138,40 +138,40 @@ def draw_graph(G, prefix = 'test'):
 
 # draw a list of graphs [G]
 def draw_graph_list(G_list, row, col, fname = 'figures/test.png'):
-    # draw graph view
-    plt.switch_backend('agg')
-    for i,G in enumerate(G_list):
-        plt.subplot(row,col,i+1)
-        # if i%2==0:
-        #     plt.title('real nodes: '+str(G.number_of_nodes()), fontsize = 4)
-        # else:
-        #     plt.title('pred nodes: '+str(G.number_of_nodes()), fontsize = 4)
-        plt.title('num of nodes: '+str(G.number_of_nodes()), fontsize = 4)
-        parts = community.best_partition(G)
-        values = [parts.get(node) for node in G.nodes()]
-        colors = []
-        for i in range(len(values)):
-            if values[i] == 0:
-                colors.append('red')
-            if values[i] == 1:
-                colors.append('green')
-            if values[i] == 2:
-                colors.append('blue')
-            if values[i] == 3:
-                colors.append('yellow')
-            if values[i] == 4:
-                colors.append('orange')
-            if values[i] == 5:
-                colors.append('pink')
-            if values[i] == 6:
-                colors.append('black')
-        plt.axis("off")
-        pos = nx.spring_layout(G)
-        # pos = nx.spectral_layout(G)
-        nx.draw_networkx(G, with_labels=True, node_size=4, width=0.3, font_size = 3, node_color=colors,pos=pos)
-    plt.tight_layout()
-    plt.savefig(fname+'_view.png', dpi=600)
-    plt.close()
+    # # draw graph view
+    # plt.switch_backend('agg')
+    # for i,G in enumerate(G_list):
+    #     plt.subplot(row,col,i+1)
+    #     # if i%2==0:
+    #     #     plt.title('real nodes: '+str(G.number_of_nodes()), fontsize = 4)
+    #     # else:
+    #     #     plt.title('pred nodes: '+str(G.number_of_nodes()), fontsize = 4)
+    #     plt.title('num of nodes: '+str(G.number_of_nodes()), fontsize = 4)
+    #     parts = community.best_partition(G)
+    #     values = [parts.get(node) for node in G.nodes()]
+    #     colors = []
+    #     for i in range(len(values)):
+    #         if values[i] == 0:
+    #             colors.append('red')
+    #         if values[i] == 1:
+    #             colors.append('green')
+    #         if values[i] == 2:
+    #             colors.append('blue')
+    #         if values[i] == 3:
+    #             colors.append('yellow')
+    #         if values[i] == 4:
+    #             colors.append('orange')
+    #         if values[i] == 5:
+    #             colors.append('pink')
+    #         if values[i] == 6:
+    #             colors.append('black')
+    #     plt.axis("off")
+    #     pos = nx.spring_layout(G)
+    #     # pos = nx.spectral_layout(G)
+    #     nx.draw_networkx(G, with_labels=True, node_size=4, width=0.3, font_size = 3, node_color=colors,pos=pos)
+    # plt.tight_layout()
+    # plt.savefig(fname+'_view.png', dpi=600)
+    # plt.close()
 
     # draw degree distribution
     plt.switch_backend('agg')

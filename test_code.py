@@ -614,8 +614,76 @@ CUDA = 2
 
 # a,b,c = [],[],[]
 # print(a,b,c)
-fname = '/lfs/hyperion2/0/jiaxuany/icml2018_part2_new/graph-generation/graphs/temp/GraphRNN_VAE_conditional_enzymes_small_4_64_train_0.dat'
-graphs = load_graph_list(fname)
-print(len(graphs))
-for graph in graphs:
-    print(graph.number_of_nodes())
+dir = '/dfs/scratch0/jiaxuany0/graphs/'
+
+model = '_MLP_'
+# model = '_VAE_conditional_'
+# model = '_RNN_new_'
+
+# dataset
+# dataset = 'barabasi'
+# dataset = 'caveman'
+# dataset = 'grid'
+# dataset = 'citeseer'
+dataset = 'DD'
+
+sample_time = 1
+
+fname_real = 'GraphRNN'+model+dataset+'_4_128_test_0' #real
+fname_pred = 'GraphRNN'+model+dataset+'_4_128_pred_3000_'+str(sample_time) # pred
+
+graphs_real = load_graph_list(dir+fname_real+'.dat')
+graphs_pred = load_graph_list(dir+fname_pred+'.dat')
+
+graphs_real_len = [graph.number_of_nodes() for graph in graphs_real]
+graphs_pred_len = [graph.number_of_nodes() for graph in graphs_pred]
+
+### print distribution of graph size
+# plt.switch_backend('agg')
+# plt.hist(graphs_real_len)
+# plt.savefig('figures/test_len'+fname_real+'.png', dpi=200)
+# plt.close()
+#
+# plt.switch_backend('agg')
+# plt.hist(graphs_pred_len)
+# plt.savefig('figures/test_len'+fname_pred+'.png', dpi=200)
+# plt.close()
+
+### print average clustering
+plt.switch_backend('agg')
+graphs_clustering_real = []
+for graph in graphs_real:
+    graphs_clustering_real.extend(list(nx.clustering(graph).values()))
+bins = np.linspace(0,1,50)
+plt.hist(np.array(graphs_clustering_real), bins=bins, align='left')
+plt.savefig('figures/test_clustering'+fname_real+'.png', dpi=200)
+
+plt.switch_backend('agg')
+graphs_clustering_pred = []
+for graph in graphs_pred:
+    graphs_clustering_pred.extend(list(nx.clustering(graph).values()))
+bins = np.linspace(0,1,50)
+plt.hist(np.array(graphs_clustering_pred), bins=bins, align='left')
+plt.savefig('figures/test_clustering'+fname_pred+'.png', dpi=200)
+
+
+### print average degree
+plt.switch_backend('agg')
+graphs_degree_real = []
+for graph in graphs_real:
+    graphs_degree_real.extend(list(graph.degree(graph.nodes()).values()))
+bins = np.linspace(0,40,40)
+plt.hist(np.array(graphs_degree_real), bins=bins, align='left')
+plt.savefig('figures/test_degree'+fname_real+'.png', dpi=200)
+
+plt.switch_backend('agg')
+graphs_degree_pred= []
+for graph in graphs_pred:
+    graphs_degree_pred.extend(list(graph.degree(graph.nodes()).values()))
+bins = np.linspace(0,40,40)
+plt.hist(np.array(graphs_degree_pred), bins=bins, align='left')
+plt.savefig('figures/test_degree'+fname_pred+'.png', dpi=200)
+
+
+# shuffle(graphs)
+# draw_graph_list(graphs[0:16],4,4,'figures/test'+fname+'.png')
