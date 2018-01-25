@@ -23,7 +23,13 @@ LR_milestones = [500, 1000]
 
 def build_model(args, max_num_nodes):
     out_dim = max_num_nodes * (max_num_nodes + 1) // 2
-    model = GraphVAE(max_num_nodes, 512, 256, max_num_nodes)
+    if args.feature_type == 'id':
+        input_dim = max_num_nodes
+    elif args.feature_type == 'deg':
+        input_dim = 1
+    elif args.feature_type == 'struct':
+        input_dim = 2
+    model = GraphVAE(input_dim, 64, 256, max_num_nodes)
     return model
 
 def train(args, dataloader, model):
@@ -32,8 +38,9 @@ def train(args, dataloader, model):
     scheduler = MultiStepLR(optimizer, milestones=LR_milestones, gamma=args.lr)
 
     model.train()
-    for epoch in range(500):
+    for epoch in range(5000):
         for batch_idx, data in enumerate(dataloader):
+            model.zero_grad()
             features = data['features'].float()
             adj_input = data['adj'].float()
 
@@ -46,6 +53,7 @@ def train(args, dataloader, model):
 
             optimizer.step()
             scheduler.step()
+            break
 
 def arg_parse():
     parser = argparse.ArgumentParser(description='GraphVAE arguments.')
@@ -53,17 +61,20 @@ def arg_parse():
     io_parser.add_argument('--dataset', dest='dataset', 
             help='Input dataset.')
 
-    parser.add_argument('--lr', dest='lr',
+    parser.add_argument('--lr', dest='lr', type=float,
             help='Learning rate.')
-    parser.add_argument('--batch_size', dest='batch_size',
+    parser.add_argument('--batch_size', dest='batch_size', type=int,
             help='Batch size.')
-    parser.add_argument('--num_workers', dest='num_workers',
+    parser.add_argument('--num_workers', dest='num_workers', type=int,
             help='Number of workers to load data.')
-    parser.add_argument('--max_num_nodes', dest='max_num_nodes',
+    parser.add_argument('--max_num_nodes', dest='max_num_nodes', type=int,
             help='Predefined maximum number of nodes in train/test graphs. -1 if determined by \
                   training data.')
+    parser.add_argument('--feature', dest='feature_type',
+            help='Feature used for encoder. Can be: id, deg')
 
     parser.set_defaults(dataset='grid',
+                        feature_type='id',
                         lr=0.001,
                         batch_size=1,
                         num_workers=1,
@@ -82,8 +93,8 @@ def main():
         num_graphs_raw = len(graphs)
     elif prog_args.dataset == 'grid':
         graphs = []
-        for i in range(2,5):
-            for j in range(2,6):
+        for i in range(2,3):
+            for j in range(2,3):
                 graphs.append(nx.grid_2d_graph(i,j))
         num_graphs_raw = len(graphs)
 
@@ -98,12 +109,13 @@ def main():
     print('Number of graphs removed due to upper-limit of number of nodes: ', 
             num_graphs_raw - graphs_len)
     graphs_test = graphs[int(0.8 * graphs_len):]
-    graphs_train = graphs[0:int(0.8*graphs_len)]
+    #graphs_train = graphs[0:int(0.8*graphs_len)]
+    graphs_train = graphs
 
     print('total graph num: {}, training set: {}'.format(len(graphs),len(graphs_train)))
     print('max number node: {}'.format(max_num_nodes))
 
-    dataset = GraphAdjSampler(graphs_train, max_num_nodes)
+    dataset = GraphAdjSampler(graphs_train, max_num_nodes, features=prog_args.feature_type)
     #sample_strategy = torch.utils.data.sampler.WeightedRandomSampler(
     #        [1.0 / len(dataset) for i in range(len(dataset))],
     #        num_samples=prog_args.batch_size, 

@@ -10,12 +10,29 @@ class GraphAdjSampler(torch.utils.data.Dataset):
         self.feature_all = []
 
         for G in G_list:
+            adj = nx.to_numpy_matrix(G)
             # the diagonal entries are 1 since they denote node probability
             self.adj_all.append(
-                    np.asarray(nx.to_numpy_matrix(G)) + np.identity(G.number_of_nodes()))
+                    np.asarray(adj) + np.identity(G.number_of_nodes()))
             self.len_all.append(G.number_of_nodes())
             if features == 'id':
                 self.feature_all.append(np.identity(max_num_nodes))
+            elif features == 'deg':
+                degs = np.sum(np.array(adj), 1)
+                degs = np.expand_dims(np.pad(degs, [0, max_num_nodes - G.number_of_nodes()], 0),
+                                      axis=1)
+                self.feature_all.append(degs)
+            elif features == 'struct':
+                degs = np.sum(np.array(adj), 1)
+                degs = np.expand_dims(np.pad(degs, [0, max_num_nodes - G.number_of_nodes()],
+                                             'constant'),
+                                      axis=1)
+                clusterings = np.array(list(nx.clustering(G).values()))
+                clusterings = np.expand_dims(np.pad(clusterings, 
+                                                    [0, max_num_nodes - G.number_of_nodes()],
+                                                    'constant'),
+                                             axis=1)
+                self.feature_all.append(np.hstack([degs, clusterings]))
 
     def __len__(self):
         return len(self.adj_all)
