@@ -6,16 +6,16 @@ class Args_DGMG():
         self.cuda = 3
 
         ### model type
-        self.note = 'Baseline_DGMG' # do GCN after adding each edge
-        # self.note = 'Baseline_DGMG_fast' # do GCN only after adding each node
+        # self.note = 'Baseline_DGMG' # do GCN after adding each edge
+        self.note = 'Baseline_DGMG_fast' # do GCN only after adding each node
 
         ### data config
         # self.graph_type = 'caveman_small'
         # self.graph_type = 'grid_small'
         # self.graph_type = 'ladder_small'
         # self.graph_type = 'enzymes_small'
-        self.graph_type = 'barabasi_small'
-        # self.graph_type = 'citeseer_small'
+        # self.graph_type = 'barabasi_small'
+        self.graph_type = 'citeseer_small'
 
         self.max_num_node = 20
 
@@ -26,17 +26,17 @@ class Args_DGMG():
 
         ### training config
         self.epochs = 2000  # now one epoch means self.batch_ratio x batch_size
-        self.epochs_test_start = 0
-        self.epochs_test = 10
-        self.epochs_log = 10
-        self.epochs_save = 10
+        self.epochs_test_start = 100
+        self.epochs_test = 100
+        self.epochs_log = 100
+        self.epochs_save = 100
         if 'fast' in self.note:
             self.is_fast = True
         else:
             self.is_fast = False
 
         self.lr = 0.001
-        self.milestones = [200, 400, 800]
+        self.milestones = [300, 600, 1000]
         self.lr_rate = 0.3
 
         ### output config

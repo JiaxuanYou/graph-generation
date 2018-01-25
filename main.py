@@ -49,10 +49,10 @@ class Args():
         ### data config
         ## used for paper
         # run in hyperion: icml2018_part1
-        self.graph_type = 'DD'
+        # self.graph_type = 'DD'
         # self.graph_type = 'caveman'
         # self.graph_type = 'caveman_small'
-        self.graph_type = 'grid'
+        # self.graph_type = 'grid'
         # self.graph_type = 'grid_small'
         # self.graph_type = 'ladder_small'
 
@@ -60,7 +60,7 @@ class Args():
         # self.graph_type = 'enzymes'
         # self.graph_type = 'enzymes_small'
         # self.graph_type = 'barabasi'
-        # self.graph_type = 'barabasi_small'
+        self.graph_type = 'barabasi_small'
         # self.graph_type = 'citeseer'
         # self.graph_type = 'citeseer_small'
         # self.graph_type = 'barabasi_noise'
@@ -715,18 +715,28 @@ if __name__ == '__main__':
                 graphs.append(nx.balanced_tree(i,j))
         args.max_prev_node = 256
     if args.graph_type=='caveman':
+        # graphs = []
+        # for i in range(5,10):
+        #     for j in range(5,25):
+        #         for k in range(5):
+        #             graphs.append(nx.relaxed_caveman_graph(i, j, p=0.1))
         graphs = []
-        for i in range(5,10):
-            for j in range(5,25):
-                for k in range(5):
-                    graphs.append(nx.relaxed_caveman_graph(i, j, p=0.1))
-        args.max_prev_node = 80
-    if args.graph_type=='caveman_small':
-        graphs = []
-        for i in range(2,5):
-            for j in range(2,6):
+        for i in range(2, 3):
+            for j in range(30, 81):
                 for k in range(10):
-                    graphs.append(nx.relaxed_caveman_graph(i, j, p=0.1))
+                    graphs.append(caveman_special(i,j, p_edge=0.3))
+        args.max_prev_node = 100
+    if args.graph_type=='caveman_small':
+        # graphs = []
+        # for i in range(2,5):
+        #     for j in range(2,6):
+        #         for k in range(10):
+        #             graphs.append(nx.relaxed_caveman_graph(i, j, p=0.1))
+        graphs = []
+        for i in range(2, 3):
+            for j in range(6, 11):
+                for k in range(20):
+                    graphs.append(caveman_special(i, j, p_edge=0.8))
         args.max_prev_node = 20
     if args.graph_type=='grid':
         graphs = []
@@ -807,6 +817,8 @@ if __name__ == '__main__':
     shuffle(graphs)
     graphs_len = len(graphs)
     graphs_test = graphs[int(0.8 * graphs_len):]
+    for graph in graphs_test:
+        print(graph.number_of_nodes())
     graphs_train = graphs[0:int(0.8*graphs_len)]
 
     args.max_num_node = max([graphs[i].number_of_nodes() for i in range(len(graphs))])

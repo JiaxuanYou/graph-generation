@@ -204,12 +204,18 @@ def orbit_stats_all(graph_ref_list, graph_pred_list):
     graph_pred_list_remove_empty = [G for G in graph_pred_list if not G.number_of_nodes() == 0]
 
     for G in graph_ref_list:
-        orbit_counts = orca(G)
+        try:
+            orbit_counts = orca(G)
+        except:
+            continue
         orbit_counts_graph = np.sum(orbit_counts, axis=0) / G.number_of_nodes()
         total_counts_ref.append(orbit_counts_graph)
 
     for G in graph_pred_list:
-        orbit_counts = orca(G)
+        try:
+            orbit_counts = orca(G)
+        except:
+            continue
         orbit_counts_graph = np.sum(orbit_counts, axis=0) / G.number_of_nodes()
         total_counts_pred.append(orbit_counts_graph)
 

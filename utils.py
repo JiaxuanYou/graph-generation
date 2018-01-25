@@ -14,6 +14,25 @@ import community
 import pickle
 import re
 
+
+
+def caveman_special(c=2,k=20,p_path=0.1,p_edge=0.3):
+    p = p_path
+    path_count = max(int(np.ceil(p * k)),1)
+    G = nx.caveman_graph(c, k)
+    # remove 50% edges
+    p = 1-p_edge
+    for (u, v) in list(G.edges()):
+        if np.random.rand() < p and ((u < k and v < k) or (u >= k and v >= k)):
+            G.remove_edge(u, v)
+    # add path_count links
+    for i in range(path_count):
+        u = np.random.randint(0, k)
+        v = np.random.randint(k, k * 2)
+        G.add_edge(u, v)
+    G = max(nx.connected_component_subgraphs(G), key=len)
+    return G
+
 def perturb(graph_list, p_del, p_add=None):
     ''' Perturb the list of graphs by adding/removing edges.
     Args:
@@ -137,41 +156,43 @@ def draw_graph(G, prefix = 'test'):
 
 
 # draw a list of graphs [G]
-def draw_graph_list(G_list, row, col, fname = 'figures/test.png'):
+def draw_graph_list(G_list, row, col, fname = 'figures/test.png', layout='spring'):
     # # draw graph view
-    # plt.switch_backend('agg')
-    # for i,G in enumerate(G_list):
-    #     plt.subplot(row,col,i+1)
-    #     # if i%2==0:
-    #     #     plt.title('real nodes: '+str(G.number_of_nodes()), fontsize = 4)
-    #     # else:
-    #     #     plt.title('pred nodes: '+str(G.number_of_nodes()), fontsize = 4)
-    #     plt.title('num of nodes: '+str(G.number_of_nodes()), fontsize = 4)
-    #     parts = community.best_partition(G)
-    #     values = [parts.get(node) for node in G.nodes()]
-    #     colors = []
-    #     for i in range(len(values)):
-    #         if values[i] == 0:
-    #             colors.append('red')
-    #         if values[i] == 1:
-    #             colors.append('green')
-    #         if values[i] == 2:
-    #             colors.append('blue')
-    #         if values[i] == 3:
-    #             colors.append('yellow')
-    #         if values[i] == 4:
-    #             colors.append('orange')
-    #         if values[i] == 5:
-    #             colors.append('pink')
-    #         if values[i] == 6:
-    #             colors.append('black')
-    #     plt.axis("off")
-    #     pos = nx.spring_layout(G)
-    #     # pos = nx.spectral_layout(G)
-    #     nx.draw_networkx(G, with_labels=True, node_size=4, width=0.3, font_size = 3, node_color=colors,pos=pos)
-    # plt.tight_layout()
-    # plt.savefig(fname+'_view.png', dpi=600)
-    # plt.close()
+    plt.switch_backend('agg')
+    for i,G in enumerate(G_list):
+        plt.subplot(row,col,i+1)
+        # if i%2==0:
+        #     plt.title('real nodes: '+str(G.number_of_nodes()), fontsize = 4)
+        # else:
+        #     plt.title('pred nodes: '+str(G.number_of_nodes()), fontsize = 4)
+        plt.title('num of nodes: '+str(G.number_of_nodes()), fontsize = 4)
+        parts = community.best_partition(G)
+        values = [parts.get(node) for node in G.nodes()]
+        colors = []
+        for i in range(len(values)):
+            if values[i] == 0:
+                colors.append('red')
+            if values[i] == 1:
+                colors.append('green')
+            if values[i] == 2:
+                colors.append('blue')
+            if values[i] == 3:
+                colors.append('yellow')
+            if values[i] == 4:
+                colors.append('orange')
+            if values[i] == 5:
+                colors.append('pink')
+            if values[i] == 6:
+                colors.append('black')
+        plt.axis("off")
+        if layout=='spring':
+            pos = nx.spring_layout(G)
+        elif layout=='spectral':
+            pos = nx.spectral_layout(G)
+        nx.draw_networkx(G, with_labels=True, node_size=4, width=0.3, font_size = 3, node_color=colors,pos=pos)
+    plt.tight_layout()
+    plt.savefig(fname+'_view.png', dpi=600)
+    plt.close()
 
     # draw degree distribution
     plt.switch_backend('agg')
@@ -333,16 +354,27 @@ def pick_connected_component(G):
     node_list = nx.node_connected_component(G,0)
     return G.subgraph(node_list)
 
+def pick_connected_component_new(G):
+    adj_list = G.adjacency_list()
+    for id,adj in enumerate(adj_list):
+        id_min = min(adj)
+        if id<id_min and id_min!=1:
+            break
+    node_list = list(range(id)) # only include node prior than node "id"
+    return G.subgraph(node_list)
+
 # load a list of graphs
-def load_graph_list(fname):
+def load_graph_list(fname,is_real=True):
     with open(fname, "rb") as f:
         graph_list = pickle.load(f)
     for i in range(len(graph_list)):
         edges_with_selfloops = graph_list[i].selfloop_edges()
         if len(edges_with_selfloops)>0:
             graph_list[i].remove_edges_from(edges_with_selfloops)
-        graph_list[i] = nx.convert_node_labels_to_integers(graph_list[i])
-        graph_list[i] = pick_connected_component(graph_list[i])
+        if is_real:
+            graph_list[i] = nx.convert_node_labels_to_integers(graph_list[i])
+        else:
+            graph_list[i] = pick_connected_component_new(graph_list[i])
     return graph_list
 
 

@@ -122,7 +122,7 @@ def evaluation_epoch(dir_input, fname_output, model_name, dataset_name, args, is
             logging.warning('Not found: ' + fname_test)
             return None
         graph_test_len = len(graph_test)
-        graph_validate = graph_test[0:int(0.8 * graph_test_len)] # validate
+        graph_validate = graph_test[0:int(0.2 * graph_test_len)] # validate
         graph_test = graph_test[int(0.8 * graph_test_len):] # test on a hold out test set
 
         # get performance for proposed approaches
@@ -148,11 +148,17 @@ def evaluation_epoch(dir_input, fname_output, model_name, dataset_name, args, is
                     # evaluate MMD test
                     mmd_degree = eval.stats.degree_stats(graph_test, graph_pred)
                     mmd_clustering = eval.stats.clustering_stats(graph_test, graph_pred)
-                    mmd_4orbits = eval.stats.orbit_stats_all(graph_test, graph_pred)
+                    try:
+                        mmd_4orbits = eval.stats.orbit_stats_all(graph_test, graph_pred)
+                    except:
+                        mmd_4orbits = -1
                     # evaluate MMD validate
                     mmd_degree_validate = eval.stats.degree_stats(graph_validate, graph_pred)
                     mmd_clustering_validate = eval.stats.clustering_stats(graph_validate, graph_pred)
-                    mmd_4orbits_validate = eval.stats.orbit_stats_all(graph_validate, graph_pred)
+                    try:
+                        mmd_4orbits_validate = eval.stats.orbit_stats_all(graph_validate, graph_pred)
+                    except:
+                        mmd_4orbits_validate = -1
                     # write results
                     f.write(str(sample_time)+','+str(epoch)+','+str(mmd_degree_validate)+','+str(mmd_clustering_validate)+','+str(mmd_4orbits_validate)
                             + ',' + str(mmd_degree)+','+str(mmd_clustering)+','+str(mmd_4orbits)+'\n')
@@ -162,7 +168,10 @@ def evaluation_epoch(dir_input, fname_output, model_name, dataset_name, args, is
         if model_name == 'Internal':
             mmd_degree_validate = eval.stats.degree_stats(graph_test, graph_validate)
             mmd_clustering_validate = eval.stats.clustering_stats(graph_test, graph_validate)
-            mmd_4orbits_validate = eval.stats.orbit_stats_all(graph_test, graph_validate)
+            try:
+                mmd_4orbits_validate = eval.stats.orbit_stats_all(graph_test, graph_validate)
+            except:
+                mmd_4orbits_validate = -1
             f.write(str(-1) + ',' + str(-1) + ',' + str(mmd_degree_validate) + ',' + str(
                 mmd_clustering_validate) + ',' + str(mmd_4orbits_validate)
                     + ',' + str(-1) + ',' + str(-1) + ',' + str(-1) + '\n')
@@ -173,7 +182,10 @@ def evaluation_epoch(dir_input, fname_output, model_name, dataset_name, args, is
             graph_validate_perturbed = perturb(graph_validate, 0.05)
             mmd_degree_validate = eval.stats.degree_stats(graph_test, graph_validate_perturbed)
             mmd_clustering_validate = eval.stats.clustering_stats(graph_test, graph_validate_perturbed)
-            mmd_4orbits_validate = eval.stats.orbit_stats_all(graph_test, graph_validate_perturbed)
+            try:
+                mmd_4orbits_validate = eval.stats.orbit_stats_all(graph_test, graph_validate_perturbed)
+            except:
+                mmd_4orbits_validate = -1
             f.write(str(-1) + ',' + str(-1) + ',' + str(mmd_degree_validate) + ',' + str(
                 mmd_clustering_validate) + ',' + str(mmd_4orbits_validate)
                     + ',' + str(-1) + ',' + str(-1) + ',' + str(-1) + '\n')
@@ -475,7 +487,8 @@ if __name__ == '__main__':
             os.makedirs(dir_prefix+'eval_results')
         # loop over all results
         model_name_all = ['GraphRNN_MLP','GraphRNN_VAE_conditional','GraphRNN_RNN_new','Internal','Noise']
-        dataset_name_all = ['caveman', 'grid', 'barabasi', 'citeseer', 'DD']
+        # dataset_name_all = ['caveman', 'grid', 'barabasi', 'citeseer', 'DD']
+        dataset_name_all = ['caveman_small', 'ladder_small', 'grid_small', 'ladder_small', 'enzymes_small', 'barabasi_small','citeseer_small']
         evaluation(dir_input=dir_prefix+"graphs/", dir_output=dir_prefix+"eval_results/",
                    model_name_all=model_name_all,dataset_name_all=dataset_name_all,args=args,overwrite=True)
 
