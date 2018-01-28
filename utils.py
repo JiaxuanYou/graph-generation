@@ -189,7 +189,7 @@ def draw_graph_list(G_list, row, col, fname = 'figures/test.png', layout='spring
             pos = nx.spring_layout(G)
         elif layout=='spectral':
             pos = nx.spectral_layout(G)
-        nx.draw_networkx(G, with_labels=True, node_size=4, width=0.3, font_size = 3, node_color=colors,pos=pos)
+        nx.draw_networkx(G, with_labels=True, node_size=2, width=0.15, font_size = 1.5, node_color=colors,pos=pos)
     plt.tight_layout()
     plt.savefig(fname+'_view.png', dpi=600)
     plt.close()

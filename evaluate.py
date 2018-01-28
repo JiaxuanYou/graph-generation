@@ -9,6 +9,7 @@ import eval.stats
 import utils
 # import main.Args
 from main import *
+from baseline import *
 
 def find_nearest_idx(array,value):
     idx = (np.abs(array-value)).argmin()
@@ -109,19 +110,20 @@ def evaluation_epoch(dir_input, fname_output, model_name, dataset_name, args, is
         else:
             hidden = 64
         # read real graph
-        if model_name=='Internal' or model_name=='Noise':
+        if model_name=='Internal' or model_name=='Noise' or model_name=='B-A' or model_name=='E-R':
             fname_test = dir_input + 'GraphRNN_MLP' + '_' + dataset_name + '_' + str(args.num_layers) + '_' + str(
                 hidden) + '_test_' + str(0) + '.dat'
         else:
             fname_test = dir_input + model_name + '_' + dataset_name + '_' + str(args.num_layers) + '_' + str(
                 hidden) + '_test_' + str(0) + '.dat'
         try:
-            graph_test = utils.load_graph_list(fname_test)
+            graph_test = utils.load_graph_list(fname_test,is_real=True)
         except:
             print('Not found: ' + fname_test)
             logging.warning('Not found: ' + fname_test)
             return None
         graph_test_len = len(graph_test)
+        graph_train = graph_test[0:int(0.8 * graph_test_len)] # train
         graph_validate = graph_test[0:int(0.2 * graph_test_len)] # validate
         graph_test = graph_test[int(0.8 * graph_test_len):] # test on a hold out test set
 
@@ -134,7 +136,7 @@ def evaluation_epoch(dir_input, fname_output, model_name, dataset_name, args, is
                     fname_pred = dir_input + model_name + '_' + dataset_name + '_' + str(args.num_layers) + '_' + str(hidden) + '_pred_' + str(epoch) + '_' + str(sample_time) + '.dat'
                     # load graphs
                     try:
-                        graph_pred = utils.load_graph_list(fname_pred)
+                        graph_pred = utils.load_graph_list(fname_pred,is_real=False)
                     except:
                         print('Not found: '+ fname_pred)
                         logging.warning('Not found: '+ fname_pred)
@@ -189,6 +191,41 @@ def evaluation_epoch(dir_input, fname_output, model_name, dataset_name, args, is
             f.write(str(-1) + ',' + str(-1) + ',' + str(mmd_degree_validate) + ',' + str(
                 mmd_clustering_validate) + ',' + str(mmd_4orbits_validate)
                     + ',' + str(-1) + ',' + str(-1) + ',' + str(-1) + '\n')
+
+        # get E-R MMD
+        if model_name == 'E-R':
+            graph_pred = Graph_generator_baseline(graph_train,generator='Gnp')
+            # clean graphs
+            if is_clean:
+                graph_test, graph_pred = clean_graphs(graph_test, graph_pred)
+            print('len graph_test', len(graph_test))
+            print('len graph_pred', len(graph_pred))
+            mmd_degree = eval.stats.degree_stats(graph_test, graph_pred)
+            mmd_clustering = eval.stats.clustering_stats(graph_test, graph_pred)
+            try:
+                mmd_4orbits_validate = eval.stats.orbit_stats_all(graph_test, graph_pred)
+            except:
+                mmd_4orbits_validate = -1
+            f.write(str(-1) + ',' + str(-1) + ',' + str(-1) + ',' + str(-1) + ',' + str(-1)
+                    + ',' + str(mmd_degree) + ',' + str(mmd_clustering) + ',' + str(mmd_4orbits_validate) + '\n')
+
+
+        # get B-A MMD
+        if model_name == 'B-A':
+            graph_pred = Graph_generator_baseline(graph_train, generator='BA')
+            # clean graphs
+            if is_clean:
+                graph_test, graph_pred = clean_graphs(graph_test, graph_pred)
+            print('len graph_test', len(graph_test))
+            print('len graph_pred', len(graph_pred))
+            mmd_degree = eval.stats.degree_stats(graph_test, graph_pred)
+            mmd_clustering = eval.stats.clustering_stats(graph_test, graph_pred)
+            try:
+                mmd_4orbits_validate = eval.stats.orbit_stats_all(graph_test, graph_pred)
+            except:
+                mmd_4orbits_validate = -1
+            f.write(str(-1) + ',' + str(-1) + ',' + str(-1) + ',' + str(-1) + ',' + str(-1)
+                    + ',' + str(mmd_degree) + ',' + str(mmd_clustering) + ',' + str(mmd_4orbits_validate) + '\n')
 
         return True
 
@@ -486,9 +523,10 @@ if __name__ == '__main__':
         if not os.path.isdir(dir_prefix+'eval_results'):
             os.makedirs(dir_prefix+'eval_results')
         # loop over all results
-        model_name_all = ['GraphRNN_MLP','GraphRNN_VAE_conditional','GraphRNN_RNN_new','Internal','Noise']
-        # dataset_name_all = ['caveman', 'grid', 'barabasi', 'citeseer', 'DD']
-        dataset_name_all = ['caveman_small', 'ladder_small', 'grid_small', 'ladder_small', 'enzymes_small', 'barabasi_small','citeseer_small']
+        # model_name_all = ['GraphRNN_MLP','GraphRNN_VAE_conditional','GraphRNN_RNN_new','Internal','Noise']
+        model_name_all = ['E-R', 'B-A']
+        dataset_name_all = ['caveman', 'grid', 'barabasi', 'citeseer', 'DD']
+        # dataset_name_all = ['caveman_small', 'ladder_small', 'grid_small', 'ladder_small', 'enzymes_small', 'barabasi_small','citeseer_small']
         evaluation(dir_input=dir_prefix+"graphs/", dir_output=dir_prefix+"eval_results/",
                    model_name_all=model_name_all,dataset_name_all=dataset_name_all,args=args,overwrite=True)
 

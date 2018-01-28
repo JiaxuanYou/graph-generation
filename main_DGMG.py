@@ -3,19 +3,19 @@ from main import *
 class Args_DGMG():
     def __init__(self):
         ### CUDA
-        self.cuda = 3
+        self.cuda = 0
 
         ### model type
-        # self.note = 'Baseline_DGMG' # do GCN after adding each edge
-        self.note = 'Baseline_DGMG_fast' # do GCN only after adding each node
+        self.note = 'Baseline_DGMG' # do GCN after adding each edge
+        # self.note = 'Baseline_DGMG_fast' # do GCN only after adding each node
 
         ### data config
-        # self.graph_type = 'caveman_small'
+        self.graph_type = 'caveman_small'
         # self.graph_type = 'grid_small'
         # self.graph_type = 'ladder_small'
         # self.graph_type = 'enzymes_small'
         # self.graph_type = 'barabasi_small'
-        self.graph_type = 'citeseer_small'
+        # self.graph_type = 'citeseer_small'
 
         self.max_num_node = 20
 
@@ -324,12 +324,19 @@ if __name__ == '__main__':
         for i in range(2, 11):
             graphs.append(nx.ladder_graph(i))
         args.max_prev_node = 10
-    if args.graph_type == 'caveman_small':
+    # if args.graph_type == 'caveman_small':
+    #     graphs = []
+    #     for i in range(2, 5):
+    #         for j in range(2, 6):
+    #             for k in range(10):
+    #                 graphs.append(nx.relaxed_caveman_graph(i, j, p=0.1))
+    #     args.max_prev_node = 20
+    if args.graph_type=='caveman_small':
         graphs = []
-        for i in range(2, 5):
-            for j in range(2, 6):
-                for k in range(10):
-                    graphs.append(nx.relaxed_caveman_graph(i, j, p=0.1))
+        for i in range(2, 3):
+            for j in range(6, 11):
+                for k in range(20):
+                    graphs.append(caveman_special(i, j, p_edge=0.8))
         args.max_prev_node = 20
     if args.graph_type == 'grid_small':
         graphs = []

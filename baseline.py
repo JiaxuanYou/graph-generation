@@ -28,8 +28,31 @@ def Graph_generator_baseline_train_rulebased(graphs,generator='BA'):
             count = parameter[nodes][-1]
             parameter[nodes] = [(parameter[nodes][i]*count+parameter_temp[i])/(count+1) for i in range(len(parameter[nodes]))]
             parameter[nodes][-1] = count+1
-    print(parameter)
+    # print(parameter)
     return parameter
+
+def Graph_generator_baseline(graph_train, pred_num=1000, generator='BA'):
+    graph_nodes = [graph_train[i].number_of_nodes() for i in range(len(graph_train))]
+    graph_edges = [graph_train[i].number_of_edges() for i in range(len(graph_train))]
+    repeat = pred_num//len(graph_train)
+    graph_pred = []
+    for i in range(len(graph_nodes)):
+        nodes = graph_nodes[i]
+        edges = graph_edges[i]
+        # based on rule, calculate optimal parameter
+        if generator=='BA':
+            # BA optimal: nodes = n; edges = (n-m)*m
+            n = nodes
+            m = int((n - np.sqrt(n**2-4*edges))/2)
+            for j in range(repeat):
+                graph_pred.append(nx.barabasi_albert_graph(n,m))
+        if generator=='Gnp':
+            # Gnp optimal: nodes = n; edges = ((n-1)*n/2)*p
+            n = nodes
+            p = float(edges)/((n-1)*n/2)
+            for j in range(repeat):
+                graph_pred.append(nx.fast_gnp_random_graph(n, p))
+    return graph_pred
 
 def emd_distance(x, y, distance_scaling=1.0):
     support_size = max(len(x), len(y))
@@ -164,6 +187,8 @@ def Graph_generator_baseline_test(graph_nodes, parameter, generator='BA'):
     graphs = []
     for i in range(len(graph_nodes)):
         nodes = graph_nodes[i]
+        if not nodes in parameter.keys():
+            nodes = min(parameter.keys(), key=lambda k: abs(k - nodes))
         if generator=='BA':
             n = int(parameter[nodes][0])
             m = int(np.rint(parameter[nodes][1]))

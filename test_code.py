@@ -616,9 +616,9 @@ CUDA = 2
 # print(a,b,c)
 
 
-# ################# print average statistics #############
-# dir = '/dfs/scratch0/jiaxuany0/graphs/'
-# # dir = 'graphs/'
+################# print average statistics #############
+# # dir = '/dfs/scratch0/jiaxuany0/graphs/'
+# dir = 'graphs/'
 #
 # # model = '_MLP_'
 # # model = '_VAE_conditional_'
@@ -627,11 +627,14 @@ CUDA = 2
 # # dataset
 # # dataset = 'barabasi'
 # # dataset = 'barabasi_small'
-# # dataset = 'caveman'
+# dataset = 'caveman'
 # # dataset = 'grid'
 # # dataset = 'citeseer'
+# # dataset = 'citeseer_small'
 # # dataset = 'DD'
-# dataset = 'grid_small'
+# # dataset = 'grid_small'
+# # dataset = 'enzymes'
+# # dataset = 'enzymes_small'
 #
 # sample_time = 1
 #
@@ -643,6 +646,9 @@ CUDA = 2
 # fname_real = 'GraphRNN'+model+dataset+'_4_'+hidden+'_test_0' #real
 # fname_pred = 'GraphRNN'+model+dataset+'_4_'+hidden+'_pred_3000_'+str(sample_time) # pred
 #
+# # fname_real = 'GraphRNN'+model+dataset+'_4_'+hidden+'_0'+'_test_0' #real
+# # fname_pred = 'GraphRNN'+model+dataset+'_4_'+hidden+'_0'+'_pred_3000_'+str(sample_time) # pred
+#
 # # fname_real = 'Baseline_DGMG_grid_small_64_test_0'
 # # fname_pred = 'Baseline_DGMG_grid_small_64_pred_2000'
 #
@@ -650,7 +656,8 @@ CUDA = 2
 # graphs_pred = load_graph_list(dir+fname_pred+'.dat',is_real=False)
 #
 # graphs_real = graphs_real[int(len(graphs_real)*0.8):]
-# graphs_pred = [graphs_pred[i] for i in range(len(graphs_pred)) if graphs_pred[i].number_of_nodes()>=4]
+# graphs_real = [graphs_real[i] for i in range(len(graphs_real)) if (graphs_real[i].number_of_nodes()>=50 and graphs_real[i].number_of_nodes()<=500)]
+# graphs_pred = [graphs_pred[i] for i in range(len(graphs_pred)) if (graphs_pred[i].number_of_nodes()>=50 and graphs_pred[i].number_of_nodes()<=500)]
 #
 # # shuffle(graphs_real)
 # # shuffle(graphs_pred)
@@ -660,6 +667,7 @@ CUDA = 2
 # print(graphs_real_len)
 # print(graphs_pred_len)
 #
+# ######### for grid only##############
 # # graphs_pred_new = []
 # # for real_len in graphs_real_len:
 # #     if real_len in graphs_pred_len:
@@ -673,7 +681,7 @@ CUDA = 2
 # #         graphs_pred_new.append(graphs_pred[id])
 #
 # # graphs_pred = graphs_pred_new
-#
+# ######################################
 #
 #
 # print('real graph count',len(graphs_real))
@@ -682,56 +690,92 @@ CUDA = 2
 #
 #
 # ### plot sample graphs
-# draw_graph_list(graphs_real[:],2,2,'figures/test_graph'+fname_real+'.png',layout='spring')
-# draw_graph_list(graphs_pred[0:19],5,4,'figures/test_graph'+fname_pred+'.png',layout='spring')
+# draw_graph_list(graphs_real[0:16],4,4,'figures/test_graph'+fname_real+'.png',layout='spring')
+# draw_graph_list(graphs_pred[0:16],4,4,'figures/test_graph'+fname_pred+'.png',layout='spring')
+# #
+# #
+# #
+# # ### print distribution of graph size
+# # plt.switch_backend('agg')
+# # plt.hist(graphs_real_len)
+# # plt.savefig('figures/test_len'+fname_real+'.png', dpi=200)
+# # plt.close()
+# #
+# # plt.switch_backend('agg')
+# # plt.hist(graphs_pred_len)
+# # plt.savefig('figures/test_len'+fname_pred+'.png', dpi=200)
+# # plt.close()
+# #
+# # ### print average clustering
+# # plt.switch_backend('agg')
+# # graphs_clustering_real = []
+# # for graph in graphs_real:
+# #     graphs_clustering_real.extend(list(nx.clustering(graph).values()))
+# # bins = np.linspace(0,1,50)
+# # plt.hist(np.array(graphs_clustering_real), bins=bins, align='left')
+# # plt.savefig('figures/test_clustering'+fname_real+'.png', dpi=200)
+# #
+# # plt.switch_backend('agg')
+# # graphs_clustering_pred = []
+# # for graph in graphs_pred:
+# #     graphs_clustering_pred.extend(list(nx.clustering(graph).values()))
+# # bins = np.linspace(0,1,50)
+# # plt.hist(np.array(graphs_clustering_pred), bins=bins, align='left')
+# # plt.savefig('figures/test_clustering'+fname_pred+'.png', dpi=200)
+# #
+# #
+# # ### print average degree
+# # plt.switch_backend('agg')
+# # graphs_degree_real = []
+# # for graph in graphs_real:
+# #     graphs_degree_real.extend(list(graph.degree(graph.nodes()).values()))
+# # bins = np.linspace(0,40,40)
+# # plt.hist(np.array(graphs_degree_real), bins=bins, align='left')
+# # plt.savefig('figures/test_degree'+fname_real+'.png', dpi=200)
+# #
+# # plt.switch_backend('agg')
+# # graphs_degree_pred= []
+# # for graph in graphs_pred:
+# #     graphs_degree_pred.extend(list(graph.degree(graph.nodes()).values()))
+# # bins = np.linspace(0,40,40)
+# # plt.hist(np.array(graphs_degree_pred), bins=bins, align='left')
+# # plt.savefig('figures/test_degree'+fname_pred+'.png', dpi=200)
+# #
+# #
 #
+
+
+
+
+
+
+
+
+# c = 2
+# k = 10
+# p = 0.1
+# path_count = int(np.ceil(p*k))
+# G = nx.caveman_graph(c,k)
 #
+# # remove 50% edges
+# p = 0.5
+# for (u, v) in list(G.edges()):
+#     if np.random.rand()<p and ((u<k and v<k)or(u>=k and v>=k)):
+#         G.remove_edge(u, v)
+# # add path_count links
+# for i in range(path_count):
+#     u = np.random.randint(0,k)
+#     v = np.random.randint(k,k*2)
+#     G.add_edge(u,v)
 #
-# ### print distribution of graph size
-# plt.switch_backend('agg')
-# plt.hist(graphs_real_len)
-# plt.savefig('figures/test_len'+fname_real+'.png', dpi=200)
-# plt.close()
-#
-# plt.switch_backend('agg')
-# plt.hist(graphs_pred_len)
-# plt.savefig('figures/test_len'+fname_pred+'.png', dpi=200)
-# plt.close()
-#
-# ### print average clustering
-# plt.switch_backend('agg')
-# graphs_clustering_real = []
-# for graph in graphs_real:
-#     graphs_clustering_real.extend(list(nx.clustering(graph).values()))
-# bins = np.linspace(0,1,50)
-# plt.hist(np.array(graphs_clustering_real), bins=bins, align='left')
-# plt.savefig('figures/test_clustering'+fname_real+'.png', dpi=200)
-#
-# plt.switch_backend('agg')
-# graphs_clustering_pred = []
-# for graph in graphs_pred:
-#     graphs_clustering_pred.extend(list(nx.clustering(graph).values()))
-# bins = np.linspace(0,1,50)
-# plt.hist(np.array(graphs_clustering_pred), bins=bins, align='left')
-# plt.savefig('figures/test_clustering'+fname_pred+'.png', dpi=200)
-#
-#
-# ### print average degree
-# plt.switch_backend('agg')
-# graphs_degree_real = []
-# for graph in graphs_real:
-#     graphs_degree_real.extend(list(graph.degree(graph.nodes()).values()))
-# bins = np.linspace(0,40,40)
-# plt.hist(np.array(graphs_degree_real), bins=bins, align='left')
-# plt.savefig('figures/test_degree'+fname_real+'.png', dpi=200)
-#
-# plt.switch_backend('agg')
-# graphs_degree_pred= []
-# for graph in graphs_pred:
-#     graphs_degree_pred.extend(list(graph.degree(graph.nodes()).values()))
-# bins = np.linspace(0,40,40)
-# plt.hist(np.array(graphs_degree_pred), bins=bins, align='left')
-# plt.savefig('figures/test_degree'+fname_pred+'.png', dpi=200)
+# draw_graph(G, 'caveman_sparse'+str(k))
+
+
+
+# dir = '/dfs/scratch0/jiaxuany0/graphs/'
+# name = 'GraphRNN_VAE_conditional_citeseer_small_4_64_pred_3000_3.dat'
+# graphs = load_graph_list(dir+name)
+# print(len(graphs))
 
 
 
@@ -746,21 +790,3 @@ CUDA = 2
 
 
 
-c = 2
-k = 10
-p = 0.1
-path_count = int(np.ceil(p*k))
-G = nx.caveman_graph(c,k)
-
-# remove 50% edges
-p = 0.5
-for (u, v) in list(G.edges()):
-    if np.random.rand()<p and ((u<k and v<k)or(u>=k and v>=k)):
-        G.remove_edge(u, v)
-# add path_count links
-for i in range(path_count):
-    u = np.random.randint(0,k)
-    v = np.random.randint(k,k*2)
-    G.add_edge(u,v)
-
-draw_graph(G, 'caveman_sparse'+str(k))

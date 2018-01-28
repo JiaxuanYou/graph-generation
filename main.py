@@ -34,16 +34,14 @@ class Args():
         self.clean_tensorboard = False
 
         ### CUDA
-        self.cuda = 1
+        self.cuda = 3
 
         ### model type
-        # self.note = 'GraphRNN_MLP'
-        # self.note = 'GraphRNN_VAE_conditional'
-        # self.note = 'GraphRNN_RNN'
-        self.note = 'GraphRNN_RNN_new'
+        self.note = 'GraphRNN_MLP'
+        # self.note = 'GraphRNN_RNN_new'
 
         ## for comparison
-        # self.note = 'GraphRNN_MLP_nobfs' # self.note = 'GraphRNN_VAE_conditional_nobfs'
+        # self.note = 'GraphRNN_MLP_nobfs'
         # self.note = 'GraphRNN_RNN_nobfs'
 
         ### data config
@@ -60,10 +58,15 @@ class Args():
         # self.graph_type = 'enzymes'
         # self.graph_type = 'enzymes_small'
         # self.graph_type = 'barabasi'
-        self.graph_type = 'barabasi_small'
+        # self.graph_type = 'barabasi_small'
         # self.graph_type = 'citeseer'
         # self.graph_type = 'citeseer_small'
-        # self.graph_type = 'barabasi_noise'
+
+        self.graph_type = 'barabasi_noise'
+        self.noise = 10
+
+        if self.graph_type == 'barabasi_noise':
+            self.graph_type = self.graph_type+str(self.noise)
 
 
         # self.graph_type = 'ladder'
@@ -209,8 +212,8 @@ def train_vae_epoch(epoch, args, rnn, output, data_loader,
         log_value('z_sgm_min_'+args.fname, z_sgm_min, epoch*args.batch_ratio + batch_idx)
         log_value('z_sgm_max_'+args.fname, z_sgm_max, epoch*args.batch_ratio + batch_idx)
 
-        loss_sum += loss.data[0]*x.size(0)
-    return loss_sum
+        loss_sum += loss.data[0]
+    return loss_sum/(batch_idx+1)
 
 def test_vae_epoch(epoch, args, rnn, output, test_batch_size=16, save_histogram=False, sample_time = 1):
     rnn.hidden = rnn.init_hidden(test_batch_size)
@@ -334,8 +337,8 @@ def train_mlp_epoch(epoch, args, rnn, output, data_loader,
         # logging
         log_value('loss_'+args.fname, loss.data[0], epoch*args.batch_ratio+batch_idx)
 
-        loss_sum += loss.data[0]*x.size(0)
-    return loss_sum
+        loss_sum += loss.data[0]
+    return loss_sum/(batch_idx+1)
 
 
 def test_mlp_epoch(epoch, args, rnn, output, test_batch_size=16, save_histogram=False,sample_time=1):
@@ -408,6 +411,54 @@ def test_mlp_partial_epoch(epoch, args, rnn, output, data_loader, save_histogram
             G_pred = get_graph(adj_pred) # get a graph from zero-padded adj
             G_pred_list.append(G_pred)
     return G_pred_list
+
+
+def train_mlp_forward_epoch(epoch, args, rnn, output, data_loader):
+    rnn.train()
+    output.train()
+    loss_sum = 0
+    for batch_idx, data in enumerate(data_loader):
+        rnn.zero_grad()
+        output.zero_grad()
+        x_unsorted = data['x'].float()
+        y_unsorted = data['y'].float()
+        y_len_unsorted = data['len']
+        y_len_max = max(y_len_unsorted)
+        x_unsorted = x_unsorted[:, 0:y_len_max, :]
+        y_unsorted = y_unsorted[:, 0:y_len_max, :]
+        # initialize lstm hidden state according to batch size
+        rnn.hidden = rnn.init_hidden(batch_size=x_unsorted.size(0))
+
+        # sort input
+        y_len,sort_index = torch.sort(y_len_unsorted,0,descending=True)
+        y_len = y_len.numpy().tolist()
+        x = torch.index_select(x_unsorted,0,sort_index)
+        y = torch.index_select(y_unsorted,0,sort_index)
+        x = Variable(x).cuda()
+        y = Variable(y).cuda()
+
+        h = rnn(x, pack=True, input_len=y_len)
+        y_pred = output(h)
+        y_pred = F.sigmoid(y_pred)
+        # clean
+        y_pred = pack_padded_sequence(y_pred, y_len, batch_first=True)
+        y_pred = pad_packed_sequence(y_pred, batch_first=True)[0]
+        # use cross entropy loss
+        loss = binary_cross_entropy_weight(y_pred, y)
+
+
+        if epoch % args.epochs_log==0 and batch_idx==0: # only output first batch's statistics
+            print('Epoch: {}/{}, train loss: {:.6f}, graph type: {}, num_layer: {}, hidden: {}'.format(
+                epoch, args.epochs,loss.data[0], args.graph_type, args.num_layers, args.hidden_size_rnn))
+
+        # logging
+        log_value('loss_'+args.fname, loss.data[0], epoch*args.batch_ratio+batch_idx)
+
+        loss_sum += loss.data[0]
+    return loss_sum/(batch_idx+1)
+
+
+
 
 
 ## too complicated, deprecated
@@ -534,8 +585,8 @@ def train_rnn_epoch(epoch, args, rnn, output, data_loader,
 
         # logging
         log_value('loss_'+args.fname, loss.data[0], epoch*args.batch_ratio+batch_idx)
-        loss_sum += loss.data[0]*x.size(0)
-    return loss_sum
+        loss_sum += loss.data[0]
+    return loss_sum/(batch_idx+1)
 
 
 
@@ -572,9 +623,90 @@ def test_rnn_epoch(epoch, args, rnn, output, test_batch_size=16):
         G_pred = get_graph(adj_pred) # get a graph from zero-padded adj
         G_pred_list.append(G_pred)
 
-
-
     return G_pred_list
+
+
+
+
+def train_rnn_forward_epoch(epoch, args, rnn, output, data_loader):
+    rnn.train()
+    output.train()
+    loss_sum = 0
+    for batch_idx, data in enumerate(data_loader):
+        rnn.zero_grad()
+        output.zero_grad()
+        x_unsorted = data['x'].float()
+        y_unsorted = data['y'].float()
+        y_len_unsorted = data['len']
+        y_len_max = max(y_len_unsorted)
+        x_unsorted = x_unsorted[:, 0:y_len_max, :]
+        y_unsorted = y_unsorted[:, 0:y_len_max, :]
+        # initialize lstm hidden state according to batch size
+        rnn.hidden = rnn.init_hidden(batch_size=x_unsorted.size(0))
+        # output.hidden = output.init_hidden(batch_size=x_unsorted.size(0)*x_unsorted.size(1))
+
+        # sort input
+        y_len,sort_index = torch.sort(y_len_unsorted,0,descending=True)
+        y_len = y_len.numpy().tolist()
+        x = torch.index_select(x_unsorted,0,sort_index)
+        y = torch.index_select(y_unsorted,0,sort_index)
+
+        # input, output for output rnn module
+        # a smart use of pytorch builtin function: pack variable--b1_l1,b2_l1,...,b1_l2,b2_l2,...
+        y_reshape = pack_padded_sequence(y,y_len,batch_first=True).data
+        # reverse y_reshape, so that their lengths are sorted, add dimension
+        idx = [i for i in range(y_reshape.size(0)-1, -1, -1)]
+        idx = torch.LongTensor(idx)
+        y_reshape = y_reshape.index_select(0, idx)
+        y_reshape = y_reshape.view(y_reshape.size(0),y_reshape.size(1),1)
+
+        output_x = torch.cat((torch.ones(y_reshape.size(0),1,1),y_reshape[:,0:-1,0:1]),dim=1)
+        output_y = y_reshape
+        # batch size for output module: sum(y_len)
+        output_y_len = []
+        output_y_len_bin = np.bincount(np.array(y_len))
+        for i in range(len(output_y_len_bin)-1,0,-1):
+            count_temp = np.sum(output_y_len_bin[i:]) # count how many y_len is above i
+            output_y_len.extend([min(i,y.size(2))]*count_temp) # put them in output_y_len; max value should not exceed y.size(2)
+        # pack into variable
+        x = Variable(x).cuda()
+        y = Variable(y).cuda()
+        output_x = Variable(output_x).cuda()
+        output_y = Variable(output_y).cuda()
+        # print(output_y_len)
+        # print('len',len(output_y_len))
+        # print('y',y.size())
+        # print('output_y',output_y.size())
+
+
+        # if using ground truth to train
+        h = rnn(x, pack=True, input_len=y_len)
+        h = pack_padded_sequence(h,y_len,batch_first=True).data # get packed hidden vector
+        # reverse h
+        idx = [i for i in range(h.size(0) - 1, -1, -1)]
+        idx = Variable(torch.LongTensor(idx)).cuda()
+        h = h.index_select(0, idx)
+        hidden_null = Variable(torch.zeros(args.num_layers-1, h.size(0), h.size(1))).cuda()
+        output.hidden = torch.cat((h.view(1,h.size(0),h.size(1)),hidden_null),dim=0) # num_layers, batch_size, hidden_size
+        y_pred = output(output_x, pack=True, input_len=output_y_len)
+        y_pred = F.sigmoid(y_pred)
+        # clean
+        y_pred = pack_padded_sequence(y_pred, output_y_len, batch_first=True)
+        y_pred = pad_packed_sequence(y_pred, batch_first=True)[0]
+        output_y = pack_padded_sequence(output_y,output_y_len,batch_first=True)
+        output_y = pad_packed_sequence(output_y,batch_first=True)[0]
+        # use cross entropy loss
+        loss = binary_cross_entropy_weight(y_pred, output_y)
+
+
+        if epoch % args.epochs_log==0 and batch_idx==0: # only output first batch's statistics
+            print('Epoch: {}/{}, train loss: {:.6f}, graph type: {}, num_layer: {}, hidden: {}'.format(
+                epoch, args.epochs,loss.data[0], args.graph_type, args.num_layers, args.hidden_size_rnn))
+
+        # logging
+        log_value('loss_'+args.fname, loss.data[0], epoch*args.batch_ratio+batch_idx)
+        loss_sum += loss.data[0]
+    return loss_sum/(batch_idx+1)
 
 
 ########### train function for LSTM + VAE
@@ -649,7 +781,7 @@ def train(args, dataset_train, rnn, output):
     np.save(args.timing_save_path+args.fname,time_all)
 
 
-########### train function for LSTM + VAE
+########### for graph completion task
 def train_graph_completion(args, dataset_test, rnn, output):
     fname = args.model_save_path + args.fname + 'lstm_' + str(args.load_epoch) + '.dat'
     rnn.load_state_dict(torch.load(fname))
@@ -669,6 +801,26 @@ def train_graph_completion(args, dataset_test, rnn, output):
         save_graph_list(G_pred, fname)
     print('graph completion done, graphs saved')
 
+
+########### for NLL evaluation
+def train_nll(args, dataset_train, dataset_test, rnn, output, fname_output, max_iter = 1000):
+    fname = args.model_save_path + args.fname + 'lstm_' + str(args.load_epoch) + '.dat'
+    rnn.load_state_dict(torch.load(fname))
+    fname = args.model_save_path + args.fname + 'output_' + str(args.load_epoch) + '.dat'
+    output.load_state_dict(torch.load(fname))
+
+    epoch = args.load_epoch
+    print('model loaded!, epoch: {}'.format(args.load_epoch))
+    with open(fname_output, 'w+') as f:
+        for iter in range(max_iter):
+            if 'GraphRNN_MLP' in args.note:
+                nll_train = train_mlp_forward_epoch(epoch, args, rnn, output, dataset_train)
+                nll_test = train_mlp_forward_epoch(epoch, args, rnn, output, dataset_test)
+            if 'GraphRNN_RNN' in args.note:
+                nll_train = train_rnn_forward_epoch(epoch, args, rnn, output, dataset_train)
+                nll_test = train_rnn_forward_epoch(epoch, args, rnn, output, dataset_test)
+
+    print('NLL evaluation done')
 
 if __name__ == '__main__':
     ### running log
@@ -771,6 +923,20 @@ if __name__ == '__main__':
                 graphs.append(nx.grid_2d_graph(i, j))
         args.max_prev_node = 90
 
+    if 'barabasi_noise' in args.graph_type:
+        graphs = []
+        for i in range(100,101):
+            for j in range(4,5):
+                for k in range(500):
+                    if args.noise!=10:
+                        graphs.append(nx.barabasi_albert_graph(i,j))
+                    else:
+                        e = 4*(100-4)
+                        n = 100*99/2
+                        graphs.append(nx.fast_gnp_random_graph(i,e/float(n)))
+        if args.noise!=10:
+            graphs = perturb(graphs,p_del=args.noise/10.0)
+        args.max_prev_node = 99
 
     # real graphs
     if args.graph_type == 'enzymes':
@@ -817,8 +983,8 @@ if __name__ == '__main__':
     shuffle(graphs)
     graphs_len = len(graphs)
     graphs_test = graphs[int(0.8 * graphs_len):]
-    for graph in graphs_test:
-        print(graph.number_of_nodes())
+    # for graph in graphs_test:
+    #     print(graph.number_of_nodes())
     graphs_train = graphs[0:int(0.8*graphs_len)]
 
     args.max_num_node = max([graphs[i].number_of_nodes() for i in range(len(graphs))])
@@ -852,6 +1018,10 @@ if __name__ == '__main__':
         print('nobfs')
         dataset = Graph_sequence_sampler_pytorch_nobfs(graphs_train, max_num_node=args.max_num_node)
         args.max_prev_node = args.max_num_node-1
+    if 'barabasi_noise' in args.graph_type:
+        print('barabasi_noise')
+        dataset = Graph_sequence_sampler_pytorch_canonical(graphs_train,max_prev_node=args.max_prev_node)
+        args.max_prev_node = args.max_num_node - 1
     else:
         dataset = Graph_sequence_sampler_pytorch(graphs_train,max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
     sample_strategy = torch.utils.data.sampler.WeightedRandomSampler([1.0 / len(dataset) for i in range(len(dataset))],
@@ -884,63 +1054,12 @@ if __name__ == '__main__':
                            has_output=True, output_size=1).cuda()
 
     ### start training
-    # for enzyme, train 10 times; otherwise train 1 time
-    if args.graph_type=='enzymes':
-        for i in range(10):
-            print('training loop',i)
-            args.fname = args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
-                args.hidden_size_rnn) + '_'  + str(i) + '_'
-            args.fname_pred = args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
-                args.hidden_size_rnn) + '_pred_' + str(i) + '_'
-            args.fname_train = args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
-                args.hidden_size_rnn) + '_train_' + str(i) + '_'
-            train(args, dataset_loader, rnn, output)
-            if args.note == 'GraphRNN_VAE':
-                rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_rnn,
-                                hidden_size=args.hidden_size_rnn, num_layers=args.num_layers, has_input=True,
-                                has_output=False).cuda()
-                output = MLP_VAE_plain(h_size=args.hidden_size_rnn, embedding_size=args.embedding_size_output,
-                                       y_size=args.max_prev_node).cuda()
-            elif args.note == 'GraphRNN_VAE_conditional':
-                rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_rnn,
-                                hidden_size=args.hidden_size_rnn, num_layers=args.num_layers, has_input=True,
-                                has_output=False).cuda()
-                output = MLP_VAE_conditional_plain(h_size=args.hidden_size_rnn,
-                                                   embedding_size=args.embedding_size_output,
-                                                   y_size=args.max_prev_node).cuda()
-            elif args.note == 'GraphRNN_MLP':
-                rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_rnn,
-                                hidden_size=args.hidden_size_rnn, num_layers=args.num_layers, has_input=True,
-                                has_output=False).cuda()
-                output = MLP_plain(h_size=args.hidden_size_rnn, embedding_size=args.embedding_size_output,
-                                   y_size=args.max_prev_node).cuda()
-            elif 'GraphRNN_RNN' in args.note:
-                rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_rnn,
-                                hidden_size=args.hidden_size_rnn, num_layers=args.num_layers, has_input=True,
-                                has_output=True, output_size=args.hidden_size_rnn_output).cuda()
-                output = GRU_plain(input_size=1, embedding_size=args.embedding_size_rnn_output,
-                                   hidden_size=args.hidden_size_rnn_output, num_layers=args.num_layers, has_input=True,
-                                   has_output=True, output_size=1).cuda()
-    # # for barabasi noise, train 10 times
-    # elif args.graph_type == 'barabasi_noise':
+    # # for enzyme, train 10 times; otherwise train 1 time
+    # if args.graph_type=='enzymes':
     #     for i in range(10):
-    #         print('training loop', i)
-    #         graphs = []
-    #         for i in range(100, 200):
-    #             for j in range(4, 5):
-    #                 for k in range(5):
-    #                     graphs.append(nx.barabasi_albert_graph(i, j))
-    #         args.max_prev_node = 130
-    #         dataset = Graph_sequence_sampler_pytorch(graphs_train, max_prev_node=args.max_prev_node,
-    #                                                  max_num_node=args.max_num_node)
-    #         sample_strategy = torch.utils.data.sampler.WeightedRandomSampler(
-    #             [1.0 / len(dataset) for i in range(len(dataset))],
-    #             num_samples=args.batch_size * args.batch_ratio, replacement=True)
-    #         dataset_loader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size,
-    #                                                      num_workers=args.num_workers,
-    #                                                      sampler=sample_strategy)
+    #         print('training loop',i)
     #         args.fname = args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
-    #             args.hidden_size_rnn) + '_' + str(i) + '_'
+    #             args.hidden_size_rnn) + '_'  + str(i) + '_'
     #         args.fname_pred = args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
     #             args.hidden_size_rnn) + '_pred_' + str(i) + '_'
     #         args.fname_train = args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
@@ -970,12 +1089,15 @@ if __name__ == '__main__':
     #                             hidden_size=args.hidden_size_rnn, num_layers=args.num_layers, has_input=True,
     #                             has_output=True, output_size=args.hidden_size_rnn_output).cuda()
     #             output = GRU_plain(input_size=1, embedding_size=args.embedding_size_rnn_output,
-    #                                hidden_size=args.hidden_size_rnn_output, num_layers=args.num_layers,
-    #                                has_input=True,
+    #                                hidden_size=args.hidden_size_rnn_output, num_layers=args.num_layers, has_input=True,
     #                                has_output=True, output_size=1).cuda()
 
-    else:
-        train(args, dataset_loader, rnn, output)
+
+    # else:
+    #     train(args, dataset_loader, rnn, output)
 
     ### graph completion
     # train_graph_completion(args,dataset_loader,rnn,output)
+
+    ### nll evaluation
+    train_nll()
