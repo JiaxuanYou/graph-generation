@@ -34,7 +34,7 @@ class Args():
         self.clean_tensorboard = False
 
         ### CUDA
-        self.cuda = 3
+        self.cuda = 1
 
         ### model type
         self.note = 'GraphRNN_MLP'
@@ -50,6 +50,8 @@ class Args():
         # self.graph_type = 'DD'
         # self.graph_type = 'caveman'
         # self.graph_type = 'caveman_small'
+        # self.graph_type = 'caveman_small_single'
+
         # self.graph_type = 'grid'
         # self.graph_type = 'grid_small'
         # self.graph_type = 'ladder_small'
@@ -62,11 +64,15 @@ class Args():
         # self.graph_type = 'citeseer'
         # self.graph_type = 'citeseer_small'
 
+
+
         self.graph_type = 'barabasi_noise'
-        self.noise = 10
+        self.noise = 2
 
         if self.graph_type == 'barabasi_noise':
             self.graph_type = self.graph_type+str(self.noise)
+
+
 
 
         # self.graph_type = 'ladder'
@@ -87,14 +93,14 @@ class Args():
         self.embedding_size_rnn_output = 8 # the embedding size for output rnn
         self.embedding_size_output = int(64/self.parameter_shrink) # the embedding size for output (VAE/MLP)
 
-        self.batch_size = 32 # normal: 32, and the rest should be changed accordingly
+        self.batch_size = 16 # normal: 32, and the rest should be changed accordingly
         self.test_batch_size = 32
         self.test_total_size = 1000
         self.num_layers = 4
 
         ### training config
         self.num_workers = 4 # num workers to load data, default 4
-        self.batch_ratio = 32 # how many batches per epoch, default 32
+        self.batch_ratio = 64 # how many batches per epoch, default 32
         self.epochs = 3000 # now one epoch means self.batch_ratio x batch_size
         self.epochs_test_start = 100
         self.epochs_test = 100
@@ -108,11 +114,13 @@ class Args():
         self.sample_time = 2 # sample time in each time step, when validating
 
         ### output config
-        self.model_save_path = 'model_save/'
+        self.dir_input = "/dfs/scratch0/jiaxuany0/"
+        self.model_save_path = self.dir_input+'model_save/' ########### only for nll evaluation!!
         self.graph_save_path = 'graphs/'
         self.figure_save_path = 'figures/'
         self.timing_save_path = 'timing/'
         self.figure_prediction_save_path = 'figures_prediction/'
+        self.nll_save_path = 'nll/'
 
 
         self.load = False # if load model, default lr is very low
@@ -444,7 +452,12 @@ def train_mlp_forward_epoch(epoch, args, rnn, output, data_loader):
         y_pred = pack_padded_sequence(y_pred, y_len, batch_first=True)
         y_pred = pad_packed_sequence(y_pred, batch_first=True)[0]
         # use cross entropy loss
-        loss = binary_cross_entropy_weight(y_pred, y)
+
+        loss = 0
+        for j in range(y.size(1)):
+            # print('y_pred',y_pred[0,j,:],'y',y[0,j,:])
+            end_idx = min(j+1,y.size(2))
+            loss += binary_cross_entropy_weight(y_pred[:,j,0:end_idx], y[:,j,0:end_idx])*end_idx
 
 
         if epoch % args.epochs_log==0 and batch_idx==0: # only output first batch's statistics
@@ -453,7 +466,6 @@ def train_mlp_forward_epoch(epoch, args, rnn, output, data_loader):
 
         # logging
         log_value('loss_'+args.fname, loss.data[0], epoch*args.batch_ratio+batch_idx)
-
         loss_sum += loss.data[0]
     return loss_sum/(batch_idx+1)
 
@@ -585,7 +597,8 @@ def train_rnn_epoch(epoch, args, rnn, output, data_loader,
 
         # logging
         log_value('loss_'+args.fname, loss.data[0], epoch*args.batch_ratio+batch_idx)
-        loss_sum += loss.data[0]
+        feature_dim = y.size(1)*y.size(2)
+        loss_sum += loss.data[0]*feature_dim
     return loss_sum/(batch_idx+1)
 
 
@@ -705,7 +718,9 @@ def train_rnn_forward_epoch(epoch, args, rnn, output, data_loader):
 
         # logging
         log_value('loss_'+args.fname, loss.data[0], epoch*args.batch_ratio+batch_idx)
-        loss_sum += loss.data[0]
+        # print(y_pred.size())
+        feature_dim = y_pred.size(0)*y_pred.size(1)
+        loss_sum += loss.data[0]*feature_dim/y.size(0)
     return loss_sum/(batch_idx+1)
 
 
@@ -803,7 +818,7 @@ def train_graph_completion(args, dataset_test, rnn, output):
 
 
 ########### for NLL evaluation
-def train_nll(args, dataset_train, dataset_test, rnn, output, fname_output, max_iter = 1000):
+def train_nll(args, dataset_train, dataset_test, rnn, output,graph_validate_len,graph_test_len, max_iter = 1000):
     fname = args.model_save_path + args.fname + 'lstm_' + str(args.load_epoch) + '.dat'
     rnn.load_state_dict(torch.load(fname))
     fname = args.model_save_path + args.fname + 'output_' + str(args.load_epoch) + '.dat'
@@ -811,7 +826,10 @@ def train_nll(args, dataset_train, dataset_test, rnn, output, fname_output, max_
 
     epoch = args.load_epoch
     print('model loaded!, epoch: {}'.format(args.load_epoch))
+    fname_output = args.nll_save_path + args.note + '_' + args.graph_type + '.csv'
     with open(fname_output, 'w+') as f:
+        f.write(str(graph_validate_len)+','+str(graph_test_len)+'\n')
+        f.write('train,test\n')
         for iter in range(max_iter):
             if 'GraphRNN_MLP' in args.note:
                 nll_train = train_mlp_forward_epoch(epoch, args, rnn, output, dataset_train)
@@ -819,6 +837,8 @@ def train_nll(args, dataset_train, dataset_test, rnn, output, fname_output, max_
             if 'GraphRNN_RNN' in args.note:
                 nll_train = train_rnn_forward_epoch(epoch, args, rnn, output, dataset_train)
                 nll_test = train_rnn_forward_epoch(epoch, args, rnn, output, dataset_test)
+            print('train',nll_train,'test',nll_test)
+            f.write(str(nll_train)+','+str(nll_test)+'\n')
 
     print('NLL evaluation done')
 
@@ -839,6 +859,8 @@ if __name__ == '__main__':
         os.makedirs(args.timing_save_path)
     if not os.path.isdir(args.figure_prediction_save_path):
         os.makedirs(args.figure_prediction_save_path)
+    if not os.path.isdir(args.nll_save_path):
+        os.makedirs(args.nll_save_path)
 
     time = strftime("%Y-%m-%d %H:%M:%S", gmtime())
     # logging.basicConfig(filename='logs/train' + time + '.log', level=logging.DEBUG)
@@ -888,7 +910,19 @@ if __name__ == '__main__':
         for i in range(2, 3):
             for j in range(6, 11):
                 for k in range(20):
-                    graphs.append(caveman_special(i, j, p_edge=0.8))
+                    graphs.append(caveman_special(i, j, p_edge=0.5)) # default 0.8
+        args.max_prev_node = 20
+    if args.graph_type=='caveman_small_single':
+        # graphs = []
+        # for i in range(2,5):
+        #     for j in range(2,6):
+        #         for k in range(10):
+        #             graphs.append(nx.relaxed_caveman_graph(i, j, p=0.1))
+        graphs = []
+        for i in range(2, 3):
+            for j in range(8, 9):
+                for k in range(100):
+                    graphs.append(caveman_special(i, j, p_edge=0.5))
         args.max_prev_node = 20
     if args.graph_type=='grid':
         graphs = []
@@ -928,14 +962,8 @@ if __name__ == '__main__':
         for i in range(100,101):
             for j in range(4,5):
                 for k in range(500):
-                    if args.noise!=10:
-                        graphs.append(nx.barabasi_albert_graph(i,j))
-                    else:
-                        e = 4*(100-4)
-                        n = 100*99/2
-                        graphs.append(nx.fast_gnp_random_graph(i,e/float(n)))
-        if args.noise!=10:
-            graphs = perturb(graphs,p_del=args.noise/10.0)
+                    graphs.append(nx.barabasi_albert_graph(i,j))
+        graphs = perturb_new(graphs,p=args.noise/10.0)
         args.max_prev_node = 99
 
     # real graphs
@@ -983,9 +1011,32 @@ if __name__ == '__main__':
     shuffle(graphs)
     graphs_len = len(graphs)
     graphs_test = graphs[int(0.8 * graphs_len):]
-    # for graph in graphs_test:
-    #     print(graph.number_of_nodes())
     graphs_train = graphs[0:int(0.8*graphs_len)]
+    graphs_validate = graphs[0:int(0.2*graphs_len)]
+
+    # # if use pre-saved graphs
+    # dir_input = "/dfs/scratch0/jiaxuany0/graphs/"
+    # fname_test = dir_input + args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
+    #     args.hidden_size_rnn) + '_test_' + str(0) + '.dat'
+    # graphs = load_graph_list(fname_test, is_real=True)
+    # graphs_test = graphs[int(0.8 * graphs_len):]
+    # graphs_train = graphs[0:int(0.8 * graphs_len)]
+    # graphs_validate = graphs[int(0.2 * graphs_len):int(0.4 * graphs_len)]
+
+
+    graph_validate_len = 0
+    for graph in graphs_validate:
+        graph_validate_len += graph.number_of_nodes()
+    graph_validate_len /= len(graphs_validate)
+    print('graph_validate_len', graph_validate_len)
+
+    graph_test_len = 0
+    for graph in graphs_test:
+        graph_test_len += graph.number_of_nodes()
+    graph_test_len /= len(graphs_test)
+    print('graph_test_len', graph_test_len)
+
+
 
     args.max_num_node = max([graphs[i].number_of_nodes() for i in range(len(graphs))])
     # args.max_num_node = 2000
@@ -1000,25 +1051,25 @@ if __name__ == '__main__':
     save_graph_list(graphs, args.graph_save_path + args.fname_test + '0.dat')
     print('train and test graphs saved')
 
-    ### comment when training
+    ### for graph completion test only
     # p = 0.5
-    # for graph in graphs:
+    # for graph in graphs_train:
     #     for node in list(graph.nodes()):
-    #         # print('node',node)
     #         if np.random.rand()>p:
     #             graph.remove_node(node)
-    #     for edge in list(graph.edges()):
-    #         # print('edge',edge)
-    #         if np.random.rand()>p:
-    #             graph.remove_edge(edge[0],edge[1])
+    #     # for edge in list(graph.edges()):
+    #     #     # print('edge',edge)
+    #     #     if np.random.rand()>p:
+    #     #         graph.remove_edge(edge[0],edge[1])
 
+    # save_graph_list(graphs_train, args.graph_save_path + args.fname_test + 'graph_completion.dat')
 
     ### dataset initialization
     if 'nobfs' in args.note:
         print('nobfs')
         dataset = Graph_sequence_sampler_pytorch_nobfs(graphs_train, max_num_node=args.max_num_node)
         args.max_prev_node = args.max_num_node-1
-    if 'barabasi_noise' in args.graph_type:
+    elif 'barabasi_noise' in args.graph_type:
         print('barabasi_noise')
         dataset = Graph_sequence_sampler_pytorch_canonical(graphs_train,max_prev_node=args.max_prev_node)
         args.max_prev_node = args.max_num_node - 1
@@ -1028,6 +1079,21 @@ if __name__ == '__main__':
                                                                      num_samples=args.batch_size*args.batch_ratio, replacement=True)
     dataset_loader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers,
                                                sampler=sample_strategy)
+
+
+    dataset_validate = Graph_sequence_sampler_pytorch(graphs_validate, max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
+    dataset_test = Graph_sequence_sampler_pytorch(graphs_test, max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
+    sample_strategy = torch.utils.data.sampler.WeightedRandomSampler([1.0 / len(dataset_validate) for i in range(len(dataset_validate))],
+                                                                     num_samples=args.batch_size * args.batch_ratio,
+                                                                     replacement=True)
+    dataset_loader_validate = torch.utils.data.DataLoader(dataset_validate, batch_size=args.batch_size, num_workers=args.num_workers,
+                                                 sampler=sample_strategy)
+    sample_strategy = torch.utils.data.sampler.WeightedRandomSampler([1.0 / len(dataset_test) for i in range(len(dataset_test))],
+                                                                     num_samples=args.batch_size * args.batch_ratio,
+                                                                     replacement=True)
+    dataset_loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=args.batch_size, num_workers=args.num_workers,
+                                                 sampler=sample_strategy)
+
 
 
     ### model initialization
@@ -1094,10 +1160,11 @@ if __name__ == '__main__':
 
 
     # else:
-    #     train(args, dataset_loader, rnn, output)
+
+    train(args, dataset_loader, rnn, output)
 
     ### graph completion
     # train_graph_completion(args,dataset_loader,rnn,output)
 
     ### nll evaluation
-    train_nll()
+    # train_nll(args, dataset_loader_validate, dataset_loader_test, rnn, output, max_iter = 200, graph_validate_len=graph_validate_len,graph_test_len=graph_test_len)

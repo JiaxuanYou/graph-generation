@@ -768,7 +768,9 @@ CUDA = 2
 #     v = np.random.randint(k,k*2)
 #     G.add_edge(u,v)
 #
-# draw_graph(G, 'caveman_sparse'+str(k))
+
+# G = caveman_special(2, 10, p_edge=0.8)
+# draw_graph(G, 'caveman_special')
 
 
 
@@ -779,13 +781,24 @@ CUDA = 2
 
 
 
+# args = Args()
+
+# sample_time = 1
+# fname_real = args.graph_save_path + args.fname_test + 'graph_completion.dat' #real
+# fname_pred = args.graph_save_path + args.fname_pred + str(3000) +'_'+str(sample_time) + 'graph_completion.dat' # pred
+
+# print('a')
 
 
+# a = np.random.binomial(1, 0.1, size=50)
+# print(a)
 
-
-
-
-
+for i in range(1):
+    print('trial',i)
+    graphs = [nx.barabasi_albert_graph(100,4)]
+    print(graphs[0].number_of_edges())
+    graphs = perturb_new(graphs,1)
+    print(graphs[0].number_of_edges())
 
 
 

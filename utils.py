@@ -72,6 +72,44 @@ def perturb(graph_list, p_del, p_add=None):
     return perturbed_graph_list
 
 
+
+def perturb_new(graph_list, p):
+    ''' Perturb the list of graphs by adding/removing edges.
+    Args:
+        p_add: probability of adding edges. If None, estimate it according to graph density,
+            such that the expected number of added edges is equal to that of deleted edges.
+        p_del: probability of removing edges
+    Returns:
+        A list of graphs that are perturbed from the original graphs
+    '''
+    perturbed_graph_list = []
+    for G_original in graph_list:
+        print('number of nodes',G_original.number_of_nodes())
+        G = G_original.copy()
+        edge_remove_count = 0
+        for (u, v) in list(G.edges()):
+            if np.random.rand()<p:
+                G.remove_edge(u, v)
+                edge_remove_count += 1
+        print('number of nodes', G.number_of_nodes())
+
+        # randomly add the edges back
+        print('edge_remove_count',edge_remove_count)
+        for i in range(edge_remove_count):
+
+            while True:
+                u = np.random.randint(0, G.number_of_nodes())
+                v = np.random.randint(0, G.number_of_nodes())
+                if (not G.has_edge(u,v)) and (u!=v):
+                    break
+            G.add_edge(u, v)
+        perturbed_graph_list.append(G)
+    return perturbed_graph_list
+
+
+
+
+
 def imsave(fname, arr, vmin=None, vmax=None, cmap=None, format=None, origin=None):
     from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
     from matplotlib.figure import Figure
@@ -358,7 +396,7 @@ def pick_connected_component_new(G):
     adj_list = G.adjacency_list()
     for id,adj in enumerate(adj_list):
         id_min = min(adj)
-        if id<id_min and id_min!=1:
+        if id<id_min and id>=4:
             break
     node_list = list(range(id)) # only include node prior than node "id"
     return G.subgraph(node_list)
