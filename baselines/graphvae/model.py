@@ -28,7 +28,8 @@ class GraphVAE(nn.Module):
         self.act = nn.ReLU()
 
         output_dim = max_num_nodes * (max_num_nodes + 1) // 2
-        self.vae = model.MLP_VAE_plain(hidden_dim, latent_dim, output_dim)
+        #self.vae = model.MLP_VAE_plain(hidden_dim, latent_dim, output_dim)
+        self.vae = model.MLP_VAE_plain(input_dim * input_dim, latent_dim, output_dim)
         #self.feature_mlp = model.MLP_plain(latent_dim, latent_dim, output_dim)
 
         self.max_num_nodes = max_num_nodes
@@ -110,14 +111,15 @@ class GraphVAE(nn.Module):
         return out
 
     def forward(self, input_features, adj):
-        x = self.conv1(input_features, adj)
-        x = self.bn1(x)
-        x = self.act(x)
-        x = self.conv2(x, adj)
-        x = self.bn2(x)
+        #x = self.conv1(input_features, adj)
+        #x = self.bn1(x)
+        #x = self.act(x)
+        #x = self.conv2(x, adj)
+        #x = self.bn2(x)
 
         # pool over all nodes 
-        graph_h = self.pool_graph(x)
+        #graph_h = self.pool_graph(x)
+        graph_h = input_features.view(-1, self.max_num_nodes * self.max_num_nodes)
         # vae
         h_decode, z_mu, z_lsgms = self.vae(graph_h)
         out = F.sigmoid(h_decode)

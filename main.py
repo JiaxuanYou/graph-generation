@@ -466,6 +466,7 @@ def train_mlp_forward_epoch(epoch, args, rnn, output, data_loader):
 
         # logging
         log_value('loss_'+args.fname, loss.data[0], epoch*args.batch_ratio+batch_idx)
+
         loss_sum += loss.data[0]
     return loss_sum/(batch_idx+1)
 
@@ -1051,25 +1052,25 @@ if __name__ == '__main__':
     save_graph_list(graphs, args.graph_save_path + args.fname_test + '0.dat')
     print('train and test graphs saved')
 
-    ### for graph completion test only
+    ### comment when training
     # p = 0.5
-    # for graph in graphs_train:
+    # for graph in graphs:
     #     for node in list(graph.nodes()):
+    #         # print('node',node)
     #         if np.random.rand()>p:
     #             graph.remove_node(node)
-    #     # for edge in list(graph.edges()):
-    #     #     # print('edge',edge)
-    #     #     if np.random.rand()>p:
-    #     #         graph.remove_edge(edge[0],edge[1])
+    #     for edge in list(graph.edges()):
+    #         # print('edge',edge)
+    #         if np.random.rand()>p:
+    #             graph.remove_edge(edge[0],edge[1])
 
-    # save_graph_list(graphs_train, args.graph_save_path + args.fname_test + 'graph_completion.dat')
 
     ### dataset initialization
     if 'nobfs' in args.note:
         print('nobfs')
         dataset = Graph_sequence_sampler_pytorch_nobfs(graphs_train, max_num_node=args.max_num_node)
         args.max_prev_node = args.max_num_node-1
-    elif 'barabasi_noise' in args.graph_type:
+    if 'barabasi_noise' in args.graph_type:
         print('barabasi_noise')
         dataset = Graph_sequence_sampler_pytorch_canonical(graphs_train,max_prev_node=args.max_prev_node)
         args.max_prev_node = args.max_num_node - 1
@@ -1079,21 +1080,6 @@ if __name__ == '__main__':
                                                                      num_samples=args.batch_size*args.batch_ratio, replacement=True)
     dataset_loader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers,
                                                sampler=sample_strategy)
-
-
-    dataset_validate = Graph_sequence_sampler_pytorch(graphs_validate, max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
-    dataset_test = Graph_sequence_sampler_pytorch(graphs_test, max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
-    sample_strategy = torch.utils.data.sampler.WeightedRandomSampler([1.0 / len(dataset_validate) for i in range(len(dataset_validate))],
-                                                                     num_samples=args.batch_size * args.batch_ratio,
-                                                                     replacement=True)
-    dataset_loader_validate = torch.utils.data.DataLoader(dataset_validate, batch_size=args.batch_size, num_workers=args.num_workers,
-                                                 sampler=sample_strategy)
-    sample_strategy = torch.utils.data.sampler.WeightedRandomSampler([1.0 / len(dataset_test) for i in range(len(dataset_test))],
-                                                                     num_samples=args.batch_size * args.batch_ratio,
-                                                                     replacement=True)
-    dataset_loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=args.batch_size, num_workers=args.num_workers,
-                                                 sampler=sample_strategy)
-
 
 
     ### model initialization
