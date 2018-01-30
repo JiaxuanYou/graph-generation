@@ -14,7 +14,18 @@ import community
 import pickle
 import re
 
+import data
 
+def citeseer_ego():
+    _, _, G = data.Graph_load(dataset='citeseer')
+    G = max(nx.connected_component_subgraphs(G), key=len)
+    G = nx.convert_node_labels_to_integers(G)
+    graphs = []
+    for i in range(G.number_of_nodes()):
+        G_ego = nx.ego_graph(G, i, radius=3)
+        if G_ego.number_of_nodes() >= 50 and (G_ego.number_of_nodes() <= 400):
+            graphs.append(G_ego)
+    return graphs
 
 def caveman_special(c=2,k=20,p_path=0.1,p_edge=0.3):
     p = p_path
@@ -48,6 +59,12 @@ def perturb(graph_list, p_del, p_add=None):
         trials = np.random.binomial(1, p_del, size=G.number_of_edges())
         i = 0
         edges = list(G.edges())
+        if p_add is None:
+            num_nodes = G.number_of_nodes()
+            p_add_est = p_del * G.number_of_edges() / (num_nodes * (num_nodes - 1) / 2 -
+                    G.number_of_edges())
+        else:
+            p_add_est = p_add
         for (u, v) in edges:
             if trials[i] == 1:
                 G.remove_edge(u, v)
@@ -56,14 +73,10 @@ def perturb(graph_list, p_del, p_add=None):
         nodes = list(G.nodes())
         for i in range(len(nodes)):
             u = nodes[i]
-            if p_add is None:
-                num_nodes = G.number_of_nodes()
-                p_add_est = p_del * 2 * G.number_of_edges() / (num_nodes * (num_nodes - 1))
-            else:
-                p_add_est = p_add
             trials = np.random.binomial(1, p_add_est, size=G.number_of_nodes())
             j = 0
-            for v in nodes:
+            for j in range(i, len(nodes)):
+                v = nodes[j]
                 if trials[j] == 1 and not i == j:
                     G.add_edge(u, v)
                 j += 1
@@ -400,4 +413,16 @@ def snap_txt_output_to_nx(in_fname):
                 if not u == v:
                     G.add_edge(int(u), int(v))
     return G
+
+def test_perturbed():
+    graphs = []
+    for i in range(10,20):
+        for j in range(10,20):
+            graphs.append(nx.grid_2d_graph(i,j))
+    g_perturbed = perturb(graphs, 0.9)
+    print([g.number_of_edges() for g in graphs])
+    print([g.number_of_edges() for g in g_perturbed])
+
+if __name__ == '__main__':
+    test_perturbed()
 
