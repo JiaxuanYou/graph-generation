@@ -127,6 +127,13 @@ def evaluation_epoch(dir_input, fname_output, model_name, dataset_name, args, is
         graph_validate = graph_test[0:int(0.2 * graph_test_len)] # validate
         graph_test = graph_test[int(0.8 * graph_test_len):] # test on a hold out test set
 
+        graph_test_aver = 0
+        for graph in graph_test:
+            graph_test_aver+=graph.number_of_nodes()
+        graph_test_aver /= len(graph_test)
+        print('test average len',graph_test_aver)
+
+
         # get performance for proposed approaches
         if 'GraphRNN' in model_name:
             # read test graph
@@ -144,9 +151,19 @@ def evaluation_epoch(dir_input, fname_output, model_name, dataset_name, args, is
                     # clean graphs
                     if is_clean:
                         graph_test, graph_pred = clean_graphs(graph_test, graph_pred)
+                    else:
+                        shuffle(graph_pred)
+                        graph_pred = graph_pred[0:len(graph_test)]
                     print('len graph_test', len(graph_test))
                     print('len graph_validate', len(graph_validate))
                     print('len graph_pred', len(graph_pred))
+
+                    graph_pred_aver = 0
+                    for graph in graph_pred:
+                        graph_pred_aver += graph.number_of_nodes()
+                    graph_pred_aver /= len(graph_pred)
+                    print('pred average len', graph_pred_aver)
+
                     # evaluate MMD test
                     mmd_degree = eval.stats.degree_stats(graph_test, graph_pred)
                     mmd_clustering = eval.stats.clustering_stats(graph_test, graph_pred)
@@ -164,7 +181,7 @@ def evaluation_epoch(dir_input, fname_output, model_name, dataset_name, args, is
                     # write results
                     f.write(str(sample_time)+','+str(epoch)+','+str(mmd_degree_validate)+','+str(mmd_clustering_validate)+','+str(mmd_4orbits_validate)
                             + ',' + str(mmd_degree)+','+str(mmd_clustering)+','+str(mmd_4orbits)+'\n')
-
+                    print('degree',mmd_degree,'clustering',mmd_clustering,'orbits',mmd_4orbits)
 
         # get internal MMD
         if model_name == 'Internal':
@@ -240,7 +257,7 @@ def evaluation(dir_input, dir_output, model_name_all, dataset_name_all, args, ov
                 print(dir_output+model_name+'_'+dataset_name+'.csv exists!')
                 logging.info(dir_output+model_name+'_'+dataset_name+'.csv exists!')
                 continue
-            evaluation_epoch(dir_input,fname_output,model_name,dataset_name,args)
+            evaluation_epoch(dir_input,fname_output,model_name,dataset_name,args,is_clean=True)
 
 
 
@@ -524,8 +541,12 @@ if __name__ == '__main__':
             os.makedirs(dir_prefix+'eval_results')
         # loop over all results
         # model_name_all = ['GraphRNN_MLP','GraphRNN_VAE_conditional','GraphRNN_RNN_new','Internal','Noise']
-        model_name_all = ['E-R', 'B-A']
-        dataset_name_all = ['caveman', 'grid', 'barabasi', 'citeseer', 'DD']
+        # model_name_all = ['E-R', 'B-A']
+        model_name_all = ['GraphRNN_MLP', 'GraphRNN_RNN_new']
+        # dataset_name_all = ['caveman', 'grid', 'barabasi', 'citeseer', 'DD']
+        dataset_name_all = ['caveman_small','citeseer_small']
+        # dataset_name_all = ['barabasi_noise0','barabasi_noise2','barabasi_noise4','barabasi_noise6','barabasi_noise8','barabasi_noise10']
+
         # dataset_name_all = ['caveman_small', 'ladder_small', 'grid_small', 'ladder_small', 'enzymes_small', 'barabasi_small','citeseer_small']
         evaluation(dir_input=dir_prefix+"graphs/", dir_output=dir_prefix+"eval_results/",
                    model_name_all=model_name_all,dataset_name_all=dataset_name_all,args=args,overwrite=True)
