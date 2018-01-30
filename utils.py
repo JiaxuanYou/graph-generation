@@ -97,19 +97,14 @@ def perturb_new(graph_list, p):
     '''
     perturbed_graph_list = []
     for G_original in graph_list:
-        print('number of nodes',G_original.number_of_nodes())
         G = G_original.copy()
         edge_remove_count = 0
         for (u, v) in list(G.edges()):
             if np.random.rand()<p:
                 G.remove_edge(u, v)
                 edge_remove_count += 1
-        print('number of nodes', G.number_of_nodes())
-
         # randomly add the edges back
-        print('edge_remove_count',edge_remove_count)
         for i in range(edge_remove_count):
-
             while True:
                 u = np.random.randint(0, G.number_of_nodes())
                 v = np.random.randint(0, G.number_of_nodes())

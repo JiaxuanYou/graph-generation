@@ -67,7 +67,7 @@ class Args():
 
 
         self.graph_type = 'barabasi_noise'
-        self.noise = 2
+        self.noise = 0
 
         if self.graph_type == 'barabasi_noise':
             self.graph_type = self.graph_type+str(self.noise)
@@ -93,14 +93,14 @@ class Args():
         self.embedding_size_rnn_output = 8 # the embedding size for output rnn
         self.embedding_size_output = int(64/self.parameter_shrink) # the embedding size for output (VAE/MLP)
 
-        self.batch_size = 16 # normal: 32, and the rest should be changed accordingly
+        self.batch_size = 32 # normal: 32, and the rest should be changed accordingly
         self.test_batch_size = 32
         self.test_total_size = 1000
         self.num_layers = 4
 
         ### training config
         self.num_workers = 4 # num workers to load data, default 4
-        self.batch_ratio = 64 # how many batches per epoch, default 32
+        self.batch_ratio = 32 # how many batches per epoch, default 32
         self.epochs = 3000 # now one epoch means self.batch_ratio x batch_size
         self.epochs_test_start = 100
         self.epochs_test = 100
