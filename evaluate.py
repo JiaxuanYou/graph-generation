@@ -479,9 +479,6 @@ def process_kron(kron_dir):
     for filename in txt_files:
         G_list.append(utils.snap_txt_output_to_nx(os.path.join(kron_dir, filename)))
 
-    out_fname = kron_dir + 'kron.dat'
-    with open(out_fname, 'wb') as out_f:
-        pickle.dump(G_list, out_f)
     return G_list
  
 
@@ -510,11 +507,6 @@ if __name__ == '__main__':
     logging.basicConfig(filename='logs/evaluate' + time_now + '.log', level=logging.INFO)
 
     if prog_args.export:
-        real_graph_filename = args.graph_save_path + args.fname_real + '0.dat'
-        #filename = args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
-        #             str(0) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + \
-        #             str(args.bptt_len) + '_' + str(args.gumbel) 
-        input_path = dir_prefix + real_graph_filename
         if not os.path.isdir('eval_results'):
             os.makedirs('eval_results')
         if not os.path.isdir('eval_results/ground_truth'):
@@ -523,12 +515,40 @@ if __name__ == '__main__':
         if not os.path.isdir(out_dir):
             os.makedirs(out_dir)
         output_prefix = os.path.join(out_dir, args.graph_type)
-        print('Export ground truth to ', output_prefix)
-        utils.export_graphs_to_txt(input_path, output_prefix)
+        print('Export ground truth to prefix: ', output_prefix)
+
+        if args.graph_type == 'grid':
+            graphs = []
+            for i in range(10,20):
+                for j in range(10,20):
+                    graphs.append(nx.grid_2d_graph(i,j))
+            utils.export_graphs_to_txt(graphs, output_prefix)
+        elif args.graph_type == 'caveman':
+            graphs = []
+            for i in range(2, 3):
+                for j in range(30, 81):
+                    for k in range(10):
+                        graphs.append(caveman_special(i,j, p_edge=0.3))
+            utils.export_graphs_to_txt(graphs, output_prefix)
+        elif args.graph_type == 'citeseer':
+            graphs = utils.citeseer_ego()
+            print([np.sum(nx.to_numpy_matrix(g)) for g in graphs])
+            #utils.export_graphs_to_txt(graphs, output_prefix)
+        else:
+            #filename = args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
+            #             str(0) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + \
+            #             str(args.bptt_len) + '_' + str(args.gumbel) 
+            input_path = dir_prefix + real_graph_filename
+
+            g_list = utils.load_graph_list(filename)
+            utils.export_graphs_to_txt(g_list, output_prefix)
+    elif not prog_args.kron_dir == '':
+        kron_g_list = process_kron(prog_args.kron_dir)
+        fname = os.path.join(prog_args.kron_dir, args.graph_type + '.dat')
+        print([g.number_of_nodes() for g in kron_g_list])
+        utils.save_graph_list(kron_g_list, fname)
     else:
         # baselines = {}
-        # if not prog_args.kron_dir == '':
-        #     baselines['kron'] = process_kron(prog_args.kron_dir)
 
         # print(args.graph_type)
         # out_file_prefix = 'eval_results/' + args.graph_type + '_' + args.note

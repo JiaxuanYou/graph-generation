@@ -426,13 +426,14 @@ def load_graph_list(fname,is_real=True):
     return graph_list
 
 
-def export_graphs_to_txt(filename, output_filename_prefix):
-    g_list = load_graph_list(filename)
+def export_graphs_to_txt(g_list, output_filename_prefix):
     i = 0
     for G in g_list:
         f = open(output_filename_prefix + '_' + str(i) + '.txt', 'w+')
         for (u, v) in G.edges():
-            f.write(str(u) + '\t' + str(v) + '\n')
+            idx_u = G.nodes().index(u)
+            idx_v = G.nodes().index(v)
+            f.write(str(idx_u) + '\t' + str(idx_v) + '\n')
         i += 1
 
 def snap_txt_output_to_nx(in_fname):

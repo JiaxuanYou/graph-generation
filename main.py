@@ -32,8 +32,7 @@ class Args():
         ### if clean tensorboard
         # self.clean_tensorboard = True
         self.clean_tensorboard = False
-
-        ### CUDA
+### CUDA
         self.cuda = 1
 
         ### model type
@@ -61,12 +60,12 @@ class Args():
         # self.graph_type = 'enzymes_small'
         # self.graph_type = 'barabasi'
         # self.graph_type = 'barabasi_small'
-        # self.graph_type = 'citeseer'
+        self.graph_type = 'citeseer'
         # self.graph_type = 'citeseer_small'
 
 
 
-        self.graph_type = 'barabasi_noise'
+        # self.graph_type = 'barabasi_noise'
         self.noise = 0
 
         if self.graph_type == 'barabasi_noise':
@@ -899,7 +898,7 @@ if __name__ == '__main__':
         for i in range(2, 3):
             for j in range(30, 81):
                 for k in range(10):
-                    graphs.append(caveman_special(i,j, p_edge=0.3))
+                    graphs.append(kaveman_special(i,j, p_edge=0.3))
         args.max_prev_node = 100
     if args.graph_type=='caveman_small':
         # graphs = []
