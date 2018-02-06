@@ -174,7 +174,35 @@ def sample_sigmoid_supervised(y_pred, y, current, y_len, sample_time=2):
                     break
     return y_result
 
+def sample_sigmoid_supervised_simple(y_pred, y, current, y_len, sample_time=2):
+    '''
+        do sampling over unnormalized score
+    :param y_pred: input
+    :param y: supervision
+    :param sample: Bool
+    :param thresh: if not sample, the threshold
+    :param sampe_time: how many times do we sample, if =1, do single sample
+    :return: sampled result
+    '''
 
+    # do sigmoid first
+    y_pred = F.sigmoid(y_pred)
+    # do sampling
+    y_result = Variable(torch.rand(y_pred.size(0), y_pred.size(1), y_pred.size(2))).cuda()
+    # loop over all batches
+    for i in range(y_result.size(0)):
+        # using supervision
+        if current<y_len[i]:
+            y_result[i] = y[i]
+        # supervision done
+        else:
+            # do 'multi_sample' times sampling
+            for j in range(sample_time):
+                y_thresh = Variable(torch.rand(y_pred.size(1), y_pred.size(2))).cuda()
+                y_result[i] = torch.gt(y_pred[i], y_thresh).float()
+                if (torch.sum(y_result[i]).data>0).any():
+                    break
+    return y_result
 
 ################### current adopted model, LSTM+MLP || LSTM+VAE || LSTM+LSTM (where LSTM can be GRU as well)
 #####

@@ -562,10 +562,10 @@ if __name__ == '__main__':
         # loop over all results
         # model_name_all = ['GraphRNN_MLP','GraphRNN_VAE_conditional','GraphRNN_RNN_new','Internal','Noise']
         # model_name_all = ['E-R', 'B-A']
-        model_name_all = ['GraphRNN_MLP', 'GraphRNN_RNN_new']
+        model_name_all = ['GraphRNN_MLP','E-R','B-A']
         # dataset_name_all = ['caveman', 'grid', 'barabasi', 'citeseer', 'DD']
-        dataset_name_all = ['caveman_small','citeseer_small']
-        # dataset_name_all = ['barabasi_noise0','barabasi_noise2','barabasi_noise4','barabasi_noise6','barabasi_noise8','barabasi_noise10']
+        # dataset_name_all = ['caveman_small','citeseer_small']
+        dataset_name_all = ['barabasi_noise0','barabasi_noise2','barabasi_noise4','barabasi_noise6','barabasi_noise8','barabasi_noise10']
 
         # dataset_name_all = ['caveman_small', 'ladder_small', 'grid_small', 'ladder_small', 'enzymes_small', 'barabasi_small','citeseer_small']
         evaluation(dir_input=dir_prefix+"graphs/", dir_output=dir_prefix+"eval_results/",

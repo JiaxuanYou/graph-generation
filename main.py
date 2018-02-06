@@ -36,8 +36,8 @@ class Args():
         self.cuda = 1
 
         ### model type
-        self.note = 'GraphRNN_MLP'
-        # self.note = 'GraphRNN_RNN_new'
+        # self.note = 'GraphRNN_MLP'
+        self.note = 'GraphRNN_RNN_new'
 
         ## for comparison
         # self.note = 'GraphRNN_MLP_nobfs'
@@ -51,7 +51,7 @@ class Args():
         # self.graph_type = 'caveman_small'
         # self.graph_type = 'caveman_small_single'
 
-        # self.graph_type = 'grid'
+        self.graph_type = 'grid'
         # self.graph_type = 'grid_small'
         # self.graph_type = 'ladder_small'
 
@@ -66,7 +66,7 @@ class Args():
 
 
         # self.graph_type = 'barabasi_noise'
-        self.noise = 0
+        # self.noise = 0
 
         if self.graph_type == 'barabasi_noise':
             self.graph_type = self.graph_type+str(self.noise)
@@ -406,6 +406,41 @@ def test_mlp_partial_epoch(epoch, args, rnn, output, data_loader, save_histogram
             y_pred_step = output(h)
             y_pred[:, i:i + 1, :] = F.sigmoid(y_pred_step)
             x_step = sample_sigmoid_supervised(y_pred_step, y[:,i:i+1,:].cuda(), current=i, y_len=y_len, sample_time=sample_time)
+
+            y_pred_long[:, i:i + 1, :] = x_step
+            rnn.hidden = Variable(rnn.hidden.data).cuda()
+        y_pred_data = y_pred.data
+        y_pred_long_data = y_pred_long.data.long()
+
+        # save graphs as pickle
+        for i in range(test_batch_size):
+            adj_pred = decode_adj(y_pred_long_data[i].cpu().numpy())
+            G_pred = get_graph(adj_pred) # get a graph from zero-padded adj
+            G_pred_list.append(G_pred)
+    return G_pred_list
+
+
+def test_mlp_partial_simple_epoch(epoch, args, rnn, output, data_loader, save_histogram=False,sample_time=1):
+    rnn.eval()
+    output.eval()
+    G_pred_list = []
+    for batch_idx, data in enumerate(data_loader):
+        x = data['x'].float()
+        y = data['y'].float()
+        y_len = data['len']
+        test_batch_size = x.size(0)
+        rnn.hidden = rnn.init_hidden(test_batch_size)
+        # generate graphs
+        max_num_node = int(args.max_num_node)
+        y_pred = Variable(torch.zeros(test_batch_size, max_num_node, args.max_prev_node)).cuda() # normalized prediction score
+        y_pred_long = Variable(torch.zeros(test_batch_size, max_num_node, args.max_prev_node)).cuda() # discrete prediction
+        x_step = Variable(torch.ones(test_batch_size,1,args.max_prev_node)).cuda()
+        for i in range(max_num_node):
+            print('finish node',i)
+            h = rnn(x_step)
+            y_pred_step = output(h)
+            y_pred[:, i:i + 1, :] = F.sigmoid(y_pred_step)
+            x_step = sample_sigmoid_supervised_simple(y_pred_step, y[:,i:i+1,:].cuda(), current=i, y_len=y_len, sample_time=sample_time)
 
             y_pred_long[:, i:i + 1, :] = x_step
             rnn.hidden = Variable(rnn.hidden.data).cuda()
@@ -808,7 +843,7 @@ def train_graph_completion(args, dataset_test, rnn, output):
 
     for sample_time in range(1,4):
         if 'GraphRNN_MLP' in args.note:
-            G_pred = test_mlp_partial_epoch(epoch, args, rnn, output, dataset_test,sample_time=sample_time)
+            G_pred = test_mlp_partial_simple_epoch(epoch, args, rnn, output, dataset_test,sample_time=sample_time)
         if 'GraphRNN_VAE' in args.note:
             G_pred = test_vae_partial_epoch(epoch, args, rnn, output, dataset_test,sample_time=sample_time)
         # save graphs
@@ -910,7 +945,7 @@ if __name__ == '__main__':
         for i in range(2, 3):
             for j in range(6, 11):
                 for k in range(20):
-                    graphs.append(caveman_special(i, j, p_edge=0.5)) # default 0.8
+                    graphs.append(caveman_special(i, j, p_edge=0.8)) # default 0.8
         args.max_prev_node = 20
     if args.graph_type=='caveman_small_single':
         # graphs = []
@@ -1014,14 +1049,14 @@ if __name__ == '__main__':
     graphs_train = graphs[0:int(0.8*graphs_len)]
     graphs_validate = graphs[0:int(0.2*graphs_len)]
 
-    # # if use pre-saved graphs
-    # dir_input = "/dfs/scratch0/jiaxuany0/graphs/"
-    # fname_test = dir_input + args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
-    #     args.hidden_size_rnn) + '_test_' + str(0) + '.dat'
-    # graphs = load_graph_list(fname_test, is_real=True)
-    # graphs_test = graphs[int(0.8 * graphs_len):]
-    # graphs_train = graphs[0:int(0.8 * graphs_len)]
-    # graphs_validate = graphs[int(0.2 * graphs_len):int(0.4 * graphs_len)]
+    # if use pre-saved graphs
+    dir_input = "/dfs/scratch0/jiaxuany0/graphs/"
+    fname_test = dir_input + args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
+        args.hidden_size_rnn) + '_test_' + str(0) + '.dat'
+    graphs = load_graph_list(fname_test, is_real=True)
+    graphs_test = graphs[int(0.8 * graphs_len):]
+    graphs_train = graphs[0:int(0.8 * graphs_len)]
+    graphs_validate = graphs[int(0.2 * graphs_len):int(0.4 * graphs_len)]
 
 
     graph_validate_len = 0
@@ -1047,21 +1082,21 @@ if __name__ == '__main__':
 
     # save ground truth graphs
     ## todo: I made a mistake, so to get train and test set, after loading you need to manually slice
-    save_graph_list(graphs, args.graph_save_path + args.fname_train + '0.dat')
-    save_graph_list(graphs, args.graph_save_path + args.fname_test + '0.dat')
-    print('train and test graphs saved')
+    # save_graph_list(graphs, args.graph_save_path + args.fname_train + '0.dat')
+    # save_graph_list(graphs, args.graph_save_path + args.fname_test + '0.dat')
+    # print('train and test graphs saved')
 
     ### comment when training
-    # p = 0.5
-    # for graph in graphs:
-    #     for node in list(graph.nodes()):
-    #         # print('node',node)
-    #         if np.random.rand()>p:
-    #             graph.remove_node(node)
-    #     for edge in list(graph.edges()):
-    #         # print('edge',edge)
-    #         if np.random.rand()>p:
-    #             graph.remove_edge(edge[0],edge[1])
+    p = 0.5
+    for graph in graphs_train:
+        for node in list(graph.nodes()):
+            # print('node',node)
+            if np.random.rand()>p:
+                graph.remove_node(node)
+        # for edge in list(graph.edges()):
+        #     # print('edge',edge)
+        #     if np.random.rand()>p:
+        #         graph.remove_edge(edge[0],edge[1])
 
 
     ### dataset initialization
@@ -1146,10 +1181,10 @@ if __name__ == '__main__':
 
     # else:
 
-    train(args, dataset_loader, rnn, output)
+    # train(args, dataset_loader, rnn, output)
 
     ### graph completion
-    # train_graph_completion(args,dataset_loader,rnn,output)
+    train_graph_completion(args,dataset_loader,rnn,output)
 
     ### nll evaluation
     # train_nll(args, dataset_loader_validate, dataset_loader_test, rnn, output, max_iter = 200, graph_validate_len=graph_validate_len,graph_test_len=graph_test_len)

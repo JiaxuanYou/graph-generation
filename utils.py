@@ -204,7 +204,7 @@ def draw_graph(G, prefix = 'test'):
 
 
 # draw a list of graphs [G]
-def draw_graph_list(G_list, row, col, fname = 'figures/test.png', layout='spring'):
+def draw_graph_list(G_list, row, col, fname = 'figures/test.png', layout='spring', is_single=False):
     # # draw graph view
     plt.switch_backend('agg')
     for i,G in enumerate(G_list):
@@ -213,126 +213,140 @@ def draw_graph_list(G_list, row, col, fname = 'figures/test.png', layout='spring
         #     plt.title('real nodes: '+str(G.number_of_nodes()), fontsize = 4)
         # else:
         #     plt.title('pred nodes: '+str(G.number_of_nodes()), fontsize = 4)
+
         plt.title('num of nodes: '+str(G.number_of_nodes()), fontsize = 4)
-        parts = community.best_partition(G)
-        values = [parts.get(node) for node in G.nodes()]
-        colors = []
-        for i in range(len(values)):
-            if values[i] == 0:
-                colors.append('red')
-            if values[i] == 1:
-                colors.append('green')
-            if values[i] == 2:
-                colors.append('blue')
-            if values[i] == 3:
-                colors.append('yellow')
-            if values[i] == 4:
-                colors.append('orange')
-            if values[i] == 5:
-                colors.append('pink')
-            if values[i] == 6:
-                colors.append('black')
+
+        # parts = community.best_partition(G)
+        # values = [parts.get(node) for node in G.nodes()]
+        # colors = []
+        # for i in range(len(values)):
+        #     if values[i] == 0:
+        #         colors.append('red')
+        #     if values[i] == 1:
+        #         colors.append('green')
+        #     if values[i] == 2:
+        #         colors.append('blue')
+        #     if values[i] == 3:
+        #         colors.append('yellow')
+        #     if values[i] == 4:
+        #         colors.append('orange')
+        #     if values[i] == 5:
+        #         colors.append('pink')
+        #     if values[i] == 6:
+        #         colors.append('black')
         plt.axis("off")
         if layout=='spring':
-            pos = nx.spring_layout(G)
+            pos = nx.spring_layout(G,scale=1,k=1/np.sqrt(G.number_of_nodes()),iterations=100)
         elif layout=='spectral':
             pos = nx.spectral_layout(G)
-        nx.draw_networkx(G, with_labels=True, node_size=2, width=0.15, font_size = 1.5, node_color=colors,pos=pos)
+        # # nx.draw_networkx(G, with_labels=True, node_size=2, width=0.15, font_size = 1.5, node_color=colors,pos=pos)
+        # nx.draw_networkx(G, with_labels=False, node_size=1.5, width=0.2, font_size = 1.5, linewidths=0.2, node_color = 'k',pos=pos,alpha=0.2)
+
+        if is_single:
+            nx.draw_networkx_nodes(G, pos, node_size=30, node_color='#336699', alpha=0.9, linewidths=0, font_size=0)
+            nx.draw_networkx_edges(G, pos, alpha=0.2, width=0.8)
+        else:
+            nx.draw_networkx_nodes(G, pos, node_size=1.5, node_color='#336699',alpha=1, linewidths=0.2, font_size = 1.5)
+            nx.draw_networkx_edges(G, pos, alpha=0.2,width=0.2)
+
+        # plt.axis('off')
+        # plt.title('Complete Graph of Odd-degree Nodes')
+        # plt.show()
     plt.tight_layout()
     plt.savefig(fname+'_view.png', dpi=600)
     plt.close()
 
-    # draw degree distribution
-    plt.switch_backend('agg')
-    for i, G in enumerate(G_list):
-        plt.subplot(row, col, i + 1)
-        G_deg = np.array(list(G.degree(G.nodes()).values()))
-        bins = np.arange(20)
-        plt.hist(np.array(G_deg), bins=bins, align='left')
-        plt.xlabel('degree', fontsize = 3)
-        plt.ylabel('count', fontsize = 3)
-        G_deg_mean = 2*G.number_of_edges()/float(G.number_of_nodes())
-        # if i % 2 == 0:
-        #     plt.title('real average degree: {:.2f}'.format(G_deg_mean), fontsize=4)
-        # else:
-        #     plt.title('pred average degree: {:.2f}'.format(G_deg_mean), fontsize=4)
-        plt.title('average degree: {:.2f}'.format(G_deg_mean), fontsize=4)
-        plt.tick_params(axis='both', which='major', labelsize=3)
-        plt.tick_params(axis='both', which='minor', labelsize=3)
-    plt.tight_layout()
-    plt.savefig(fname+'_degree.png', dpi=600)
-    plt.close()
-
-    # draw clustering distribution
-    plt.switch_backend('agg')
-    for i, G in enumerate(G_list):
-        plt.subplot(row, col, i + 1)
-        G_cluster = list(nx.clustering(G).values())
-        bins = np.linspace(0,1,20)
-        plt.hist(np.array(G_cluster), bins=bins, align='left')
-        plt.xlabel('clustering coefficient', fontsize=3)
-        plt.ylabel('count', fontsize=3)
-        G_cluster_mean = sum(G_cluster) / len(G_cluster)
-        # if i % 2 == 0:
-        #     plt.title('real average clustering: {:.4f}'.format(G_cluster_mean), fontsize=4)
-        # else:
-        #     plt.title('pred average clustering: {:.4f}'.format(G_cluster_mean), fontsize=4)
-        plt.title('average clustering: {:.4f}'.format(G_cluster_mean), fontsize=4)
-        plt.tick_params(axis='both', which='major', labelsize=3)
-        plt.tick_params(axis='both', which='minor', labelsize=3)
-    plt.tight_layout()
-    plt.savefig(fname+'_clustering.png', dpi=600)
-    plt.close()
-
-    # draw circle distribution
-    plt.switch_backend('agg')
-    for i, G in enumerate(G_list):
-        plt.subplot(row, col, i + 1)
-        cycle_len = []
-        cycle_all = nx.cycle_basis(G)
-        for item in cycle_all:
-            cycle_len.append(len(item))
-
-        bins = np.arange(20)
-        plt.hist(np.array(cycle_len), bins=bins, align='left')
-        plt.xlabel('cycle length', fontsize=3)
-        plt.ylabel('count', fontsize=3)
-        G_cycle_mean = 0
-        if len(cycle_len)>0:
-            G_cycle_mean = sum(cycle_len) / len(cycle_len)
-        # if i % 2 == 0:
-        #     plt.title('real average cycle: {:.4f}'.format(G_cycle_mean), fontsize=4)
-        # else:
-        #     plt.title('pred average cycle: {:.4f}'.format(G_cycle_mean), fontsize=4)
-        plt.title('average cycle: {:.4f}'.format(G_cycle_mean), fontsize=4)
-        plt.tick_params(axis='both', which='major', labelsize=3)
-        plt.tick_params(axis='both', which='minor', labelsize=3)
-    plt.tight_layout()
-    plt.savefig(fname+'_cycle.png', dpi=600)
-    plt.close()
-
-    # draw community distribution
-    plt.switch_backend('agg')
-    for i, G in enumerate(G_list):
-        plt.subplot(row, col, i + 1)
-        parts = community.best_partition(G)
-        values = np.array([parts.get(node) for node in G.nodes()])
-        counts = np.sort(np.bincount(values)[::-1])
-        pos = np.arange(len(counts))
-        plt.bar(pos,counts,align = 'edge')
-        plt.xlabel('community ID', fontsize=3)
-        plt.ylabel('count', fontsize=3)
-        G_community_count = len(counts)
-        # if i % 2 == 0:
-        #     plt.title('real average clustering: {}'.format(G_community_count), fontsize=4)
-        # else:
-        #     plt.title('pred average clustering: {}'.format(G_community_count), fontsize=4)
-        plt.title('average clustering: {}'.format(G_community_count), fontsize=4)
-        plt.tick_params(axis='both', which='major', labelsize=3)
-        plt.tick_params(axis='both', which='minor', labelsize=3)
-    plt.tight_layout()
-    plt.savefig(fname+'_community.png', dpi=600)
-    plt.close()
+    # # draw degree distribution
+    # plt.switch_backend('agg')
+    # for i, G in enumerate(G_list):
+    #     plt.subplot(row, col, i + 1)
+    #     G_deg = np.array(list(G.degree(G.nodes()).values()))
+    #     bins = np.arange(20)
+    #     plt.hist(np.array(G_deg), bins=bins, align='left')
+    #     plt.xlabel('degree', fontsize = 3)
+    #     plt.ylabel('count', fontsize = 3)
+    #     G_deg_mean = 2*G.number_of_edges()/float(G.number_of_nodes())
+    #     # if i % 2 == 0:
+    #     #     plt.title('real average degree: {:.2f}'.format(G_deg_mean), fontsize=4)
+    #     # else:
+    #     #     plt.title('pred average degree: {:.2f}'.format(G_deg_mean), fontsize=4)
+    #     plt.title('average degree: {:.2f}'.format(G_deg_mean), fontsize=4)
+    #     plt.tick_params(axis='both', which='major', labelsize=3)
+    #     plt.tick_params(axis='both', which='minor', labelsize=3)
+    # plt.tight_layout()
+    # plt.savefig(fname+'_degree.png', dpi=600)
+    # plt.close()
+    #
+    # # draw clustering distribution
+    # plt.switch_backend('agg')
+    # for i, G in enumerate(G_list):
+    #     plt.subplot(row, col, i + 1)
+    #     G_cluster = list(nx.clustering(G).values())
+    #     bins = np.linspace(0,1,20)
+    #     plt.hist(np.array(G_cluster), bins=bins, align='left')
+    #     plt.xlabel('clustering coefficient', fontsize=3)
+    #     plt.ylabel('count', fontsize=3)
+    #     G_cluster_mean = sum(G_cluster) / len(G_cluster)
+    #     # if i % 2 == 0:
+    #     #     plt.title('real average clustering: {:.4f}'.format(G_cluster_mean), fontsize=4)
+    #     # else:
+    #     #     plt.title('pred average clustering: {:.4f}'.format(G_cluster_mean), fontsize=4)
+    #     plt.title('average clustering: {:.4f}'.format(G_cluster_mean), fontsize=4)
+    #     plt.tick_params(axis='both', which='major', labelsize=3)
+    #     plt.tick_params(axis='both', which='minor', labelsize=3)
+    # plt.tight_layout()
+    # plt.savefig(fname+'_clustering.png', dpi=600)
+    # plt.close()
+    #
+    # # draw circle distribution
+    # plt.switch_backend('agg')
+    # for i, G in enumerate(G_list):
+    #     plt.subplot(row, col, i + 1)
+    #     cycle_len = []
+    #     cycle_all = nx.cycle_basis(G)
+    #     for item in cycle_all:
+    #         cycle_len.append(len(item))
+    #
+    #     bins = np.arange(20)
+    #     plt.hist(np.array(cycle_len), bins=bins, align='left')
+    #     plt.xlabel('cycle length', fontsize=3)
+    #     plt.ylabel('count', fontsize=3)
+    #     G_cycle_mean = 0
+    #     if len(cycle_len)>0:
+    #         G_cycle_mean = sum(cycle_len) / len(cycle_len)
+    #     # if i % 2 == 0:
+    #     #     plt.title('real average cycle: {:.4f}'.format(G_cycle_mean), fontsize=4)
+    #     # else:
+    #     #     plt.title('pred average cycle: {:.4f}'.format(G_cycle_mean), fontsize=4)
+    #     plt.title('average cycle: {:.4f}'.format(G_cycle_mean), fontsize=4)
+    #     plt.tick_params(axis='both', which='major', labelsize=3)
+    #     plt.tick_params(axis='both', which='minor', labelsize=3)
+    # plt.tight_layout()
+    # plt.savefig(fname+'_cycle.png', dpi=600)
+    # plt.close()
+    #
+    # # draw community distribution
+    # plt.switch_backend('agg')
+    # for i, G in enumerate(G_list):
+    #     plt.subplot(row, col, i + 1)
+    #     parts = community.best_partition(G)
+    #     values = np.array([parts.get(node) for node in G.nodes()])
+    #     counts = np.sort(np.bincount(values)[::-1])
+    #     pos = np.arange(len(counts))
+    #     plt.bar(pos,counts,align = 'edge')
+    #     plt.xlabel('community ID', fontsize=3)
+    #     plt.ylabel('count', fontsize=3)
+    #     G_community_count = len(counts)
+    #     # if i % 2 == 0:
+    #     #     plt.title('real average clustering: {}'.format(G_community_count), fontsize=4)
+    #     # else:
+    #     #     plt.title('pred average clustering: {}'.format(G_community_count), fontsize=4)
+    #     plt.title('average clustering: {}'.format(G_community_count), fontsize=4)
+    #     plt.tick_params(axis='both', which='major', labelsize=3)
+    #     plt.tick_params(axis='both', which='minor', labelsize=3)
+    # plt.tight_layout()
+    # plt.savefig(fname+'_community.png', dpi=600)
+    # plt.close()
 
 
 
