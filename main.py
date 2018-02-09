@@ -99,7 +99,7 @@ class Args():
         self.num_layers = 4
 
         ### training config
-        self.num_workers = 2 # num workers to load data, default 4
+        self.num_workers = 4 # num workers to load data, default 4
         self.batch_ratio = 32 # how many batches per epoch, default 32
         self.epochs = 3000 # now one epoch means self.batch_ratio x batch_size
         self.epochs_test_start = 100
@@ -863,30 +863,18 @@ def train_nll(args, dataset_train, dataset_test, rnn, output,graph_validate_len,
     epoch = args.load_epoch
     print('model loaded!, epoch: {}'.format(args.load_epoch))
     fname_output = args.nll_save_path + args.note + '_' + args.graph_type + '.csv'
-    # with open(fname_output, 'w+') as f:
-    #     f.write(str(graph_validate_len)+','+str(graph_test_len)+'\n')
-    #     f.write('train,test\n')
-    #     for iter in range(max_iter):
-    #         if 'GraphRNN_MLP' in args.note:
-    #             nll_train = train_mlp_forward_epoch(epoch, args, rnn, output, dataset_train)
-    #             nll_test = train_mlp_forward_epoch(epoch, args, rnn, output, dataset_test)
-    #         if 'GraphRNN_RNN' in args.note:
-    #             nll_train = train_rnn_forward_epoch(epoch, args, rnn, output, dataset_train)
-    #             nll_test = train_rnn_forward_epoch(epoch, args, rnn, output, dataset_test)
-    #         print('train',nll_train,'test',nll_test)
-    #         f.write(str(nll_train)+','+str(nll_test)+'\n')
-
-    for iter in range(max_iter):
-        if 'GraphRNN_MLP' in args.note:
-            nll_train = train_mlp_forward_epoch(epoch, args, rnn, output, dataset_train)
-            nll_test = train_mlp_forward_epoch(epoch, args, rnn, output, dataset_test)
-        if 'GraphRNN_RNN' in args.note:
-            time1 = tm.time()
-            nll_train = train_rnn_forward_epoch(epoch, args, rnn, output, dataset_train)
-            time2 = tm.time()
-            print('time per batch',time2-time1)
-            nll_test = train_rnn_forward_epoch(epoch, args, rnn, output, dataset_test)
-        print('train',nll_train,'test',nll_test)
+    with open(fname_output, 'w+') as f:
+        f.write(str(graph_validate_len)+','+str(graph_test_len)+'\n')
+        f.write('train,test\n')
+        for iter in range(max_iter):
+            if 'GraphRNN_MLP' in args.note:
+                nll_train = train_mlp_forward_epoch(epoch, args, rnn, output, dataset_train)
+                nll_test = train_mlp_forward_epoch(epoch, args, rnn, output, dataset_test)
+            if 'GraphRNN_RNN' in args.note:
+                nll_train = train_rnn_forward_epoch(epoch, args, rnn, output, dataset_train)
+                nll_test = train_rnn_forward_epoch(epoch, args, rnn, output, dataset_test)
+            print('train',nll_train,'test',nll_test)
+            f.write(str(nll_train)+','+str(nll_test)+'\n')
 
     print('NLL evaluation done')
 

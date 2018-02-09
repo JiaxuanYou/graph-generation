@@ -9,7 +9,7 @@ import networkx as nx
 import numpy as np
 import tensorflow as tf
 
-from edward.models import Bernoulli, Multinomial, Beta, Dirichlet, PointMass
+from edward.models import Bernoulli, Multinomial, Beta, Dirichlet, PointMass, Normal
 from observations import karate
 from sklearn.metrics.cluster import adjusted_rand_score
 
@@ -28,7 +28,7 @@ def disjoint_cliques_test_graph(num_cliques, clique_size):
 
 def mmsb(N, K, data):
     # sparsity
-    rho = 0
+    rho = 0.3
     # MODEL
     # probability of belonging to each of K blocks for each node
     gamma = Dirichlet(concentration=tf.ones([K]))
@@ -41,19 +41,27 @@ def mmsb(N, K, data):
     
     # INFERENCE (EM algorithm)
     qgamma = PointMass(params=tf.nn.softmax(tf.Variable(tf.random_normal([K]))))
-    #qgamma = PointMass(params=tf.nn.softmax(tf.Variable(tf.constant(1.0, shape=[K]))))
     qPi = PointMass(params=tf.nn.sigmoid(tf.Variable(tf.random_normal([K, K]))))
     qZ = PointMass(params=tf.nn.softmax(tf.Variable(tf.random_normal([N, K]))))
-    #qZ = PointMass(params=tf.nn.softmax(tf.Variable(tf.constant(1.0, shape=[N, K]))))
     
+    #qgamma = Normal(loc=tf.get_variable("qgamma/loc", [K]),
+    #                scale=tf.nn.softplus(
+    #                        tf.get_variable("qgamma/scale", [K])))
+    #qPi = Normal(loc=tf.get_variable("qPi/loc", [K, K]),
+    #                scale=tf.nn.softplus(
+    #                        tf.get_variable("qPi/scale", [K, K])))
+    #qZ = Normal(loc=tf.get_variable("qZ/loc", [N, K]),
+    #                scale=tf.nn.softplus(
+    #                        tf.get_variable("qZ/scale", [N, K])))
+    
+    #inference = ed.KLqp({gamma: qgamma, Pi: qPi, Z: qZ}, data={X: data})
     inference = ed.MAP({gamma: qgamma, Pi: qPi, Z: qZ}, data={X: data})
-    #inference = ed.MAP({Pi: qPi, Z: qZ}, data={X: data})
     
-    n_iter = 20000
-    inference.initialize(optimizer=tf.train.RMSPropOptimizer(learning_rate=0.01), n_iter=n_iter)
+    #inference.run()
+    n_iter = 6000
+    inference.initialize(optimizer=tf.train.AdamOptimizer(learning_rate=0.01), n_iter=n_iter)
     
     tf.global_variables_initializer().run()
-    print(qgamma.mean().eval())
     
     for _ in range(inference.n_iter):
         info_dict = inference.update()
@@ -65,13 +73,25 @@ def mmsb(N, K, data):
 
 def arg_parse():
     parser = argparse.ArgumentParser(description='MMSB arguments.')
-    io_parser = parser.add_mutually_exclusive_group(required=False)
-    io_parser.add_argument('--dataset', dest='dataset', 
+    parser.add_argument('--dataset', dest='dataset', 
             help='Input dataset.')
+    parser.add_argument('--K', dest='K', type=int,
+            help='Number of blocks.')
+    parser.add_argument('--samples-per-G', dest='samples', type=int,
+            help='Number of samples for every graph.')
 
-    parser.set_defaults(dataset='clique_test',
-                        )
+    parser.set_defaults(dataset='community',
+                        K=4,
+                        samples=1)
     return parser.parse_args()
+
+def graph_gen_from_blockmodel(B, Z):
+    n_blocks = len(B)
+    B = np.array(B)
+    Z = np.array(Z)
+    adj_prob = np.dot(Z, np.dot(B, np.transpose(Z)))
+    adj = np.random.binomial(1, adj_prob * 0.3)
+    return nx.from_numpy_matrix(adj)
 
 if __name__ == '__main__':
     prog_args = arg_parse()
@@ -86,20 +106,41 @@ if __name__ == '__main__':
     elif prog_args.dataset == 'citeseer':
         graphs = utils.citeseer_ego()
         X_dataset = [nx.to_numpy_matrix(g) for g in graphs]
+    elif prog_args.dataset == 'community':
+        graphs = []
+        for i in range(2, 3):
+            for j in range(30, 81):
+                for k in range(10):
+                    graphs.append(utils.caveman_special(i,j, p_edge=0.3))
+        X_dataset = [nx.to_numpy_matrix(g) for g in graphs]
+    elif prog_args.dataset == 'grid':
+        graphs = []
+        for i in range(10,20):
+            for j in range(10,20):
+                graphs.append(nx.grid_2d_graph(i,j))
+        X_dataset = [nx.to_numpy_matrix(g) for g in graphs]
 
+    print('Number of graphs: ', len(X_dataset))
+    K = prog_args.K  # number of clusters
+    gen_graphs = []
     for i in range(len(X_dataset)):
-        print('Number of graphs: ', len(graphs))
-        N = X_data.shape[0]  # number of vertices
-        K = 4  # number of clusters
+        print(i)
+        if i % 5 == 0:
+            X_data = X_dataset[i]
+            N = X_data.shape[0]  # number of vertices
 
-        Zp, B = mmsb(N, K, X_data)
-        print("Block: ", B)
-        Z_pred = Zp.argmax(axis=1)
-        print("Result (label flip can happen):")
-        print("prob: ", Zp)
-        print("Predicted")
-        print(Z_pred)
-        #print("True")
-        #print(Z_true)
-        #print("Adjusted Rand Index =", adjusted_rand_score(Z_pred, Z_true))
+            Zp, B = mmsb(N, K, X_data)
+            #print("Block: ", B)
+            Z_pred = Zp.argmax(axis=1)
+            print("Result (label flip can happen):")
+            #print("prob: ", Zp)
+            print("Predicted")
+            print(Z_pred)
+            #print(Z_true)
+            #print("Adjusted Rand Index =", adjusted_rand_score(Z_pred, Z_true))
+            for j in range(prog_args.samples):
+                gen_graphs.append(graph_gen_from_blockmodel(B, Zp))
+
+    save_path = '/lfs/local/0/rexy/graph-generation/eval_results/mmsb/'
+    utils.save_graph_list(gen_graphs, os.path.join(save_path, prog_args.dataset + '1.dat'))
 

@@ -57,27 +57,29 @@ def perturb(graph_list, p_del, p_add=None):
     for G_original in graph_list:
         G = G_original.copy()
         trials = np.random.binomial(1, p_del, size=G.number_of_edges())
-        i = 0
         edges = list(G.edges())
-        if p_add is None:
-            num_nodes = G.number_of_nodes()
-            p_add_est = p_del * G.number_of_edges() / (num_nodes * (num_nodes - 1) / 2 -
-                    G.number_of_edges())
-        else:
-            p_add_est = p_add
+        i = 0
         for (u, v) in edges:
             if trials[i] == 1:
                 G.remove_edge(u, v)
             i += 1
+        if p_add is None:
+            num_nodes = G.number_of_nodes()
+            p_add_est = np.sum(trials) / (num_nodes * (num_nodes - 1) / 2 -
+                    G.number_of_edges())
+        else:
+            p_add_est = p_add
 
         nodes = list(G.nodes())
+        tmp = 0
         for i in range(len(nodes)):
             u = nodes[i]
             trials = np.random.binomial(1, p_add_est, size=G.number_of_nodes())
             j = 0
-            for j in range(i, len(nodes)):
+            for j in range(i+1, len(nodes)):
                 v = nodes[j]
-                if trials[j] == 1 and not i == j:
+                if trials[j] == 1:
+                    tmp += 1
                     G.add_edge(u, v)
                 j += 1
 
@@ -449,13 +451,14 @@ def load_graph_list(fname,is_real=True):
     return graph_list
 
 
-def export_graphs_to_txt(filename, output_filename_prefix):
-    g_list = load_graph_list(filename)
+def export_graphs_to_txt(g_list, output_filename_prefix):
     i = 0
     for G in g_list:
         f = open(output_filename_prefix + '_' + str(i) + '.txt', 'w+')
         for (u, v) in G.edges():
-            f.write(str(u) + '\t' + str(v) + '\n')
+            idx_u = G.nodes().index(u)
+            idx_v = G.nodes().index(v)
+            f.write(str(idx_u) + '\t' + str(idx_v) + '\n')
         i += 1
 
 def snap_txt_output_to_nx(in_fname):
@@ -473,10 +476,12 @@ def snap_txt_output_to_nx(in_fname):
     return G
 
 def test_perturbed():
+    
     graphs = []
-    for i in range(10,20):
-        for j in range(10,20):
-            graphs.append(nx.grid_2d_graph(i,j))
+    for i in range(100,101):
+        for j in range(4,5):
+            for k in range(500):
+                graphs.append(nx.barabasi_albert_graph(i,j))
     g_perturbed = perturb(graphs, 0.9)
     print([g.number_of_edges() for g in graphs])
     print([g.number_of_edges() for g in g_perturbed])
