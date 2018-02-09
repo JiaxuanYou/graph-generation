@@ -14,6 +14,7 @@ import torch.nn as nn
 from main import *
 from main_DGMG import *
 from utils import *
+from evaluate import *
 
 CUDA = 2
 # G = nx.ladder_graph(4)
@@ -617,152 +618,442 @@ CUDA = 2
 
 
 ################# print average statistics #############
-dir = '/dfs/scratch0/jiaxuany0/graphs/'
-# dir = 'graphs/'
-
-# model = '_MLP_'
-# model = '_VAE_conditional_'
-model = '_RNN_new_'
-
-# dataset
-# dataset = 'barabasi'
-# dataset = 'barabasi_small'
-dataset = 'caveman'
-# dataset = 'grid'
-# dataset = 'citeseer'
-# dataset = 'citeseer_small'
-# dataset = 'DD'
-# dataset = 'grid_small'
-# dataset = 'enzymes'
-# dataset = 'enzymes_small'
-
-sample_time = 1
-
-if 'small' in dataset:
-    hidden = '64'
-else:
-    hidden = '128'
-
-epoch = 3000
-fname_real = 'GraphRNN'+model+dataset+'_4_'+hidden+'_test_0' #real
-fname_pred = 'GraphRNN'+model+dataset+'_4_'+hidden+'_pred_'+str(epoch)+'_'+str(sample_time) # pred
-
-# fname_real = 'GraphRNN'+model+dataset+'_4_'+hidden+'_0'+'_test_0' #real
-# fname_pred = 'GraphRNN'+model+dataset+'_4_'+hidden+'_0'+'_pred_3000_'+str(sample_time) # pred
-
-# fname_real = 'Baseline_DGMG_grid_small_64_test_0'
-# fname_pred = 'Baseline_DGMG_grid_small_64_pred_2000'
-
-graphs_real = load_graph_list(dir+fname_real+'.dat',is_real=True)
-graphs_pred = load_graph_list(dir+fname_pred+'.dat',is_real=False)
-
-graphs_train = graphs_real[0:int(len(graphs_real)*0.8)]
-graphs_real = graphs_real[int(len(graphs_real)*0.8):]
-graphs_real = [graphs_real[i] for i in range(len(graphs_real)) if (graphs_real[i].number_of_nodes()>=60 and graphs_real[i].number_of_nodes()<=500)]
-graphs_pred = [graphs_pred[i] for i in range(len(graphs_pred)) if (graphs_pred[i].number_of_nodes()>=60 and graphs_pred[i].number_of_nodes()<=500)]
-
-# shuffle(graphs_real)
-# shuffle(graphs_pred)
-
-graphs_real_len = [graph.number_of_nodes() for graph in graphs_real]
-graphs_pred_len = [graph.number_of_nodes() for graph in graphs_pred]
-graphs_train_len = [graph.number_of_nodes() for graph in graphs_train]
-
-print(graphs_real_len)
-# print(graphs_pred_len)
-print(graphs_train_len)
-######### for grid only##############
-# graphs_pred_new = []
-# for real_len in graphs_real_len:
-#     if real_len in graphs_pred_len:
-#         id = graphs_pred_len.index(real_len)
-#         print('Found!!',real_len,id)
-#         graphs_pred_new.append(graphs_pred[id])
-
-# for pred_len in graphs_pred_len:
-#     if pred_len<100:
-#         id = graphs_pred_len.index(pred_len)
-#         graphs_pred_new.append(graphs_pred[id])
-
-# graphs_pred = graphs_pred_new
-######################################
-
-
-print('real graph count',len(graphs_real))
-print('pred graph count',len(graphs_pred))
-
-
-
-### plot sample graphs
-## find one
-# draw_graph_list(graphs_real[0:16],4,4,'figures/test_graph'+fname_real+'.png',layout='spring')
-# for i in range(5):
-#     draw_graph_list(graphs_pred[16*i:min(16*(i+1),len(graphs_pred))],4,4,'figures/test_graph'+fname_pred+str(i)+'.png',layout='spring')
+# dir = '/dfs/scratch0/jiaxuany0/graphs/'
+# # dir = 'graphs/'
 #
-# for i in range(5):
-#     draw_graph_list(graphs_real[16 * i:min(16 * (i + 1), len(graphs_real))], 4, 4,
-#                     'figures/test_graph' + fname_real + str(i) + '.png', layout='spring')
-
-## plot, get a best layout
-# for i in range(5):
-#     draw_graph_list(graphs_pred[1:2], 1, 1, 'figures/test_graph' + fname_pred + '_single'+str(i) + '.png',
-#                     layout='spring',is_single=True)
-# for i in range(1):
-#     draw_graph_list(graphs_real[3:4], 1, 1, 'figures/test_graph' + fname_real + '_single'+str(i) + '.png',
-#                     layout='spectral',is_single=True)
-
-
-
-
-
-### print distribution of graph size
-plt.switch_backend('agg')
-plt.hist(graphs_real_len)
-plt.savefig('figures/test_len'+fname_real+'.png', dpi=200)
-plt.close()
-
-plt.switch_backend('agg')
-plt.hist(graphs_pred_len)
-plt.savefig('figures/test_len'+fname_pred+'.png', dpi=200)
-plt.close()
-
-### print average clustering
-plt.switch_backend('agg')
-graphs_clustering_real = []
-for graph in graphs_real:
-    graphs_clustering_real.extend(list(nx.clustering(graph).values()))
-bins = np.linspace(0,1,50)
-plt.hist(np.array(graphs_clustering_real), bins=bins, align='left')
-plt.savefig('figures/test_clustering'+fname_real+'.png', dpi=200)
-
-plt.switch_backend('agg')
-graphs_clustering_pred = []
-for graph in graphs_pred:
-    graphs_clustering_pred.extend(list(nx.clustering(graph).values()))
-bins = np.linspace(0,1,50)
-plt.hist(np.array(graphs_clustering_pred), bins=bins, align='left')
-plt.savefig('figures/test_clustering'+fname_pred+'.png', dpi=200)
-
-
-### print average degree
-plt.switch_backend('agg')
-graphs_degree_real = []
-for graph in graphs_real:
-    graphs_degree_real.extend(list(graph.degree(graph.nodes()).values()))
-bins = np.linspace(0,40,40)
-plt.hist(np.array(graphs_degree_real), bins=bins, align='left')
-plt.savefig('figures/test_degree'+fname_real+'.png', dpi=200)
-
-plt.switch_backend('agg')
-graphs_degree_pred= []
-for graph in graphs_pred:
-    graphs_degree_pred.extend(list(graph.degree(graph.nodes()).values()))
-bins = np.linspace(0,40,40)
-plt.hist(np.array(graphs_degree_pred), bins=bins, align='left')
-plt.savefig('figures/test_degree'+fname_pred+'.png', dpi=200)
-
+# # model = '_MLP_'
+# # model = '_VAE_conditional_'
+# model = '_RNN_new_'
+#
+# # dataset
+# # dataset = 'barabasi'
+# # dataset = 'barabasi_small'
+# dataset = 'caveman'
+# # dataset = 'grid'
+# # dataset = 'citeseer'
+# # dataset = 'citeseer_small'
+# # dataset = 'DD'
+# # dataset = 'grid_small'
+# # dataset = 'enzymes'
+# # dataset = 'enzymes_small'
+#
+# sample_time = 1
+#
+# if 'small' in dataset:
+#     hidden = '64'
+# else:
+#     hidden = '128'
+#
+# epoch = 3000
+# fname_real = 'GraphRNN'+model+dataset+'_4_'+hidden+'_test_0' #real
+# fname_pred = 'GraphRNN'+model+dataset+'_4_'+hidden+'_pred_'+str(epoch)+'_'+str(sample_time) # pred
+# # fname_pred = 'grid_kron'
+# # fname_pred = 'grid_mmsb'
+# # fname_pred = 'grid_BA'
+#
+# # fname_pred = 'citeseer_kron'
+# # fname_pred = 'citeseer_mmsb'
+# # fname_pred = 'citeseer_BA'
+#
+# # fname_pred = 'caveman_kron'
+# # fname_pred = 'caveman_mmsb'
+# fname_pred = 'caveman_sparse_mmsb'
+# # fname_pred = 'caveman_BA'
+#
+#
+# # fname_real = 'GraphRNN'+model+dataset+'_4_'+hidden+'_0'+'_test_0' #real
+# # fname_pred = 'GraphRNN'+model+dataset+'_4_'+hidden+'_0'+'_pred_3000_'+str(sample_time) # pred
+#
+# # fname_real = 'Baseline_DGMG_grid_small_64_test_0'
+# # fname_pred = 'Baseline_DGMG_grid_small_64_pred_2000'
+#
+# graphs_real = load_graph_list(dir+fname_real+'.dat',is_real=True)
+# # graphs_train = graphs_real[0:int(len(graphs_real)*0.8)]
+# graphs_real = graphs_real[int(len(graphs_real)*0.8):]
+#
+# #### if not using BA
+# graphs_pred = load_graph_list(dir+fname_pred+'.dat',is_real=True) # False for proposed model, True for baseline
+# #### if using BA
+# # graphs_pred = Graph_generator_baseline(graphs_real, generator='BA',pred_num=len(graphs_real))
+#
+#
+# graphs_real,graphs_pred = clean_graphs(graphs_real,graphs_pred)
+#
+#
+# # graphs_real = [graphs_real[i] for i in range(len(graphs_real)) if (graphs_real[i].number_of_nodes()>=60 and graphs_real[i].number_of_nodes()<=500)]
+# # graphs_pred = [graphs_pred[i] for i in range(len(graphs_pred)) if (graphs_pred[i].number_of_nodes()>=60 and graphs_pred[i].number_of_nodes()<=500)]
+#
+# # shuffle(graphs_real)
+# # shuffle(graphs_pred)
+#
+# graphs_real_len = [graph.number_of_nodes() for graph in graphs_real]
+# len_min = min(graphs_real_len)
+# len_max = max(graphs_real_len)
+#
+# # graphs_pred = [graphs_pred[i] for i in range(len(graphs_pred)) if (graphs_pred[i].number_of_nodes()>=len_min and graphs_pred[i].number_of_nodes()<=len_max)]
+# graphs_pred_len = [graph.number_of_nodes() for graph in graphs_pred]
+# graphs_real_degree = [(graph.number_of_nodes(),graph.number_of_edges(),graph.number_of_edges()/graph.number_of_nodes()) for graph in graphs_real]
+# graphs_pred_degree = [(graph.number_of_nodes(),graph.number_of_edges(),graph.number_of_edges()/graph.number_of_nodes()) for graph in graphs_pred]
+#
+#
+# # graphs_train_len = [graph.number_of_nodes() for graph in graphs_train]
+#
+# print(graphs_real_degree)
+# print(graphs_pred_degree)
+# # print(graphs_train_len)
+# ######### for grid only##############
+# # graphs_pred_new = []
+# # for real_len in graphs_real_len:
+# #     if real_len in graphs_pred_len:
+# #         id = graphs_pred_len.index(real_len)
+# #         print('Found!!',real_len,id)
+# #         graphs_pred_new.append(graphs_pred[id])
+#
+# # for pred_len in graphs_pred_len:
+# #     if pred_len<100:
+# #         id = graphs_pred_len.index(pred_len)
+# #         graphs_pred_new.append(graphs_pred[id])
+#
+# # graphs_pred = graphs_pred_new
+# ######################################
+#
+#
+# print('real graph count',len(graphs_real))
+# print('pred graph count',len(graphs_pred))
 
 #
+#
+# ### plot sample graphs
+# ## find one
+#
+#
+# # layout='spring'
+#
+# # for i in range(min(len(graphs_pred)//16+1,5)):
+# #     draw_graph_list(graphs_pred[16*i:min(16*(i+1),len(graphs_pred))],4,4,'figures/test_graph'+fname_pred+str(i)+'.png',layout=layout)
+#
+# # for i in range(min(len(graphs_real)//16+1,5)):
+# #     draw_graph_list(graphs_real[16 * i:min(16 * (i + 1), len(graphs_real))], 4, 4,
+# #                     'figures/test_graph' + fname_real + str(i) + '.png', layout=layout)
+#
+# ## plot, get a best layout
+#
+#
+# #### grid
+# # draw pred
+# # layout = 'spectral'
+# # for i in range(3):
+# #     draw_graph_list(graphs_pred[8:9], 1, 1, 'figures/test_graph' + fname_pred + '_single_0_'+str(i) + '.png',
+# #                     layout=layout,is_single=True)
+# #
+# # for i in range(3):
+# #     draw_graph_list(graphs_pred[24:25], 1, 1, 'figures/test_graph' + fname_pred + '_single_1_' + str(i) + '.png',
+# #                     layout=layout, is_single=True)
+# #
+# # for i in range(3):
+# #     draw_graph_list(graphs_pred[51:52], 1, 1, 'figures/test_graph' + fname_pred + '_single_2_' + str(i) + '.png',
+# #                     layout=layout, is_single=True)
+# #
+# # # # draw real
+# # for i in range(3):
+# #     draw_graph_list(graphs_real[0:1], 1, 1, 'figures/test_graph' + fname_real + '_single_0_' + str(i) + '.png',
+# #                     layout=layout, is_single=True)
+# #
+# # for i in range(3):
+# #     draw_graph_list(graphs_real[1:2], 1, 1, 'figures/test_graph' + fname_real + '_single_1_' + str(i) + '.png',
+# #                     layout=layout, is_single=True)
+# #
+# # for i in range(3):
+# #     draw_graph_list(graphs_real[16:17], 1, 1, 'figures/test_graph' + fname_real + '_single_2_' + str(i) + '.png',
+# #                     layout=layout, is_single=True)
+#
+#
+#
+# # ## draw baseline
+# # layout = 'spring'
+# # # draw pred
+# # for i in range(3):
+# #     draw_graph_list(graphs_pred[0:1], 1, 1, 'figures/test_graph' + fname_pred + '_single_0_'+str(i) + '.png',
+# #                     layout=layout,is_single=True,k=0.5)
+# #
+# # for i in range(3):
+# #     draw_graph_list(graphs_pred[1:2], 1, 1, 'figures/test_graph' + fname_pred + '_single_1_' + str(i) + '.png',
+# #                     layout=layout, is_single=True,k=0.5)
+# #
+# # for i in range(3):
+# #     draw_graph_list(graphs_pred[2:3], 1, 1, 'figures/test_graph' + fname_pred + '_single_2_' + str(i) + '.png',
+# #                     layout=layout, is_single=True,k=0.5)
+#
+# # for i in range(3):
+# #     draw_graph_list(graphs_pred[4:5], 1, 1, 'figures/test_graph' + fname_pred + '_single_0_' + str(i) + '.png',
+# #                     layout=layout, is_single=True, k=0.5)
+# #
+# # for i in range(3):
+# #     draw_graph_list(graphs_pred[5:6], 1, 1, 'figures/test_graph' + fname_pred + '_single_1_' + str(i) + '.png',
+# #                     layout=layout, is_single=True, k=0.5)
+# #
+# # for i in range(3):
+# #     draw_graph_list(graphs_pred[7:8], 1, 1, 'figures/test_graph' + fname_pred + '_single_2_' + str(i) + '.png',
+# #                     layout=layout, is_single=True, k=0.5)
+#
+#
+#
+#
+#
+#
+#
+# #### caveman
+# ## draw pred
+# # layout = 'spring'
+# # #
+# # for i in range(3):
+# #     draw_graph_list(graphs_pred[3:4], 1, 1, 'figures/test_graph' + fname_pred + '_single_0_'+str(i) + '.png',
+# #                     layout=layout,is_single=True,node_size=40,width=1,alpha=0.3)
+# #
+# # for i in range(3):
+# #     draw_graph_list(graphs_pred[12:13], 1, 1, 'figures/test_graph' + fname_pred + '_single_1_' + str(i) + '.png',
+# #                     layout=layout, is_single=True,node_size=40,width=1,alpha=0.3)
+# #
+# # for i in range(3):
+# #     draw_graph_list(graphs_pred[15:16], 1, 1, 'figures/test_graph' + fname_pred + '_single_2_' + str(i) + '.png',
+# #                     layout=layout, is_single=True,node_size=40,width=1,alpha=0.3)
+# # #
+# # # # draw real
+# # for i in range(3):
+# #     draw_graph_list(graphs_real[0:1], 1, 1, 'figures/test_graph' + fname_real + '_single_0_' + str(i) + '.png',
+# #                     layout=layout, is_single=True,node_size=40,width=1,alpha=0.3)
+# #
+# # for i in range(3):
+# #     draw_graph_list(graphs_real[1:2], 1, 1, 'figures/test_graph' + fname_real + '_single_1_' + str(i) + '.png',
+# #                     layout=layout, is_single=True,node_size=40,width=1,alpha=0.3)
+# #
+# # for i in range(3):
+# #     draw_graph_list(graphs_real[2:3], 1, 1, 'figures/test_graph' + fname_real + '_single_2_' + str(i) + '.png',
+# #                     layout=layout, is_single=True,node_size=40,width=1,alpha=0.3)
+#
+#
+#
+#
+# #### citeseer
+# ## draw pred
+#
+# layout = 'spring'
+# #
+# #
+# # for i in range(3):
+# #     draw_graph_list(graphs_pred[1:2], 1, 1, 'figures/test_graph' + fname_pred + '_single_0_'+str(i) + '.png',
+# #                     layout=layout,is_single=True)
+# #
+# # for i in range(3):
+# #     draw_graph_list(graphs_pred[5:6], 1, 1, 'figures/test_graph' + fname_pred + '_single_1_' + str(i) + '.png',
+# #                     layout=layout, is_single=True)
+# #
+# # for i in range(3):
+# #     draw_graph_list(graphs_pred[76:77], 1, 1, 'figures/test_graph' + fname_pred + '_single_2_' + str(i) + '.png',
+# #                     layout=layout, is_single=True)
+#
+# # # # draw real
+# # for i in range(3):
+# #     draw_graph_list(graphs_real[1:2], 1, 1, 'figures/test_graph' + fname_real + '_single_0_' + str(i) + '.png',
+# #                     layout=layout, is_single=True)
+# #
+# # for i in range(3):
+# #     draw_graph_list(graphs_real[31:32], 1, 1, 'figures/test_graph' + fname_real + '_single_1_' + str(i) + '.png',
+# #                     layout=layout, is_single=True)
+# #
+# # for i in range(3):
+# #     draw_graph_list(graphs_real[37:38], 1, 1, 'figures/test_graph' + fname_real + '_single_2_' + str(i) + '.png',
+# #                     layout=layout, is_single=True)
+#
+#
+#
+#
+# for i in range(3):
+#     draw_graph_list(graphs_pred[7:8], 1, 1, 'figures/test_graph' + fname_pred + '_single_0_' + str(i) + '.png',
+#                     layout=layout, is_single=True)
+#
+# for i in range(3):
+#     draw_graph_list(graphs_pred[8:9], 1, 1, 'figures/test_graph' + fname_pred + '_single_1_' + str(i) + '.png',
+#                     layout=layout, is_single=True)
+#
+# for i in range(3):
+#     draw_graph_list(graphs_pred[9:10], 1, 1, 'figures/test_graph' + fname_pred + '_single_2_' + str(i) + '.png',
+#                     layout=layout, is_single=True)
+#
+# # for i in range(3):
+# #     draw_graph_list(graphs_pred[10:11], 1, 1, 'figures/test_graph' + fname_pred + '_single_0_' + str(i) + '.png',
+# #                     layout=layout, is_single=True)
+# #
+# # for i in range(3):
+# #     draw_graph_list(graphs_pred[11:12], 1, 1, 'figures/test_graph' + fname_pred + '_single_1_' + str(i) + '.png',
+# #                     layout=layout, is_single=True)
+# #
+# # for i in range(3):
+# #     draw_graph_list(graphs_pred[12:13], 1, 1, 'figures/test_graph' + fname_pred + '_single_2_' + str(i) + '.png',
+# #                     layout=layout, is_single=True)
+#
+#
+#
+# # ### print distribution of graph size
+# # plt.switch_backend('agg')
+# # plt.hist(graphs_real_len)
+# # plt.savefig('figures/test_len'+fname_real+'.png', dpi=200)
+# # plt.close()
+# #
+# # plt.switch_backend('agg')
+# # plt.hist(graphs_pred_len)
+# # plt.savefig('figures/test_len'+fname_pred+'.png', dpi=200)
+# # plt.close()
+# #
+# ### print average clustering
+# # plt.switch_backend('agg')
+# # graphs_clustering_real = []
+# # for graph in graphs_real:
+# #     graphs_clustering_real.extend(list(nx.clustering(graph).values()))
+# # bins = np.linspace(0,1,50)
+# # plt.hist(np.array(graphs_clustering_real), bins=bins, align='left')
+# # plt.savefig('figures/test_clustering'+fname_real+'.png', dpi=200)
+# #
+# # plt.switch_backend('agg')
+# graphs_clustering_pred = []
+# for graph in graphs_pred:
+#     graphs_clustering_pred.extend(list(nx.clustering(graph).values()))
+# # bins = np.linspace(0,1,50)
+# # plt.hist(np.array(graphs_clustering_pred), bins=bins, align='left')
+# # plt.savefig('figures/test_clustering'+fname_pred+'.png', dpi=200)
+# #
+# save np results
+# np.save('figures/real_clustering.npy', np.array((graphs_clustering_real)))
+
+# np.save('figures/graphrnn_rnn_clustering.npy', np.array((graphs_clustering_pred)))
+# np.save('figures/graphrnn_mlp_clustering.npy', np.array((graphs_clustering_pred)))
+# np.save('figures/mmsb_clustering.npy', np.array((graphs_clustering_pred)))
+# np.save('figures/mmsb_sparse_clustering.npy', np.array((graphs_clustering_pred)))
+# np.save('figures/kron_clustering.npy', np.array((graphs_clustering_pred)))
+# np.save('figures/ba_clustering.npy', np.array((graphs_clustering_pred)))
+# #
+# #
+# #
+# #
+# #
+# # #
+# # #
+# # # ### print average degree
+# # plt.switch_backend('agg')
+# # graphs_degree_real = []
+# # for graph in graphs_real:
+# #     graphs_degree_real.extend(list(graph.degree(graph.nodes()).values()))
+# # bins = np.linspace(0,40,40)
+# # plt.hist(np.array(graphs_degree_real), bins=bins, align='left')
+# # plt.savefig('figures/test_degree'+fname_real+'.png', dpi=200)
+# #
+# # plt.switch_backend('agg')
+# graphs_degree_pred= []
+# for graph in graphs_pred:
+#     graphs_degree_pred.extend(list(graph.degree(graph.nodes()).values()))
+# # bins = np.linspace(0,40,40)
+# # plt.hist(np.array(graphs_degree_pred), bins=bins, align='left')
+# # plt.savefig('figures/test_degree'+fname_pred+'.png', dpi=200)
+# #
+# # # save np results
+# # # np.save('figures/real_degree.npy', np.array((graphs_degree_real)))
+# #
+# # # np.save('figures/graphrnn_rnn_degree.npy', np.array((graphs_degree_pred)))
+# # # np.save('figures/graphrnn_mlp_degree.npy', np.array((graphs_degree_pred)))
+# # # np.save('figures/mmsb_degree.npy', np.array((graphs_degree_pred)))
+# np.save('figures/mmsb_sparse_degree.npy', np.array((graphs_degree_pred)))
+# # # np.save('figures/kron_degree.npy', np.array((graphs_degree_pred)))
+# # np.save('figures/ba_degree.npy', np.array((graphs_degree_pred)))
+# #
+#
+
+
+
+
+
+
+
+import seaborn as sns
+
+real_degree = np.load('figures/real_degree.npy')
+graphrnn_rnn_degree = np.load('figures/graphrnn_rnn_degree.npy')
+graphrnn_mlp_degree = np.load('figures/graphrnn_mlp_degree.npy')
+mmsb_degree = np.load('figures/mmsb_sparse_degree.npy')
+kron_degree = np.load('figures/kron_degree.npy')
+ba_degree = np.load('figures/ba_degree.npy')
+
+real_clustering = np.load('figures/real_clustering.npy')
+graphrnn_rnn_clustering = np.load('figures/graphrnn_rnn_clustering.npy')
+graphrnn_mlp_clustering = np.load('figures/graphrnn_mlp_clustering.npy')
+mmsb_clustering = np.load('figures/mmsb_sparse_clustering.npy')
+kron_clustering = np.load('figures/kron_clustering.npy')
+ba_clustering = np.load('figures/ba_clustering.npy')
+
+
+plt.switch_backend('agg')
+
+sns.set()
+sns.set_style("ticks")
+sns.set_context("poster",font_scale=1.4,rc={"lines.linewidth": 3.5})
+
+fig = plt.figure()
+plt.ylim(0, 0.1)
+plt.xlim(0, 50)
+plt.tight_layout()
+current_size = fig.get_size_inches()
+fig.set_size_inches(current_size[0]*1.5, current_size[1]*1.5)
+degree_plot = sns.distplot(real_degree,hist=False,rug=False,norm_hist=True,label='Real')
+degree_plot = sns.distplot(ba_degree,hist=False,rug=False,norm_hist=True,label='B-A')
+degree_plot = sns.distplot(kron_degree,hist=False,rug=False,norm_hist=True,label='Kronecker')
+degree_plot = sns.distplot(mmsb_degree,hist=False,rug=False,norm_hist=True,label='MMSB')
+degree_plot = sns.distplot(graphrnn_mlp_degree,hist=False,rug=False,norm_hist=True,label='GraphRNN-S')
+degree_plot = sns.distplot(graphrnn_rnn_degree,hist=False,rug=False,norm_hist=True,label='GraphRNN')
+
+degree_plot.set(xlabel='degree', ylabel='probability density')
+# plt.legend(['real','graphrnn','graphrnn2','mmsb','kron','ba'])
+
+degree_plot = degree_plot.get_figure()
+degree_plot.savefig('figures/test0_degree.png',dpi=300)
+plt.close()
+
+
+fig = plt.figure()
+plt.ylim(0, 12)
+plt.xlim(0, 0.65)
+plt.tight_layout()
+current_size = fig.get_size_inches()
+fig.set_size_inches(current_size[0]*1.5, current_size[1]*1.5)
+degree_plot = sns.distplot(real_clustering,hist=False,rug=False,norm_hist=False,label='Real')
+degree_plot = sns.distplot(ba_clustering,hist=False,rug=False,norm_hist=False,label='B-A')
+degree_plot = sns.distplot(kron_clustering,hist=False,rug=False,norm_hist=False,label='Kronecker')
+degree_plot = sns.distplot(mmsb_clustering,hist=False,rug=False,norm_hist=False,label='MMSB')
+degree_plot = sns.distplot(graphrnn_mlp_clustering,hist=False,rug=False,norm_hist=False,label='GraphRNN-S')
+degree_plot = sns.distplot(graphrnn_rnn_clustering,hist=False,rug=False,norm_hist=False,label='GraphRNN')
+
+degree_plot.set(xlabel='clustering coefficient', ylabel='probability density')
+# plt.legend(['real','graphrnn','graphrnn2','mmsb','kron','ba'])
+
+
+
+degree_plot = degree_plot.get_figure()
+degree_plot.savefig('figures/test0_clustering.png',dpi=300)
+plt.close()
+
+
+
+
+#
+#
+#
+#
+#
+#
+#
+#
+#
+
+
+
 
 
 

@@ -3,19 +3,19 @@ from main import *
 class Args_DGMG():
     def __init__(self):
         ### CUDA
-        self.cuda = 0
+        self.cuda = 2
 
         ### model type
         self.note = 'Baseline_DGMG' # do GCN after adding each edge
         # self.note = 'Baseline_DGMG_fast' # do GCN only after adding each node
 
         ### data config
-        # self.graph_type = 'caveman_small'
+        self.graph_type = 'caveman_small'
         # self.graph_type = 'grid_small'
         # self.graph_type = 'ladder_small'
         # self.graph_type = 'enzymes_small'
         # self.graph_type = 'barabasi_small'
-        self.graph_type = 'citeseer_small'
+        # self.graph_type = 'citeseer_small'
 
         self.max_num_node = 20
 
@@ -550,7 +550,7 @@ if __name__ == '__main__':
     # save ground truth graphs
     # save_graph_list(graphs, args.graph_save_path + args.fname_train + '0.dat')
     # save_graph_list(graphs, args.graph_save_path + args.fname_test + '0.dat')
-    print('train and test graphs saved')
+    # print('train and test graphs saved')
 
     # if use pre-saved graphs
     dir_input = "graphs/"

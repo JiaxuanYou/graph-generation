@@ -67,10 +67,10 @@ class Args():
 
 
         # self.graph_type = 'barabasi_noise'
-        # self.noise = 0
-
-        if self.graph_type == 'barabasi_noise':
-            self.graph_type = self.graph_type+str(self.noise)
+        # self.noise = 10
+        #
+        # if self.graph_type == 'barabasi_noise':
+        #     self.graph_type = self.graph_type+str(self.noise)
 
 
 
@@ -99,7 +99,7 @@ class Args():
         self.num_layers = 4
 
         ### training config
-        self.num_workers = 4 # num workers to load data, default 4
+        self.num_workers = 2 # num workers to load data, default 4
         self.batch_ratio = 32 # how many batches per epoch, default 32
         self.epochs = 3000 # now one epoch means self.batch_ratio x batch_size
         self.epochs_test_start = 100
@@ -863,18 +863,30 @@ def train_nll(args, dataset_train, dataset_test, rnn, output,graph_validate_len,
     epoch = args.load_epoch
     print('model loaded!, epoch: {}'.format(args.load_epoch))
     fname_output = args.nll_save_path + args.note + '_' + args.graph_type + '.csv'
-    with open(fname_output, 'w+') as f:
-        f.write(str(graph_validate_len)+','+str(graph_test_len)+'\n')
-        f.write('train,test\n')
-        for iter in range(max_iter):
-            if 'GraphRNN_MLP' in args.note:
-                nll_train = train_mlp_forward_epoch(epoch, args, rnn, output, dataset_train)
-                nll_test = train_mlp_forward_epoch(epoch, args, rnn, output, dataset_test)
-            if 'GraphRNN_RNN' in args.note:
-                nll_train = train_rnn_forward_epoch(epoch, args, rnn, output, dataset_train)
-                nll_test = train_rnn_forward_epoch(epoch, args, rnn, output, dataset_test)
-            print('train',nll_train,'test',nll_test)
-            f.write(str(nll_train)+','+str(nll_test)+'\n')
+    # with open(fname_output, 'w+') as f:
+    #     f.write(str(graph_validate_len)+','+str(graph_test_len)+'\n')
+    #     f.write('train,test\n')
+    #     for iter in range(max_iter):
+    #         if 'GraphRNN_MLP' in args.note:
+    #             nll_train = train_mlp_forward_epoch(epoch, args, rnn, output, dataset_train)
+    #             nll_test = train_mlp_forward_epoch(epoch, args, rnn, output, dataset_test)
+    #         if 'GraphRNN_RNN' in args.note:
+    #             nll_train = train_rnn_forward_epoch(epoch, args, rnn, output, dataset_train)
+    #             nll_test = train_rnn_forward_epoch(epoch, args, rnn, output, dataset_test)
+    #         print('train',nll_train,'test',nll_test)
+    #         f.write(str(nll_train)+','+str(nll_test)+'\n')
+
+    for iter in range(max_iter):
+        if 'GraphRNN_MLP' in args.note:
+            nll_train = train_mlp_forward_epoch(epoch, args, rnn, output, dataset_train)
+            nll_test = train_mlp_forward_epoch(epoch, args, rnn, output, dataset_test)
+        if 'GraphRNN_RNN' in args.note:
+            time1 = tm.time()
+            nll_train = train_rnn_forward_epoch(epoch, args, rnn, output, dataset_train)
+            time2 = tm.time()
+            print('time per batch',time2-time1)
+            nll_test = train_rnn_forward_epoch(epoch, args, rnn, output, dataset_test)
+        print('train',nll_train,'test',nll_test)
 
     print('NLL evaluation done')
 
@@ -1051,13 +1063,13 @@ if __name__ == '__main__':
     graphs_validate = graphs[0:int(0.2*graphs_len)]
 
     # if use pre-saved graphs
-    dir_input = "/dfs/scratch0/jiaxuany0/graphs/"
-    fname_test = dir_input + args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
-        args.hidden_size_rnn) + '_test_' + str(0) + '.dat'
-    graphs = load_graph_list(fname_test, is_real=True)
-    graphs_test = graphs[int(0.8 * graphs_len):]
-    graphs_train = graphs[0:int(0.8 * graphs_len)]
-    graphs_validate = graphs[int(0.2 * graphs_len):int(0.4 * graphs_len)]
+    # dir_input = "/dfs/scratch0/jiaxuany0/graphs/"
+    # fname_test = dir_input + args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
+    #     args.hidden_size_rnn) + '_test_' + str(0) + '.dat'
+    # graphs = load_graph_list(fname_test, is_real=True)
+    # graphs_test = graphs[int(0.8 * graphs_len):]
+    # graphs_train = graphs[0:int(0.8 * graphs_len)]
+    # graphs_validate = graphs[int(0.2 * graphs_len):int(0.4 * graphs_len)]
 
 
     graph_validate_len = 0
@@ -1075,25 +1087,29 @@ if __name__ == '__main__':
 
 
     args.max_num_node = max([graphs[i].number_of_nodes() for i in range(len(graphs))])
+    max_num_edge = max([graphs[i].number_of_edges() for i in range(len(graphs))])
+    min_num_edge = min([graphs[i].number_of_edges() for i in range(len(graphs))])
+
     # args.max_num_node = 2000
     # show graphs statistics
     print('total graph num: {}, training set: {}'.format(len(graphs),len(graphs_train)))
     print('max number node: {}'.format(args.max_num_node))
+    print('max/min number edge: {}; {}'.format(max_num_edge,min_num_edge))
     print('max previous node: {}'.format(args.max_prev_node))
 
     # save ground truth graphs
-    ## todo: I made a mistake, so to get train and test set, after loading you need to manually slice
-    # save_graph_list(graphs, args.graph_save_path + args.fname_train + '0.dat')
-    # save_graph_list(graphs, args.graph_save_path + args.fname_test + '0.dat')
-    # print('train and test graphs saved')
+    ## To get train and test set, after loading you need to manually slice
+    save_graph_list(graphs, args.graph_save_path + args.fname_train + '0.dat')
+    save_graph_list(graphs, args.graph_save_path + args.fname_test + '0.dat')
+    print('train and test graphs saved')
 
-    ### comment when training
-    p = 0.5
-    for graph in graphs_train:
-        for node in list(graph.nodes()):
-            # print('node',node)
-            if np.random.rand()>p:
-                graph.remove_node(node)
+    ### comment when normal training, for graph completion only
+    # p = 0.5
+    # for graph in graphs_train:
+    #     for node in list(graph.nodes()):
+    #         # print('node',node)
+    #         if np.random.rand()>p:
+    #             graph.remove_node(node)
         # for edge in list(graph.edges()):
         #     # print('edge',edge)
         #     if np.random.rand()>p:
@@ -1115,7 +1131,6 @@ if __name__ == '__main__':
                                                                      num_samples=args.batch_size*args.batch_ratio, replacement=True)
     dataset_loader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers,
                                                sampler=sample_strategy)
-
 
     ### model initialization
     ## Graph RNN VAE model
@@ -1141,51 +1156,10 @@ if __name__ == '__main__':
                            has_output=True, output_size=1).cuda()
 
     ### start training
-    # # for enzyme, train 10 times; otherwise train 1 time
-    # if args.graph_type=='enzymes':
-    #     for i in range(10):
-    #         print('training loop',i)
-    #         args.fname = args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
-    #             args.hidden_size_rnn) + '_'  + str(i) + '_'
-    #         args.fname_pred = args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
-    #             args.hidden_size_rnn) + '_pred_' + str(i) + '_'
-    #         args.fname_train = args.note + '_' + args.graph_type + '_' + str(args.num_layers) + '_' + str(
-    #             args.hidden_size_rnn) + '_train_' + str(i) + '_'
-    #         train(args, dataset_loader, rnn, output)
-    #         if args.note == 'GraphRNN_VAE':
-    #             rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_rnn,
-    #                             hidden_size=args.hidden_size_rnn, num_layers=args.num_layers, has_input=True,
-    #                             has_output=False).cuda()
-    #             output = MLP_VAE_plain(h_size=args.hidden_size_rnn, embedding_size=args.embedding_size_output,
-    #                                    y_size=args.max_prev_node).cuda()
-    #         elif args.note == 'GraphRNN_VAE_conditional':
-    #             rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_rnn,
-    #                             hidden_size=args.hidden_size_rnn, num_layers=args.num_layers, has_input=True,
-    #                             has_output=False).cuda()
-    #             output = MLP_VAE_conditional_plain(h_size=args.hidden_size_rnn,
-    #                                                embedding_size=args.embedding_size_output,
-    #                                                y_size=args.max_prev_node).cuda()
-    #         elif args.note == 'GraphRNN_MLP':
-    #             rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_rnn,
-    #                             hidden_size=args.hidden_size_rnn, num_layers=args.num_layers, has_input=True,
-    #                             has_output=False).cuda()
-    #             output = MLP_plain(h_size=args.hidden_size_rnn, embedding_size=args.embedding_size_output,
-    #                                y_size=args.max_prev_node).cuda()
-    #         elif 'GraphRNN_RNN' in args.note:
-    #             rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_rnn,
-    #                             hidden_size=args.hidden_size_rnn, num_layers=args.num_layers, has_input=True,
-    #                             has_output=True, output_size=args.hidden_size_rnn_output).cuda()
-    #             output = GRU_plain(input_size=1, embedding_size=args.embedding_size_rnn_output,
-    #                                hidden_size=args.hidden_size_rnn_output, num_layers=args.num_layers, has_input=True,
-    #                                has_output=True, output_size=1).cuda()
-
-
-    # else:
-
-    # train(args, dataset_loader, rnn, output)
+    train(args, dataset_loader, rnn, output)
 
     ### graph completion
-    train_graph_completion(args,dataset_loader,rnn,output)
+    # train_graph_completion(args,dataset_loader,rnn,output)
 
     ### nll evaluation
-    # train_nll(args, dataset_loader_validate, dataset_loader_test, rnn, output, max_iter = 200, graph_validate_len=graph_validate_len,graph_test_len=graph_test_len)
+    # train_nll(args, dataset_loader, dataset_loader, rnn, output, max_iter = 200, graph_validate_len=graph_validate_len,graph_test_len=graph_test_len)

@@ -202,17 +202,21 @@ def draw_graph(G, prefix = 'test'):
 
 
 # draw a list of graphs [G]
-def draw_graph_list(G_list, row, col, fname = 'figures/test.png', layout='spring', is_single=False):
+def draw_graph_list(G_list, row, col, fname = 'figures/test.png', layout='spring', is_single=False,k=1,node_size=55,alpha=1,width=1.3):
     # # draw graph view
+    # from pylab import rcParams
+    # rcParams['figure.figsize'] = 12,3
     plt.switch_backend('agg')
     for i,G in enumerate(G_list):
         plt.subplot(row,col,i+1)
+        plt.subplots_adjust(left=0, bottom=0, right=1, top=1,
+                        wspace=0, hspace=0)
         # if i%2==0:
         #     plt.title('real nodes: '+str(G.number_of_nodes()), fontsize = 4)
         # else:
         #     plt.title('pred nodes: '+str(G.number_of_nodes()), fontsize = 4)
 
-        plt.title('num of nodes: '+str(G.number_of_nodes()), fontsize = 4)
+        # plt.title('num of nodes: '+str(G.number_of_nodes()), fontsize = 4)
 
         # parts = community.best_partition(G)
         # values = [parts.get(node) for node in G.nodes()]
@@ -234,18 +238,21 @@ def draw_graph_list(G_list, row, col, fname = 'figures/test.png', layout='spring
         #         colors.append('black')
         plt.axis("off")
         if layout=='spring':
-            pos = nx.spring_layout(G,scale=1,k=1/np.sqrt(G.number_of_nodes()),iterations=100)
+            pos = nx.spring_layout(G,k=k/np.sqrt(G.number_of_nodes()),iterations=100)
+            # pos = nx.spring_layout(G)
+
         elif layout=='spectral':
             pos = nx.spectral_layout(G)
         # # nx.draw_networkx(G, with_labels=True, node_size=2, width=0.15, font_size = 1.5, node_color=colors,pos=pos)
         # nx.draw_networkx(G, with_labels=False, node_size=1.5, width=0.2, font_size = 1.5, linewidths=0.2, node_color = 'k',pos=pos,alpha=0.2)
 
         if is_single:
-            nx.draw_networkx_nodes(G, pos, node_size=30, node_color='#336699', alpha=0.9, linewidths=0, font_size=0)
-            nx.draw_networkx_edges(G, pos, alpha=0.2, width=0.8)
+            # node_size default 60, edge_width default 1.5
+            nx.draw_networkx_nodes(G, pos, node_size=node_size, node_color='#336699', alpha=1, linewidths=0, font_size=0)
+            nx.draw_networkx_edges(G, pos, alpha=alpha, width=width)
         else:
             nx.draw_networkx_nodes(G, pos, node_size=1.5, node_color='#336699',alpha=1, linewidths=0.2, font_size = 1.5)
-            nx.draw_networkx_edges(G, pos, alpha=0.2,width=0.2)
+            nx.draw_networkx_edges(G, pos, alpha=0.3,width=0.2)
 
         # plt.axis('off')
         # plt.title('Complete Graph of Odd-degree Nodes')
@@ -418,10 +425,13 @@ def pick_connected_component_new(G):
     adj_list = G.adjacency_list()
     for id,adj in enumerate(adj_list):
         id_min = min(adj)
-        if id<id_min and id>=4:
+        if id<id_min and id>=1:
+        # if id<id_min and id>=4:
             break
     node_list = list(range(id)) # only include node prior than node "id"
-    return G.subgraph(node_list)
+    G = G.subgraph(node_list)
+    G = max(nx.connected_component_subgraphs(G), key=len)
+    return G
 
 # load a list of graphs
 def load_graph_list(fname,is_real=True):
@@ -432,6 +442,7 @@ def load_graph_list(fname,is_real=True):
         if len(edges_with_selfloops)>0:
             graph_list[i].remove_edges_from(edges_with_selfloops)
         if is_real:
+            graph_list[i] = max(nx.connected_component_subgraphs(graph_list[i]), key=len)
             graph_list[i] = nx.convert_node_labels_to_integers(graph_list[i])
         else:
             graph_list[i] = pick_connected_component_new(graph_list[i])

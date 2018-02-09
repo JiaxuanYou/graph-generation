@@ -5,7 +5,7 @@ import seaborn as sns
 
 sns.set()
 sns.set_style("ticks")
-sns.set_context("talk")
+sns.set_context("poster",font_scale=1.28,rc={"lines.linewidth": 3})
 
 ### plot robustness result
 noise = np.array([0,0.2,0.4,0.6,0.8,1.0])
@@ -25,14 +25,26 @@ plt.plot(noise,BA_degree)
 plt.plot(noise, MLP_degree)
 # plt.plot(noise, RNN_degree)
 
-# plt.plot(noise,Gnp_clustering)
-# plt.plot(noise,BA_clustering)
-# plt.plot(noise, MLP_clustering)
-# plt.plot(noise, RNN_degree)
-
 # plt.rc('text', usetex=True)
 plt.legend(['E-R','B-A','GraphRNN'])
+plt.xlabel('Noise level')
+plt.ylabel('MMD degree')
 
-plt.show()
-plt.savefig('')
+plt.tight_layout()
+plt.savefig('figures_paper/robustness_degree.png',dpi=300)
+plt.close()
+
+plt.plot(noise,Gnp_clustering)
+plt.plot(noise,BA_clustering)
+plt.plot(noise, MLP_clustering)
+# plt.plot(noise, RNN_clustering)
+plt.legend(['E-R','B-A','GraphRNN'])
+plt.xlabel('Noise level')
+plt.ylabel('MMD clustering')
+
+plt.tight_layout()
+plt.savefig('figures_paper/robustness_clustering.png',dpi=300)
+plt.close()
+
+
 
