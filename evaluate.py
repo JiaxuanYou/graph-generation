@@ -15,14 +15,15 @@ def find_nearest_idx(array,value):
     idx = (np.abs(array-value)).argmin()
     return idx
 
-def extract_result_id_and_epoch(name, prefix, after_word):
+def extract_result_id_and_epoch(name, prefix, suffix):
     '''
     Args:
         eval_every: the number of epochs between consecutive evaluations
+        suffix: real_ or pred_
     Returns:
-        A tuple of (id, epoch number)
+        A tuple of (id, epoch number) extracted from the filename string
     '''
-    pos = name.find(after_word) + len(after_word)
+    pos = name.find(suffix) + len(suffix)
     end_pos = name.find('.dat')
     result_id = name[pos:end_pos]
 
@@ -30,7 +31,6 @@ def extract_result_id_and_epoch(name, prefix, after_word):
     end_pos = name.find('_', pos)
     epochs = int(name[pos:end_pos])
     return result_id, epochs
-
 
 
 def eval_list(real_graphs_filename, pred_graphs_filename, prefix, eval_every):
@@ -82,6 +82,9 @@ def compute_basic_stats(real_g_list, target_g_list):
 
 
 def clean_graphs(graph_real, graph_pred):
+    ''' Selecting graphs generated that have the similar sizes.
+    It is usually necessary for GraphRNN-S version, but not the full GraphRNN model.
+    '''
     shuffle(graph_real)
     shuffle(graph_pred)
 
@@ -100,28 +103,51 @@ def clean_graphs(graph_real, graph_pred):
 
     return graph_real, pred_graph_new
 
+def load_ground_truth(dir_input, dataset_name, model_name='GraphRNN_RNN'):
+    ''' Read ground truth graphs.
+    '''
+    if not 'small' in dataset_name:
+        hidden = 128
+    else:
+        hidden = 64
+    if model_name=='Internal' or model_name=='Noise' or model_name=='B-A' or model_name=='E-R':
+        fname_test = dir_input + 'GraphRNN_MLP' + '_' + dataset_name + '_' + str(args.num_layers) + '_' + str(
+                hidden) + '_test_' + str(0) + '.dat'
+    else:
+        fname_test = dir_input + model_name + '_' + dataset_name + '_' + str(args.num_layers) + '_' + str(
+                hidden) + '_test_' + str(0) + '.dat'
+    try:
+        graph_test = utils.load_graph_list(fname_test,is_real=True)
+    except:
+        print('Not found: ' + fname_test)
+        logging.warning('Not found: ' + fname_test)
+        return None
+    return graph_test
+
+def eval_single_list(graphs, dir_input, dataset_name):
+    ''' Evaluate a list of graphs by comparing with graphs in directory dir_input.
+    Args:
+        dir_input: directory where ground truth graph list is stored
+        dataset_name: name of the dataset (ground truth)
+    '''
+    graph_test = load_ground_truth(dir_input, dataset_name)
+    graph_test_len = len(graph_test)
+    graph_test = graph_test[int(0.8 * graph_test_len):] # test on a hold out test set
+    mmd_degree = eval.stats.degree_stats(graph_test, graphs)
+    mmd_clustering = eval.stats.clustering_stats(graph_test, graphs)
+    try:
+        mmd_4orbits = eval.stats.orbit_stats_all(graph_test, graphs)
+    except:
+        mmd_4orbits = -1
+    print('deg: ', mmd_degree)
+    print('clustering: ', mmd_clustering)
+    print('orbits: ', mmd_4orbits)
 
 def evaluation_epoch(dir_input, fname_output, model_name, dataset_name, args, is_clean=True, epoch_start=1000,epoch_end=3001,epoch_step=100):
     with open(fname_output, 'w+') as f:
         f.write('sample_time,epoch,degree_validate,clustering_validate,orbits4_validate,degree_test,clustering_test,orbits4_test\n')
         # read real graph
-        if not 'small' in dataset_name:
-            hidden = 128
-        else:
-            hidden = 64
-        # read real graph
-        if model_name=='Internal' or model_name=='Noise' or model_name=='B-A' or model_name=='E-R':
-            fname_test = dir_input + 'GraphRNN_MLP' + '_' + dataset_name + '_' + str(args.num_layers) + '_' + str(
-                hidden) + '_test_' + str(0) + '.dat'
-        else:
-            fname_test = dir_input + model_name + '_' + dataset_name + '_' + str(args.num_layers) + '_' + str(
-                hidden) + '_test_' + str(0) + '.dat'
-        try:
-            graph_test = utils.load_graph_list(fname_test,is_real=True)
-        except:
-            print('Not found: ' + fname_test)
-            logging.warning('Not found: ' + fname_test)
-            return None
+        graph_test = load_ground_truth(dir_input, dataset_name, model_name='')
         graph_test_len = len(graph_test)
         graph_train = graph_test[0:int(0.8 * graph_test_len)] # train
         graph_validate = graph_test[0:int(0.2 * graph_test_len)] # validate
@@ -179,11 +205,17 @@ def evaluation_epoch(dir_input, fname_output, model_name, dataset_name, args, is
                     except:
                         mmd_4orbits_validate = -1
                     # write results
-                    f.write(str(sample_time)+','+str(epoch)+','+str(mmd_degree_validate)+','+str(mmd_clustering_validate)+','+str(mmd_4orbits_validate)
-                            + ',' + str(mmd_degree)+','+str(mmd_clustering)+','+str(mmd_4orbits)+'\n')
+                    f.write(str(sample_time)+','+
+                            str(epoch)+','+
+                            str(mmd_degree_validate)+','+
+                            str(mmd_clustering_validate)+','+
+                            str(mmd_4orbits_validate)+','+ 
+                            str(mmd_degree)+','+
+                            str(mmd_clustering)+','+
+                            str(mmd_4orbits)+'\n')
                     print('degree',mmd_degree,'clustering',mmd_clustering,'orbits',mmd_4orbits)
 
-        # get internal MMD
+        # get internal MMD (MMD between ground truth validation and test sets)
         if model_name == 'Internal':
             mmd_degree_validate = eval.stats.degree_stats(graph_test, graph_validate)
             mmd_clustering_validate = eval.stats.clustering_stats(graph_test, graph_validate)
@@ -196,7 +228,7 @@ def evaluation_epoch(dir_input, fname_output, model_name, dataset_name, args, is
                     + ',' + str(-1) + ',' + str(-1) + ',' + str(-1) + '\n')
 
 
-        # get noisy MMD
+        # get MMD between ground truth and its perturbed graphs
         if model_name == 'Noise':
             graph_validate_perturbed = perturb(graph_validate, 0.05)
             mmd_degree_validate = eval.stats.degree_stats(graph_test, graph_validate_perturbed)
@@ -247,6 +279,8 @@ def evaluation_epoch(dir_input, fname_output, model_name, dataset_name, args, is
         return True
 
 def evaluation(dir_input, dir_output, model_name_all, dataset_name_all, args, overwrite = True):
+    ''' Evaluate the performance of a set of models on a set of datasets.
+    '''
     for model_name in model_name_all:
         for dataset_name in dataset_name_all:
             # check output exist
@@ -258,8 +292,6 @@ def evaluation(dir_input, dir_output, model_name_all, dataset_name_all, args, ov
                 logging.info(dir_output+model_name+'_'+dataset_name+'.csv exists!')
                 continue
             evaluation_epoch(dir_input,fname_output,model_name,dataset_name,args,is_clean=True)
-
-
 
 
 
@@ -483,26 +515,32 @@ def process_kron(kron_dir):
  
 
 if __name__ == '__main__':
+    args = Args()
+
     parser = argparse.ArgumentParser(description='Evaluation arguments.')
     feature_parser = parser.add_mutually_exclusive_group(required=False)
     feature_parser.add_argument('--export-real', dest='export', action='store_true')
     feature_parser.add_argument('--no-export-real', dest='export', action='store_false')
     feature_parser.add_argument('--kron-dir', dest='kron_dir', 
             help='Directory where graphs generated by kronecker method is stored.')
+
+    parser.add_argument('--testfile', dest='test_file',
+            help='The file that stores list of graphs to be evaluated. Only used when 1 list of '
+                 'graphs is to be evaluated.')
+    parser.add_argument('--dir-prefix', dest='dir_prefix',
+            help='The file that stores list of graphs to be evaluated. Can be used when evaluating multiple'
+                 'models on multiple datasets.')
+    parser.add_argument('--graph-type', dest='graph_type',
+            help='Type of graphs / dataset.')
     
-    parser.set_defaults(export=False, kron_dir='')
+    parser.set_defaults(export=False, kron_dir='', test_file='',
+                        dir_prefix='',
+                        graph_type=args.graph_type)
     prog_args = parser.parse_args()
 
-    # datadir = "/dfs/scratch0/rexy/graph_gen_data/"
-    ## the following dir has all experiment data, including 1-3 sample times that you can choose from
-    # datadir = ''
-    dir_prefix = "/dfs/scratch0/jiaxuany0/"
+    dir_prefix = prog_args.dir_prefix
+    #dir_prefix = "/dfs/scratch0/jiaxuany0/"
 
-
-    #datadir = "/lfs/local/0/jiaxuany/pycharm/graphs_share/"
-    #datadir = "/lfs/local/0/jiaxuany/pycharm/"
-    prefix = "GraphRNN_structure_enzymes_50_"
-    args = Args()
     time_now = strftime("%Y-%m-%d %H:%M:%S", gmtime())
     logging.basicConfig(filename='logs/evaluate' + time_now + '.log', level=logging.INFO)
 
@@ -511,51 +549,43 @@ if __name__ == '__main__':
             os.makedirs('eval_results')
         if not os.path.isdir('eval_results/ground_truth'):
             os.makedirs('eval_results/ground_truth')
-        out_dir = os.path.join('eval_results/ground_truth', args.graph_type)
+        out_dir = os.path.join('eval_results/ground_truth', prog_args.graph_type)
         if not os.path.isdir(out_dir):
             os.makedirs(out_dir)
-        output_prefix = os.path.join(out_dir, args.graph_type)
+        output_prefix = os.path.join(out_dir, prog_args.graph_type)
         print('Export ground truth to prefix: ', output_prefix)
 
-        if args.graph_type == 'grid':
+        if prog_args.graph_type == 'grid':
             graphs = []
             for i in range(10,20):
                 for j in range(10,20):
                     graphs.append(nx.grid_2d_graph(i,j))
             utils.export_graphs_to_txt(graphs, output_prefix)
-        elif args.graph_type == 'caveman':
+        elif prog_args.graph_type == 'caveman':
             graphs = []
             for i in range(2, 3):
                 for j in range(30, 81):
                     for k in range(10):
                         graphs.append(caveman_special(i,j, p_edge=0.3))
             utils.export_graphs_to_txt(graphs, output_prefix)
-        elif args.graph_type == 'citeseer':
+        elif prog_args.graph_type == 'citeseer':
             graphs = utils.citeseer_ego()
-            print([np.sum(nx.to_numpy_matrix(g)) for g in graphs])
-            #utils.export_graphs_to_txt(graphs, output_prefix)
+            utils.export_graphs_to_txt(graphs, output_prefix)
         else:
-            #filename = args.graph_save_path + args.note + '_' + args.graph_type + '_' + \
-            #             str(0) + '_real_' + str(args.num_layers) + '_' + str(args.bptt) + '_' + \
-            #             str(args.bptt_len) + '_' + str(args.gumbel) 
+            # load from directory
             input_path = dir_prefix + real_graph_filename
-
-            g_list = utils.load_graph_list(filename)
+            g_list = utils.load_graph_list(input_path)
             utils.export_graphs_to_txt(g_list, output_prefix)
     elif not prog_args.kron_dir == '':
         kron_g_list = process_kron(prog_args.kron_dir)
-        fname = os.path.join(prog_args.kron_dir, args.graph_type + '.dat')
+        fname = os.path.join(prog_args.kron_dir, prog_args.graph_type + '.dat')
         print([g.number_of_nodes() for g in kron_g_list])
         utils.save_graph_list(kron_g_list, fname)
+    elif not prog_args.test_file == '':
+        # evaluate single .dat file containing list of test graphs (networkx format)
+        graphs = utils.load_graph_list(prog_args.test_file)
+        eval_single_list(graphs, dir_input=dir_prefix+'graphs/', dataset_name='grid')
     else:
-        # baselines = {}
-
-        # print(args.graph_type)
-        # out_file_prefix = 'eval_results/' + args.graph_type + '_' + args.note
-
-        # eval_performance(datadir, args=args,
-        #         out_file_prefix=out_file_prefix,sample_time=args.sample_time,
-        #         baselines=baselines)
 
         if not os.path.isdir(dir_prefix+'eval_results'):
             os.makedirs(dir_prefix+'eval_results')
@@ -564,8 +594,8 @@ if __name__ == '__main__':
         # model_name_all = ['E-R', 'B-A']
         model_name_all = ['GraphRNN_MLP','E-R','B-A']
         # dataset_name_all = ['caveman', 'grid', 'barabasi', 'citeseer', 'DD']
-        # dataset_name_all = ['caveman_small','citeseer_small']
-        dataset_name_all = ['barabasi_noise0','barabasi_noise2','barabasi_noise4','barabasi_noise6','barabasi_noise8','barabasi_noise10']
+        dataset_name_all = ['caveman_small','citeseer_small']
+        # dataset_name_all = ['barabasi_noise0','barabasi_noise2','barabasi_noise4','barabasi_noise6','barabasi_noise8','barabasi_noise10']
 
         # dataset_name_all = ['caveman_small', 'ladder_small', 'grid_small', 'ladder_small', 'enzymes_small', 'barabasi_small','citeseer_small']
         evaluation(dir_input=dir_prefix+"graphs/", dir_output=dir_prefix+"eval_results/",
