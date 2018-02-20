@@ -1,9 +1,11 @@
-name: graph
+name: root
 channels:
 - soumith
 - conda-forge
 - defaults
 dependencies:
+- conda=4.3.29=py36_0
+- conda-env=2.6.0=0
 - gensim=3.0.0=py36_0
 - smart_open=1.5.3=py36_0
 - _ipyw_jlab_nb_ext_conf=0.1.0=py36he11e457_0
@@ -36,6 +38,8 @@ dependencies:
 - cloudpickle=0.4.0=py36h30f8c20_0
 - clyent=1.2.2=py36h7e57e65_1
 - colorama=0.3.9=py36h489cec4_0
+- conda-build=3.0.22=py36ha23cd1e_0
+- conda-verify=2.0.0=py36h98955d8_0
 - contextlib2=0.5.5=py36h6c84a62_0
 - cryptography=2.0.3=py36ha225213_1
 - curl=7.55.1=hcb0b314_2
@@ -245,6 +249,7 @@ dependencies:
 - pip:
   - backports.shutil-get-terminal-size==1.0.0
   - et-xmlfile==1.0.1
+  - gae==0.0.1
   - ipython-genutils==0.2.0
   - jupyter-client==5.1.0
   - jupyter-console==5.2.0
@@ -258,6 +263,5 @@ dependencies:
   - tables==3.4.2
   - tensorboard-logger==0.0.4
   - torch==0.2.0.post4
-  - pyemd==0.4.4
-prefix: /lfs/hyperion/0/rexy/anaconda/envs/
+prefix: /lfs/hyperion/0/jiaxuany/anaconda3
 

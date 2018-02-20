@@ -146,8 +146,29 @@ def eval_single_list(graphs, dir_input, dataset_name):
 def evaluation_epoch(dir_input, fname_output, model_name, dataset_name, args, is_clean=True, epoch_start=1000,epoch_end=3001,epoch_step=100):
     with open(fname_output, 'w+') as f:
         f.write('sample_time,epoch,degree_validate,clustering_validate,orbits4_validate,degree_test,clustering_test,orbits4_test\n')
+
+        # TODO: Maybe refactor into a separate file/function that specifies THE naming convention
+        # across main and evaluate
+        if not 'small' in dataset_name:
+            hidden = 128
+        else:
+            hidden = 64
         # read real graph
-        graph_test = load_ground_truth(dir_input, dataset_name, model_name='')
+        if model_name=='Internal' or model_name=='Noise' or model_name=='B-A' or model_name=='E-R':
+            fname_test = dir_input + 'GraphRNN_MLP' + '_' + dataset_name + '_' + str(args.num_layers) + '_' + str(
+                hidden) + '_test_' + str(0) + '.dat'
+        elif 'Baseline' in model_name:
+            fname_test = dir_input + model_name + '_' + dataset_name + '_' + str(64) + '_test_' + str(0) + '.dat'
+        else:
+            fname_test = dir_input + model_name + '_' + dataset_name + '_' + str(args.num_layers) + '_' + str(
+                hidden) + '_test_' + str(0) + '.dat'
+        try:
+            graph_test = utils.load_graph_list(fname_test,is_real=True)
+        except:
+            print('Not found: ' + fname_test)
+            logging.warning('Not found: ' + fname_test)
+            return None
+
         graph_test_len = len(graph_test)
         graph_train = graph_test[0:int(0.8 * graph_test_len)] # train
         graph_validate = graph_test[0:int(0.2 * graph_test_len)] # validate
@@ -169,7 +190,7 @@ def evaluation_epoch(dir_input, fname_output, model_name, dataset_name, args, is
                     fname_pred = dir_input + model_name + '_' + dataset_name + '_' + str(args.num_layers) + '_' + str(hidden) + '_pred_' + str(epoch) + '_' + str(sample_time) + '.dat'
                     # load graphs
                     try:
-                        graph_pred = utils.load_graph_list(fname_pred,is_real=False)
+                        graph_pred = utils.load_graph_list(fname_pred,is_real=False) # default False
                     except:
                         print('Not found: '+ fname_pred)
                         logging.warning('Not found: '+ fname_pred)
@@ -275,6 +296,58 @@ def evaluation_epoch(dir_input, fname_output, model_name, dataset_name, args, is
                 mmd_4orbits_validate = -1
             f.write(str(-1) + ',' + str(-1) + ',' + str(-1) + ',' + str(-1) + ',' + str(-1)
                     + ',' + str(mmd_degree) + ',' + str(mmd_clustering) + ',' + str(mmd_4orbits_validate) + '\n')
+
+        # get performance for baseline approaches
+        if 'Baseline' in model_name:
+            # read test graph
+            for epoch in range(epoch_start, epoch_end, epoch_step):
+                # get filename
+                fname_pred = dir_input + model_name + '_' + dataset_name + '_' + str(
+                    64) + '_pred_' + str(epoch) + '.dat'
+                # load graphs
+                try:
+                    graph_pred = utils.load_graph_list(fname_pred, is_real=True)  # default False
+                except:
+                    print('Not found: ' + fname_pred)
+                    logging.warning('Not found: ' + fname_pred)
+                    continue
+                # clean graphs
+                if is_clean:
+                    graph_test, graph_pred = clean_graphs(graph_test, graph_pred)
+                else:
+                    shuffle(graph_pred)
+                    graph_pred = graph_pred[0:len(graph_test)]
+                print('len graph_test', len(graph_test))
+                print('len graph_validate', len(graph_validate))
+                print('len graph_pred', len(graph_pred))
+
+                graph_pred_aver = 0
+                for graph in graph_pred:
+                    graph_pred_aver += graph.number_of_nodes()
+                graph_pred_aver /= len(graph_pred)
+                print('pred average len', graph_pred_aver)
+
+                # evaluate MMD test
+                mmd_degree = eval.stats.degree_stats(graph_test, graph_pred)
+                mmd_clustering = eval.stats.clustering_stats(graph_test, graph_pred)
+                try:
+                    mmd_4orbits = eval.stats.orbit_stats_all(graph_test, graph_pred)
+                except:
+                    mmd_4orbits = -1
+                # evaluate MMD validate
+                mmd_degree_validate = eval.stats.degree_stats(graph_validate, graph_pred)
+                mmd_clustering_validate = eval.stats.clustering_stats(graph_validate, graph_pred)
+                try:
+                    mmd_4orbits_validate = eval.stats.orbit_stats_all(graph_validate, graph_pred)
+                except:
+                    mmd_4orbits_validate = -1
+                # write results
+                f.write(str(-1) + ',' + str(epoch) + ',' + str(mmd_degree_validate) + ',' + str(
+                    mmd_clustering_validate) + ',' + str(mmd_4orbits_validate)
+                        + ',' + str(mmd_degree) + ',' + str(mmd_clustering) + ',' + str(mmd_4orbits) + '\n')
+                print('degree', mmd_degree, 'clustering', mmd_clustering, 'orbits', mmd_4orbits)
+
+
 
         return True
 
@@ -592,9 +665,10 @@ if __name__ == '__main__':
         # loop over all results
         # model_name_all = ['GraphRNN_MLP','GraphRNN_VAE_conditional','GraphRNN_RNN_new','Internal','Noise']
         # model_name_all = ['E-R', 'B-A']
-        model_name_all = ['GraphRNN_MLP','E-R','B-A']
+        # model_name_all = ['GraphRNN_MLP','GraphRNN_RNN_new']
+        model_name_all = ['Baseline_DGMG']
         # dataset_name_all = ['caveman', 'grid', 'barabasi', 'citeseer', 'DD']
-        dataset_name_all = ['caveman_small','citeseer_small']
+        dataset_name_all = ['citeseer_small','caveman_small']
         # dataset_name_all = ['barabasi_noise0','barabasi_noise2','barabasi_noise4','barabasi_noise6','barabasi_noise8','barabasi_noise10']
 
         # dataset_name_all = ['caveman_small', 'ladder_small', 'grid_small', 'ladder_small', 'enzymes_small', 'barabasi_small','citeseer_small']
