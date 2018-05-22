@@ -79,17 +79,17 @@ def Graph_load_batch(min_num_nodes = 20, max_num_nodes = 1000, name = 'ENZYMES',
     print('Loaded')
     return graphs
 
-########## code test ##########
-# graphs, max_num_nodes = Graph_load_batch(min_num_nodes=10,name='DD',node_attributes=False,graph_labels=True)
-# shuffle(graphs)
-# plt.switch_backend('agg')
-# plt.hist([len(graphs[i]) for i in range(len(graphs))], bins=100)
-# plt.savefig('figures/test.png')
-# plt.close()
-# row = 4
-# col = 4
-# draw_graph_list(graphs[0:row*col], row=row,col=col, fname='figures/test')
-# print('max num nodes',max_num_nodes)
+def test_graph_load_DD():
+    graphs, max_num_nodes = Graph_load_batch(min_num_nodes=10,name='DD',node_attributes=False,graph_labels=True)
+    shuffle(graphs)
+    plt.switch_backend('agg')
+    plt.hist([len(graphs[i]) for i in range(len(graphs))], bins=100)
+    plt.savefig('figures/test.png')
+    plt.close()
+    row = 4
+    col = 4
+    draw_graph_list(graphs[0:row*col], row=row,col=col, fname='figures/test')
+    print('max num nodes',max_num_nodes)
 
 
 def parse_index_file(filename):
@@ -275,35 +275,36 @@ def decode_adj_flexible(adj_output):
 
     return adj_full
 
+def test_encode_decode_adj():
 ######## code test ###########
-# G = nx.ladder_graph(5)
-# G = nx.grid_2d_graph(20,20)
-# G = nx.ladder_graph(200)
-# G = nx.karate_club_graph()
-# G = nx.connected_caveman_graph(2,3)
-# print(G.number_of_nodes())
-#
-# adj = np.asarray(nx.to_numpy_matrix(G))
-# G = nx.from_numpy_matrix(adj)
-# #
-# start_idx = np.random.randint(adj.shape[0])
-# x_idx = np.array(bfs_seq(G, start_idx))
-# adj = adj[np.ix_(x_idx, x_idx)]
-#
-# print('adj\n',adj)
-# adj_output = encode_adj(adj,max_prev_node=5)
-# print('adj_output\n',adj_output)
-# adj_recover = decode_adj(adj_output,max_prev_node=5)
-# print('adj_recover\n',adj_recover)
-# print('error\n',np.amin(adj_recover-adj),np.amax(adj_recover-adj))
-
-
-# adj_output = encode_adj_flexible(adj)
-# for i in range(len(adj_output)):
-#     print(len(adj_output[i]))
-# adj_recover = decode_adj_flexible(adj_output)
-# print(adj_recover)
-# print(np.amin(adj_recover-adj),np.amax(adj_recover-adj))
+    G = nx.ladder_graph(5)
+    G = nx.grid_2d_graph(20,20)
+    G = nx.ladder_graph(200)
+    G = nx.karate_club_graph()
+    G = nx.connected_caveman_graph(2,3)
+    print(G.number_of_nodes())
+    
+    adj = np.asarray(nx.to_numpy_matrix(G))
+    G = nx.from_numpy_matrix(adj)
+    #
+    start_idx = np.random.randint(adj.shape[0])
+    x_idx = np.array(bfs_seq(G, start_idx))
+    adj = adj[np.ix_(x_idx, x_idx)]
+    
+    print('adj\n',adj)
+    adj_output = encode_adj(adj,max_prev_node=5)
+    print('adj_output\n',adj_output)
+    adj_recover = decode_adj(adj_output,max_prev_node=5)
+    print('adj_recover\n',adj_recover)
+    print('error\n',np.amin(adj_recover-adj),np.amax(adj_recover-adj))
+    
+    
+    adj_output = encode_adj_flexible(adj)
+    for i in range(len(adj_output)):
+        print(len(adj_output[i]))
+    adj_recover = decode_adj_flexible(adj_output)
+    print(adj_recover)
+    print(np.amin(adj_recover-adj),np.amax(adj_recover-adj))
 
 
 
@@ -354,26 +355,27 @@ def decode_adj_full(adj_output):
     adj = adj + adj.T
     return adj
 
+def test_encode_decode_adj_full():
 ########### code test #############
-# # G = nx.ladder_graph(10)
-# G = nx.karate_club_graph()
-# # get bfs adj
-# adj = np.asarray(nx.to_numpy_matrix(G))
-# G = nx.from_numpy_matrix(adj)
-# start_idx = np.random.randint(adj.shape[0])
-# x_idx = np.array(bfs_seq(G, start_idx))
-# adj = adj[np.ix_(x_idx, x_idx)]
-#
-# adj_output, adj_len = encode_adj_full(adj)
-# print('adj\n',adj)
-# print('adj_output[0]\n',adj_output[:,:,0])
-# print('adj_output[1]\n',adj_output[:,:,1])
-# # print('adj_len\n',adj_len)
-#
-# adj_recover = decode_adj_full(adj_output)
-# print('adj_recover\n', adj_recover)
-# print('error\n',adj_recover-adj)
-# print('error_sum\n',np.amax(adj_recover-adj), np.amin(adj_recover-adj))
+    # G = nx.ladder_graph(10)
+    G = nx.karate_club_graph()
+    # get bfs adj
+    adj = np.asarray(nx.to_numpy_matrix(G))
+    G = nx.from_numpy_matrix(adj)
+    start_idx = np.random.randint(adj.shape[0])
+    x_idx = np.array(bfs_seq(G, start_idx))
+    adj = adj[np.ix_(x_idx, x_idx)]
+    
+    adj_output, adj_len = encode_adj_full(adj)
+    print('adj\n',adj)
+    print('adj_output[0]\n',adj_output[:,:,0])
+    print('adj_output[1]\n',adj_output[:,:,1])
+    # print('adj_len\n',adj_len)
+    
+    adj_recover = decode_adj_full(adj_output)
+    print('adj_recover\n', adj_recover)
+    print('error\n',adj_recover-adj)
+    print('error_sum\n',np.amax(adj_recover-adj), np.amin(adj_recover-adj))
 
 
 
@@ -451,60 +453,6 @@ class Graph_sequence_sampler_pytorch(torch.utils.data.Dataset):
             max_prev_node.append(max_encoded_len)
         max_prev_node = sorted(max_prev_node)[-1*topk:]
         return max_prev_node
-
-
-
-# graphs, max_num_nodes = Graph_load_batch(min_num_nodes=6, name='DD',node_attributes=False)
-# graphs, max_num_nodes = Graph_load_batch(min_num_nodes=20, name='PROTEINS_full')
-# graphs = Graph_load_batch(min_num_nodes=10, name='ENZYMES')
-# graphs = [nx.karate_club_graph() for i in range(100)]
-# graphs = [nx.ladder_graph(5) for i in range(10)]
-
-# print('ladder')
-# graphs = []
-# for i in range(2, 6):
-#     graphs.append(nx.ladder_graph(i))
-# print('tree')
-# graphs = []
-# for i in range(2, 5):
-#     for j in range(3,5):
-#         graphs.append(nx.balanced_tree(i,j))
-# print('caveman')
-# graphs = []
-# for i in range(2,11):
-#     for j in range(10,41):
-#         for k in range(10):
-#             graphs.append(nx.relaxed_caveman_graph(i, j, 0.1))
-# print('grid')
-# graphs = []
-# for i in range(10,21):
-#     for j in range(10,21):
-#         graphs.append(nx.grid_2d_graph(i,j))
-# print('barabasi')
-# graphs = []
-# for i in range(100,401):
-#     for j in range(10):
-#         graphs.append(nx.barabasi_albert_graph(i,2))
-
-# dataset = Graph_sequence_sampler_pytorch(graphs,max_prev_node=17)
-# print(dataset[0]['x'])
-# print('dataset len', len(dataset))
-# sample_strategy = torch.utils.data.sampler.WeightedRandomSampler([1.0/len(dataset) for i in range(len(dataset))], num_samples=1024, replacement=True)
-# num_workers = 4
-# train_loader = torch.utils.data.DataLoader(dataset, batch_size=128, num_workers=num_workers,sampler=sample_strategy)
-# print(len(train_loader))
-#
-# for i in range(10):
-#     print('start loading, num_workers:{}'.format(num_workers))
-#     time0 = time.time()
-#     for batch_idx, data in enumerate(train_loader):
-#         print('batch_idx',batch_idx)
-#         # print('x',data['x'])
-#         # print('y',data['y'])
-#         # print('len',data['len'])
-#     time1 = time.time()
-#     print('end loading, time:{}'.format((time1-time0)/(batch_idx+1)))
-
 
 
 
@@ -619,14 +567,6 @@ class Graph_sequence_sampler_pytorch_canonical(torch.utils.data.Dataset):
             max_prev_node.append(max_encoded_len)
         max_prev_node = sorted(max_prev_node)[-1*topk:]
         return max_prev_node
-
-
-#
-# graphs = [nx.barabasi_albert_graph(100,3)]
-# dataset = Graph_sequence_sampler_pytorch_canonical(graphs)
-# print(dataset[0]['x'])
-# print(dataset[0]['y'])
-# print(dataset[0]['len'])
 
 
 
@@ -1353,18 +1293,6 @@ class GraphDataset_adj_batch_1(torch.utils.data.Dataset):
 
         sample = {'adj': adj, 'adj_norm': adj_norm, 'features': features}
         return sample
-
-
-# graphs = Graph_load_batch(num_nodes=16)
-# dataset = GraphDataset_adj_batch(graphs, num_nodes=16)
-# # print(dataset[0])
-# train_loader = torch.utils.data.DataLoader(dataset,
-#         batch_size=16, shuffle=True, num_workers=0)
-# for id, data in enumerate(train_loader):
-#     # print('id', id)
-#     if id ==10:
-#         print(data)
-
 
 
 
