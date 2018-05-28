@@ -20,12 +20,10 @@ import pickle
 from tensorboard_logger import configure, log_value
 import scipy.misc
 import time as tm
+
 from utils import *
 from model import *
 from data import *
-
-
-
 from args import Args
 import create_graphs
 

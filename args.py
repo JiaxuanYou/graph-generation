@@ -3,33 +3,25 @@
 class Args():
     def __init__(self):
         ### if clean tensorboard
-        # self.clean_tensorboard = True
         self.clean_tensorboard = False
-
         ### CUDA
         self.cuda = 1
-
         ### model type
         # self.note = 'GraphRNN_MLP'
-        self.note = 'GraphRNN_RNN_new'
-
+        self.note = 'GraphRNN_RNN'
         ## for comparison
         # self.note = 'GraphRNN_MLP_nobfs'
         # self.note = 'GraphRNN_RNN_nobfs'
 
         ### data config
-        ## used for paper
-        # run in hyperion: icml2018_part1
         # self.graph_type = 'DD'
         # self.graph_type = 'caveman'
         # self.graph_type = 'caveman_small'
         # self.graph_type = 'caveman_small_single'
-
         self.graph_type = 'grid'
         # self.graph_type = 'grid_small'
         # self.graph_type = 'ladder_small'
 
-        # run in hyperion2: icml2018_part2
         # self.graph_type = 'enzymes'
         # self.graph_type = 'enzymes_small'
         # self.graph_type = 'barabasi'
@@ -37,17 +29,13 @@ class Args():
         # self.graph_type = 'citeseer'
         # self.graph_type = 'citeseer_small'
 
-
         # self.graph_type = 'barabasi_noise'
         # self.noise = 10
         #
         # if self.graph_type == 'barabasi_noise':
         #     self.graph_type = self.graph_type+str(self.noise)
 
-
-        # self.graph_type = 'ladder'
-
-        # update when initializing dataset
+        # if none, then auto calculate
         self.max_num_node = None # max number of nodes in a graph
         self.max_prev_node = None # max previous node that looks back
 
