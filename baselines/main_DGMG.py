@@ -1,4 +1,4 @@
-from main import *
+from graph-generation import main
 
 class Args_DGMG():
     def __init__(self):
