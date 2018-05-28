@@ -1,6 +1,8 @@
 import networkx as nx
 import numpy as np
 
+from utils import *
+
 def create(args):
 ### load datasets
     graphs=[]
@@ -57,6 +59,11 @@ def create(args):
                 for k in range(100):
                     graphs.append(caveman_special(i, j, p_edge=0.5))
         args.max_prev_node = 20
+    elif args.graph_type == 'community':
+        c_sizes = [15] * 4
+        for k in range(500):
+            graphs.append(community(c_sizes, p_inter=0.01))
+        args.max_prev_node = 80
     elif args.graph_type=='grid':
         graphs = []
         for i in range(10,20):

@@ -44,7 +44,7 @@ def caveman_special(c=2,k=20,p_path=0.1,p_edge=0.3):
     G = max(nx.connected_component_subgraphs(G), key=len)
     return G
 
-def community(c_sizes, p_inter=0.1):
+def community(c_sizes, p_inter=0.01):
     graphs = [nx.barabasi_albert_graph(c_sizes[i], int(c_sizes[i]/4)) for i in range(len(c_sizes))]
     G = nx.disjoint_union_all(graphs)
     communities = list(nx.connected_component_subgraphs(G))
