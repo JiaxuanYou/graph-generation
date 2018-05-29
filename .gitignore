@@ -19,6 +19,7 @@ model_save/
 logs/
 graphs/
 eval_results/
+tensorboard/
 
 .idea/
 

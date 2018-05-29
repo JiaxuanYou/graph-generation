@@ -18,6 +18,7 @@ class Args():
         # self.graph_type = 'caveman'
         # self.graph_type = 'caveman_small'
         # self.graph_type = 'caveman_small_single'
+        # self.graph_type = 'community4'
         self.graph_type = 'grid'
         # self.graph_type = 'grid_small'
         # self.graph_type = 'ladder_small'

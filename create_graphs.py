@@ -60,10 +60,12 @@ def create(args):
                 for k in range(100):
                     graphs.append(caveman_special(i, j, p_edge=0.5))
         args.max_prev_node = 20
-    elif args.graph_type == 'community':
-        c_sizes = [15] * 4
-        for k in range(500):
-            graphs.append(community(c_sizes, p_inter=0.01))
+    elif args.graph_type.startswith('community'):
+        num_communities = int(args.graph_type[-1])
+        print('Creating dataset with ', num_communities, ' communities')
+        c_sizes = [15] * num_communities
+        for k in range(3000):
+            graphs.append(n_community(c_sizes, p_inter=0.01))
         args.max_prev_node = 80
     elif args.graph_type=='grid':
         graphs = []

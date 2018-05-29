@@ -1,7 +1,7 @@
 from train import *
 
 if __name__ == '__main__':
-    ### running log
+    # All necessary arguments are defined in args.py
     args = Args()
     os.environ['CUDA_VISIBLE_DEVICES'] = str(args.cuda)
     print('CUDA', args.cuda)
@@ -76,7 +76,7 @@ if __name__ == '__main__':
     ## To get train and test set, after loading you need to manually slice
     save_graph_list(graphs, args.graph_save_path + args.fname_train + '0.dat')
     save_graph_list(graphs, args.graph_save_path + args.fname_test + '0.dat')
-    print('train and test graphs saved')
+    print('train and test graphs saved at: ', args.graph_save_path + args.fname_test + '0.dat')
 
     ### comment when normal training, for graph completion only
     # p = 0.5
