@@ -19,8 +19,14 @@ python main.py
 ```
 
 ## Code description
-`main.py` is the main executable file, and `args.py`
+For the GraphRNN model:
+`main.py` is the main executable file, and specific arguments are set in `args.py`.
+`train.py` includes training iterations and calls `model.py` and `data.py`
+`create_graphs.py` is where we prepare target graph datasets.
 
+For baseline models:
+B-A and E-R models are implemented in `baseline.py`
+We implemented the DeepGMG paper based on the instruction of their paper in `main_DeepGMG.py`.
 
 
 ## Misc

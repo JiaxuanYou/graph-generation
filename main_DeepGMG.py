@@ -571,10 +571,10 @@ if __name__ == '__main__':
 
 
     ### train
-    # train_DGMG(args,graphs,model)
+    train_DGMG(args,graphs,model)
 
     ### calc nll
-    train_DGMG_nll(args, graphs_validate,graphs_test, model,max_iter=1000)
+    # train_DGMG_nll(args, graphs_validate,graphs_test, model,max_iter=1000)
 
 
 
