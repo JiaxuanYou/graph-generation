@@ -630,6 +630,8 @@ if __name__ == '__main__':
 
 
     time_now = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+    if not os.path.isdir('logs/'):
+        os.makedirs('logs/')
     logging.basicConfig(filename='logs/evaluate' + time_now + '.log', level=logging.INFO)
 
     if prog_args.export:
