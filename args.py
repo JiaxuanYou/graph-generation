@@ -72,13 +72,14 @@ class Args():
         self.sample_time = 2 # sample time in each time step, when validating
 
         ### output config
-        self.dir_input = "/dfs/scratch0/jiaxuany0/"
-        self.model_save_path = self.dir_input+'model_save/' ########### only for nll evaluation!!
-        self.graph_save_path = 'graphs/'
-        self.figure_save_path = 'figures/'
-        self.timing_save_path = 'timing/'
-        self.figure_prediction_save_path = 'figures_prediction/'
-        self.nll_save_path = 'nll/'
+        # self.dir_input = "/dfs/scratch0/jiaxuany0/"
+        self.dir_input = "./"
+        self.model_save_path = self.dir_input+'model_save/' # only for nll evaluation
+        self.graph_save_path = self.dir_input+'graphs/'
+        self.figure_save_path = self.dir_input+'figures/'
+        self.timing_save_path = self.dir_input+'timing/'
+        self.figure_prediction_save_path = self.dir_input+'figures_prediction/'
+        self.nll_save_path = self.dir_input+'nll/'
 
 
         self.load = False # if load model, default lr is very low
@@ -87,8 +88,8 @@ class Args():
 
 
         ### baseline config
-        self.generator_baseline = 'Gnp'
-        # self.generator_baseline = 'BA'
+        # self.generator_baseline = 'Gnp'
+        self.generator_baseline = 'BA'
 
         # self.metric_baseline = 'general'
         # self.metric_baseline = 'degree'

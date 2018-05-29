@@ -1,3 +1,4 @@
+# an implementation for "Learning Deep Generative Models of Graphs"
 from main import *
 
 class Args_DGMG():

@@ -611,8 +611,10 @@ if __name__ == '__main__':
                         graph_type=args.graph_type)
     prog_args = parser.parse_args()
 
-    dir_prefix = prog_args.dir_prefix
-    #dir_prefix = "/dfs/scratch0/jiaxuany0/"
+    # dir_prefix = prog_args.dir_prefix
+    # dir_prefix = "/dfs/scratch0/jiaxuany0/"
+    dir_prefix = args.dir_input
+
 
     time_now = strftime("%Y-%m-%d %H:%M:%S", gmtime())
     logging.basicConfig(filename='logs/evaluate' + time_now + '.log', level=logging.INFO)
@@ -658,17 +660,18 @@ if __name__ == '__main__':
         # evaluate single .dat file containing list of test graphs (networkx format)
         graphs = utils.load_graph_list(prog_args.test_file)
         eval_single_list(graphs, dir_input=dir_prefix+'graphs/', dataset_name='grid')
+    ## if you don't try kronecker, only the following part is needed
     else:
-
         if not os.path.isdir(dir_prefix+'eval_results'):
             os.makedirs(dir_prefix+'eval_results')
         # loop over all results
-        # model_name_all = ['GraphRNN_MLP','GraphRNN_VAE_conditional','GraphRNN_RNN_new','Internal','Noise']
+        # model_name_all = ['GraphRNN_MLP','GraphRNN_RNN','Internal','Noise']
         # model_name_all = ['E-R', 'B-A']
-        # model_name_all = ['GraphRNN_MLP','GraphRNN_RNN_new']
-        model_name_all = ['Baseline_DGMG']
-        # dataset_name_all = ['caveman', 'grid', 'barabasi', 'citeseer', 'DD']
-        dataset_name_all = ['citeseer_small','caveman_small']
+        model_name_all = ['GraphRNN_RNN']
+        # model_name_all = ['Baseline_DGMG']
+
+        dataset_name_all = ['caveman', 'grid', 'barabasi', 'citeseer', 'DD']
+        # dataset_name_all = ['citeseer_small','caveman_small']
         # dataset_name_all = ['barabasi_noise0','barabasi_noise2','barabasi_noise4','barabasi_noise6','barabasi_noise8','barabasi_noise10']
 
         # dataset_name_all = ['caveman_small', 'ladder_small', 'grid_small', 'ladder_small', 'enzymes_small', 'barabasi_small','citeseer_small']
