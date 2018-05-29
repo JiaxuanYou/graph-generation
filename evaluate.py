@@ -1,15 +1,27 @@
 import argparse
 import numpy as np
 import os
-import pickle
 import re
 from random import shuffle
 
 import eval.stats
 import utils
 # import main.Args
-from main import *
-from baseline import *
+from baselines.baseline_simple import *
+
+class Args_evaluate():
+    def __init__(self):
+        # loop over the settings
+        # self.model_name_all = ['GraphRNN_MLP','GraphRNN_RNN','Internal','Noise']
+        # self.model_name_all = ['E-R', 'B-A']
+        self.model_name_all = ['GraphRNN_RNN']
+        # self.model_name_all = ['Baseline_DGMG']
+
+        self.dataset_name_all = ['caveman', 'grid', 'barabasi', 'citeseer', 'DD']
+        # self.dataset_name_all = ['citeseer_small','caveman_small']
+        # self.dataset_name_all = ['barabasi_noise0','barabasi_noise2','barabasi_noise4','barabasi_noise6','barabasi_noise8','barabasi_noise10']
+        # self.dataset_name_all = ['caveman_small', 'ladder_small', 'grid_small', 'ladder_small', 'enzymes_small', 'barabasi_small','citeseer_small']
+
 
 def find_nearest_idx(array,value):
     idx = (np.abs(array-value)).argmin()
@@ -589,6 +601,7 @@ def process_kron(kron_dir):
 
 if __name__ == '__main__':
     args = Args()
+    args_evaluate = Args_evaluate()
 
     parser = argparse.ArgumentParser(description='Evaluation arguments.')
     feature_parser = parser.add_mutually_exclusive_group(required=False)
@@ -664,19 +677,8 @@ if __name__ == '__main__':
     else:
         if not os.path.isdir(dir_prefix+'eval_results'):
             os.makedirs(dir_prefix+'eval_results')
-        # loop over all results
-        # model_name_all = ['GraphRNN_MLP','GraphRNN_RNN','Internal','Noise']
-        # model_name_all = ['E-R', 'B-A']
-        model_name_all = ['GraphRNN_RNN']
-        # model_name_all = ['Baseline_DGMG']
-
-        dataset_name_all = ['caveman', 'grid', 'barabasi', 'citeseer', 'DD']
-        # dataset_name_all = ['citeseer_small','caveman_small']
-        # dataset_name_all = ['barabasi_noise0','barabasi_noise2','barabasi_noise4','barabasi_noise6','barabasi_noise8','barabasi_noise10']
-
-        # dataset_name_all = ['caveman_small', 'ladder_small', 'grid_small', 'ladder_small', 'enzymes_small', 'barabasi_small','citeseer_small']
         evaluation(dir_input=dir_prefix+"graphs/", dir_output=dir_prefix+"eval_results/",
-                   model_name_all=model_name_all,dataset_name_all=dataset_name_all,args=args,overwrite=True)
+                   model_name_all=args_evaluate.model_name_all,dataset_name_all=args_evaluate.dataset_name_all,args=args,overwrite=True)
 
 
 
