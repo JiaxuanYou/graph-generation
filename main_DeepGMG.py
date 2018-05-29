@@ -553,13 +553,13 @@ if __name__ == '__main__':
     # save_graph_list(graphs, args.graph_save_path + args.fname_test + '0.dat')
     # print('train and test graphs saved')
 
-    # if use pre-saved graphs
-    dir_input = "graphs/"
-    fname_test = args.graph_save_path + args.fname_test + '0.dat'
-    graphs = load_graph_list(fname_test, is_real=True)
-    graphs_test = graphs[int(0.8 * graphs_len):]
-    graphs_train = graphs[0:int(0.8 * graphs_len)]
-    graphs_validate = graphs[0:int(0.2 * graphs_len)]
+    ## if use pre-saved graphs
+    # dir_input = "graphs/"
+    # fname_test = args.graph_save_path + args.fname_test + '0.dat'
+    # graphs = load_graph_list(fname_test, is_real=True)
+    # graphs_test = graphs[int(0.8 * graphs_len):]
+    # graphs_train = graphs[0:int(0.8 * graphs_len)]
+    # graphs_validate = graphs[0:int(0.2 * graphs_len)]
 
     # print('train')
     # for graph in graphs_validate:
