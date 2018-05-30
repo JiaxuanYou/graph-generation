@@ -25,8 +25,10 @@ For the GraphRNN model:
 `create_graphs.py` is where we prepare target graph datasets.
 
 For baseline models: 
-* B-A and E-R models are implemented in `baselines/baseline_simple.py`, MMSB model is implemented in `baselines/mmsb.py`.
+* B-A and E-R models are implemented in `baselines/baseline_simple.py`.
 * [Kronecker graph model](https://cs.stanford.edu/~jure/pubs/kronecker-jmlr10.pdf) is implemented in the SNAP software, which can be found in `https://github.com/snap-stanford/snap/tree/master/examples/krongen` (for generating Kronecker graphs), and `https://github.com/snap-stanford/snap/tree/master/examples/kronfit` (for learning parameters for the model).
+* MMSB is implemented using the EDWARD library (http://edwardlib.org/), and is located in
+  `baselines`.
 * We implemented the DeepGMG model based on the instructions of their [paper](https://arxiv.org/abs/1803.03324) in `main_DeepGMG.py`.
 * We implemented the GraphVAE model based on the instructions of their [paper](https://arxiv.org/abs/1802.03480) in `baselines/graphvae`.
 
@@ -73,3 +75,4 @@ networkx.
 
 ## Misc
 Jesse Bettencourt and Harris Chan have made a great [slide](https://duvenaud.github.io/learn-discrete/slides/graphrnn.pdf) introducing GraphRNN in Prof. David Duvenaud’s seminar course [Learning Discrete Latent Structure](https://duvenaud.github.io/learn-discrete/).
+
