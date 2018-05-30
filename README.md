@@ -56,6 +56,13 @@ module. One can easily extend the evaluation to compute MMD for other distributi
 
 We also compute the orbit counts for each graph, represented as a high-dimensional data point. We then compute the MMD
 between the two _sets of sampled points_ using ORCA (see http://www.biolab.si/supp/orca/orca.html) at `eval/orca`. 
+One first needs to compile ORCA by `g++ -O2 -std=c++11 -o orca orca.cpp` in directory `eval/orca`
+(the binary file already in repo works in Ubuntu). 
+
+To evaluate, run `python evaluate.py`. Arguments specific to evaluation is specified in class
+`evaluate.Args_evaluate`. Note that the field `Args_evaluate.dataset_name_all` must only contain
+datasets that are already trained, by setting args.graph_type to each of the datasets and running
+`python main.py`.
 
 ## Visualization of graphs
 The training, testing and generated graphs are saved at 'graphs/'.
