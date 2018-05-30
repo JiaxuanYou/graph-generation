@@ -60,8 +60,9 @@ We also compute the orbit counts for each graph, represented as a high-dimension
 between the two _sets of sampled points_ using ORCA (see http://www.biolab.si/supp/orca/orca.html) at `eval/orca`. 
 One first needs to compile ORCA by 
 ```bash
-g++ -O2 -std=c++11 -o orca orca.cpp` in directory `eval/orca`
+g++ -O2 -std=c++11 -o orca orca.cpp` 
 ```
+in directory `eval/orca`.
 (the binary file already in repo works in Ubuntu). 
 
 To evaluate, run 
