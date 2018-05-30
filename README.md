@@ -25,10 +25,19 @@ For the GraphRNN model:
 `create_graphs.py` is where we prepare target graph datasets.
 
 For baseline models: 
-* B-A and E-R models are implemented in `baselines/baseline_simple.py`, MMSB model is implemented in `baselines/mmsb.py`.
+* B-A and E-R models are implemented in `baselines/baseline_simple.py`.
 * [Kronecker graph model](https://cs.stanford.edu/~jure/pubs/kronecker-jmlr10.pdf) is implemented in the SNAP software, which can be found in `https://github.com/snap-stanford/snap/tree/master/examples/krongen` (for generating Kronecker graphs), and `https://github.com/snap-stanford/snap/tree/master/examples/kronfit` (for learning parameters for the model).
+* MMSB is implemented using the EDWARD library (http://edwardlib.org/), and is located in
+  `baselines`.
 * We implemented the DeepGMG model based on the instructions of their [paper](https://arxiv.org/abs/1803.03324) in `main_DeepGMG.py`.
 * We implemented the GraphVAE model based on the instructions of their [paper](https://arxiv.org/abs/1802.03480) in `baselines/graphvae`.
+
+Parameter setting:
+To adjust the hyper-parameter and input arguments to the model, modify the fields of `args.py`
+accordingly.
+For example, `args.cuda` controls which GPU is used to train the model, and `args.graph_type`
+specifies which dataset is used to train the generative model. See the documentation in `args.py`
+for more detailed descriptions of all fields.
 
 ## Outputs
 There are several different types of outputs, each saved into a different directory under a path prefix. The path prefix is set at `args.dir_input`. Suppose that this field is set to `./`:
@@ -49,6 +58,21 @@ module. One can easily extend the evaluation to compute MMD for other distributi
 
 We also compute the orbit counts for each graph, represented as a high-dimensional data point. We then compute the MMD
 between the two _sets of sampled points_ using ORCA (see http://www.biolab.si/supp/orca/orca.html) at `eval/orca`. 
+One first needs to compile ORCA by 
+```bash
+g++ -O2 -std=c++11 -o orca orca.cpp` 
+```
+in directory `eval/orca`.
+(the binary file already in repo works in Ubuntu). 
+
+To evaluate, run 
+```bash
+python evaluate.py
+```
+Arguments specific to evaluation is specified in class
+`evaluate.Args_evaluate`. Note that the field `Args_evaluate.dataset_name_all` must only contain
+datasets that are already trained, by setting args.graph_type to each of the datasets and running
+`python main.py`.
 
 ## Visualization of graphs
 The training, testing and generated graphs are saved at 'graphs/'.
@@ -59,3 +83,4 @@ networkx.
 
 ## Misc
 Jesse Bettencourt and Harris Chan have made a great [slide](https://duvenaud.github.io/learn-discrete/slides/graphrnn.pdf) introducing GraphRNN in Prof. David Duvenaud’s seminar course [Learning Discrete Latent Structure](https://duvenaud.github.io/learn-discrete/).
+
