@@ -30,6 +30,13 @@ For baseline models:
 * We implemented the DeepGMG model based on the instructions of their [paper](https://arxiv.org/abs/1803.03324) in `main_DeepGMG.py`.
 * We implemented the GraphVAE model based on the instructions of their [paper](https://arxiv.org/abs/1802.03480) in `baselines/graphvae`.
 
+Parameter setting:
+To adjust the hyper-parameter and input arguments to the model, modify the fields of `args.py`
+accordingly.
+For example, `args.cuda` controls which GPU is used to train the model, and `args.graph_type`
+specifies which dataset is used to train the generative model. See the documentation in `args.py`
+for more detailed descriptions of all fields.
+
 ## Outputs
 There are several different types of outputs, each saved into a different directory under a path prefix. The path prefix is set at `args.dir_input`. Suppose that this field is set to `./`:
 * `./graphs` contains the pickle files of training, test and generated graphs. Each contains a list

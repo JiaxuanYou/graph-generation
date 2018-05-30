@@ -4,16 +4,20 @@ class Args():
     def __init__(self):
         ### if clean tensorboard
         self.clean_tensorboard = False
-        ### CUDA
-        self.cuda = 2
-        ### model type
+        ### Which CUDA GPU device is used for training
+        self.cuda = 1
+
+        ### Which GraphRNN model variant is used.
+        # The simple version of Graph RNN
         # self.note = 'GraphRNN_MLP'
+        # The dependent Bernoulli sequence version of GraphRNN
         self.note = 'GraphRNN_RNN'
-        ## for comparison
+
+        ## for comparison, removing the BFS compoenent
         # self.note = 'GraphRNN_MLP_nobfs'
         # self.note = 'GraphRNN_RNN_nobfs'
 
-        ### data config
+        ### Which dataset is used to train the model
         # self.graph_type = 'DD'
         # self.graph_type = 'caveman'
         # self.graph_type = 'caveman_small'
@@ -97,7 +101,7 @@ class Args():
         self.metric_baseline = 'clustering'
 
 
-        ### fname
+        ### filenames to save intemediate and final outputs
         self.fname = self.note + '_' + self.graph_type + '_' + str(self.num_layers) + '_' + str(self.hidden_size_rnn) + '_'
         self.fname_pred = self.note+'_'+self.graph_type+'_'+str(self.num_layers)+'_'+ str(self.hidden_size_rnn)+'_pred_'
         self.fname_train = self.note+'_'+self.graph_type+'_'+str(self.num_layers)+'_'+ str(self.hidden_size_rnn)+'_train_'
