@@ -24,13 +24,38 @@ For the GraphRNN model:
 `train.py` includes training iterations and calls `model.py` and `data.py`
 `create_graphs.py` is where we prepare target graph datasets.
 
-For baseline models:
-B-A and E-R models are implemented in `baselines/baseline_simple.py`, MMSB model is implemented in `baselines/mmsb.py`.
-[Kronecker graph model](https://cs.stanford.edu/~jure/pubs/kronecker-jmlr10.pdf) is implemented in `eval/orca`.
-We implemented the DeepGMG model based on the instructions of their [paper](https://arxiv.org/abs/1803.03324) in `main_DeepGMG.py`.
-We implemented the GraphVAE model based on the instructions of their [paper](https://arxiv.org/abs/1802.03480) in `baselines/graphvae`.
+For baseline models: 
+* B-A and E-R models are implemented in `baselines/baseline_simple.py`, MMSB model is implemented in `baselines/mmsb.py`.
+* [Kronecker graph model](https://cs.stanford.edu/~jure/pubs/kronecker-jmlr10.pdf) is implemented in the SNAP software, which can be found in `https://github.com/snap-stanford/snap/tree/master/examples/krongen` (for generating Kronecker graphs), and `https://github.com/snap-stanford/snap/tree/master/examples/kronfit` (for learning parameters for the model).
+* We implemented the DeepGMG model based on the instructions of their [paper](https://arxiv.org/abs/1803.03324) in `main_DeepGMG.py`.
+* We implemented the GraphVAE model based on the instructions of their [paper](https://arxiv.org/abs/1802.03480) in `baselines/graphvae`.
 
+## Outputs
+There are several different types of outputs, each saved into a different directory under a path prefix. The path prefix is set at `args.dir_input`. Suppose that this field is set to `./`:
+* `./graphs` contains the pickle files of training, test and generated graphs. Each contains a list
+  of networkx object.
+* `./eval_results` contains the evaluation of MMD scores in txt format.
+* `./model_save` stores the model checkpoints
+* `./nll` saves the log-likelihood for generated graphs as sequences.
+* `./figures` is used to save visualizations (see Visualization of graphs section).
+
+## Evaluation
 The evaluation is done in `evaluate.py`, where user can choose which settings to evaluate.
+To evaluate how close the generated graphs are to the ground truth set, we use MMD (maximum mean discrepancy) to calculate the divergence between two _sets of distributions_ related to
+the ground truth and generated graphs.
+Three types of distributions are chosen: degree distribution, clustering coefficient distribution.
+Both of which are implemented in `eval/stats.py`, using multiprocessing python
+module. One can easily extend the evaluation to compute MMD for other distribution of graphs.
+
+We also compute the orbit counts for each graph, represented as a high-dimensional data point. We then compute the MMD
+between the two _sets of sampled points_ using ORCA (see http://www.biolab.si/supp/orca/orca.html) at `eval/orca`. 
+
+## Visualization of graphs
+The training, testing and generated graphs are saved at 'graphs/'.
+One can visualize the generated graph using the function `utils.load_graph_list`, which loads the
+list of graphs from the pickle file, and `util.draw_graph_list`, which plots the graph using
+networkx. 
+
 
 ## Misc
 Jesse Bettencourt and Harris Chan have made a great [slide](https://duvenaud.github.io/learn-discrete/slides/graphrnn.pdf) introducing GraphRNN in Prof. David Duvenaud’s seminar course [Learning Discrete Latent Structure](https://duvenaud.github.io/learn-discrete/).

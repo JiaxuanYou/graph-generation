@@ -5,7 +5,7 @@ class Args():
         ### if clean tensorboard
         self.clean_tensorboard = False
         ### CUDA
-        self.cuda = 1
+        self.cuda = 2
         ### model type
         # self.note = 'GraphRNN_MLP'
         self.note = 'GraphRNN_RNN'

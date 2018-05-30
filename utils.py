@@ -45,7 +45,7 @@ def caveman_special(c=2,k=20,p_path=0.1,p_edge=0.3):
     return G
 
 def n_community(c_sizes, p_inter=0.01):
-    graphs = [nx.gnp_random_graph(c_sizes[i], 0.3, seed=i) for i in range(len(c_sizes))]
+    graphs = [nx.gnp_random_graph(c_sizes[i], 0.7, seed=i) for i in range(len(c_sizes))]
     G = nx.disjoint_union_all(graphs)
     communities = list(nx.connected_component_subgraphs(G))
     for i in range(len(communities)):
@@ -54,11 +54,14 @@ def n_community(c_sizes, p_inter=0.01):
         for j in range(i+1, len(communities)):
             subG2 = communities[j]
             nodes2 = list(subG2.nodes())
-            G.add_edge(nodes1[0], nodes2[0])
+            has_inter_edge = False
             for n1 in nodes1:
                 for n2 in nodes2:
                     if np.random.rand() < p_inter:
                         G.add_edge(n1, n2)
+                        has_inter_edge = True
+            if not has_inter_edge:
+                G.add_edge(nodes1[0], nodes2[0])
     #print('connected comp: ', len(list(nx.connected_component_subgraphs(G))))
     return G
 
@@ -222,7 +225,7 @@ def draw_graph(G, prefix = 'test'):
 
 
 # draw a list of graphs [G]
-def draw_graph_list(G_list, row, col, fname = 'figures/test.png', layout='spring', is_single=False,k=1,node_size=55,alpha=1,width=1.3):
+def draw_graph_list(G_list, row, col, fname = 'figures/test', layout='spring', is_single=False,k=1,node_size=55,alpha=1,width=1.3):
     # # draw graph view
     # from pylab import rcParams
     # rcParams['figure.figsize'] = 12,3
@@ -278,7 +281,7 @@ def draw_graph_list(G_list, row, col, fname = 'figures/test.png', layout='spring
         # plt.title('Complete Graph of Odd-degree Nodes')
         # plt.show()
     plt.tight_layout()
-    plt.savefig(fname+'_view.png', dpi=600)
+    plt.savefig(fname+'.png', dpi=600)
     plt.close()
 
     # # draw degree distribution
@@ -505,5 +508,7 @@ def test_perturbed():
     print([g.number_of_edges() for g in g_perturbed])
 
 if __name__ == '__main__':
-    test_perturbed()
+    #test_perturbed()
+    graphs = load_graph_list('graphs/' + 'GraphRNN_RNN_community4_4_128_train_0.dat')
+    draw_graph_list(graphs[:16], 4, 4)
 
