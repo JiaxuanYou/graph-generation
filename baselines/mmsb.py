@@ -119,13 +119,21 @@ if __name__ == '__main__':
             for j in range(10,20):
                 graphs.append(nx.grid_2d_graph(i,j))
         X_dataset = [nx.to_numpy_matrix(g) for g in graphs]
+    elif prog_args.dataset.startswith('community'):
+        graphs = []
+        num_communities = int(prog_args.dataset[-1])
+        print('Creating dataset with ', num_communities, ' communities')
+        c_sizes = np.random.choice([12, 13, 14, 15, 16, 17], num_communities)
+        for k in range(3000):
+            graphs.append(utils.n_community(c_sizes, p_inter=0.01))
+        X_dataset = [nx.to_numpy_matrix(g) for g in graphs]
 
     print('Number of graphs: ', len(X_dataset))
     K = prog_args.K  # number of clusters
     gen_graphs = []
     for i in range(len(X_dataset)):
-        print(i)
         if i % 5 == 0:
+            print(i)
             X_data = X_dataset[i]
             N = X_data.shape[0]  # number of vertices
 
