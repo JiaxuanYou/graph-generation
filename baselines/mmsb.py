@@ -150,5 +150,5 @@ if __name__ == '__main__':
                 gen_graphs.append(graph_gen_from_blockmodel(B, Zp))
 
     save_path = '/lfs/local/0/rexy/graph-generation/eval_results/mmsb/'
-    utils.save_graph_list(gen_graphs, os.path.join(save_path, prog_args.dataset + '1.dat'))
+    utils.save_graph_list(gen_graphs, os.path.join(save_path, prog_args.dataset + '.dat'))
 
