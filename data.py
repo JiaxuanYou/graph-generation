@@ -575,6 +575,7 @@ class Graph_sequence_sampler_pytorch_nll(torch.utils.data.Dataset):
     def __init__(self, G_list, max_num_node=None, max_prev_node=None, iteration=20000):
         self.adj_all = []
         self.len_all = []
+        # Maybe it would be good to save these
         for G in G_list:
             adj = np.asarray(nx.to_numpy_matrix(G))
             adj_temp = self.calc_adj(adj)

@@ -23,9 +23,10 @@ class Args():
         # self.graph_type = 'caveman_small'
         # self.graph_type = 'caveman_small_single'
         # self.graph_type = 'community4'
-        self.graph_type = 'grid'
+        #self.graph_type = 'grid'
         # self.graph_type = 'grid_small'
-        # self.graph_type = 'ladder_small'
+        #self.graph_type = 'ladder'
+        self.graph_type = 'ladder_small'
 
         # self.graph_type = 'enzymes'
         # self.graph_type = 'enzymes_small'
@@ -64,11 +65,11 @@ class Args():
         ### training config
         self.num_workers = 4 # num workers to load data, default 4
         self.batch_ratio = 32 # how many batches of samples per epoch, default 32, e.g., 1 epoch = 32 batches
-        self.epochs = 3000 # now one epoch means self.batch_ratio x batch_size
-        self.epochs_test_start = 100
-        self.epochs_test = 100
-        self.epochs_log = 100
-        self.epochs_save = 100
+        self.epochs = 100 #was 3000 # now one epoch means self.batch_ratio x batch_size
+        self.epochs_test_start = 25 # was 100
+        self.epochs_test = 25 # was 100
+        self.epochs_log = 5 # was 100
+        self.epochs_save = 25 # was 100
 
         self.lr = 0.003
         self.milestones = [400, 1000]
@@ -88,7 +89,7 @@ class Args():
 
 
         self.load = False # if load model, default lr is very low
-        self.load_epoch = 3000
+        self.load_epoch = 100
         self.save = True
 
 

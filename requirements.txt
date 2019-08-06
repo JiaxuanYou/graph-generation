@@ -2,3 +2,6 @@ tensorboard-logger
 tensorflow
 networkx==1.11
 pyemd
+matplotlib
+sklearn
+community
