@@ -7,6 +7,7 @@ if __name__ == '__main__':
     args = Args()
     os.environ['CUDA_VISIBLE_DEVICES'] = str(args.cuda)
     print('CUDA', args.cuda)
+    print('CUDA Available:', torch.cuda.is_available())
     print('File name prefix',args.fname)
     # check if necessary directories exist
     if not os.path.isdir(args.model_save_path):
@@ -21,7 +22,7 @@ if __name__ == '__main__':
         os.makedirs(args.figure_prediction_save_path)
     if not os.path.isdir(args.nll_save_path):
         os.makedirs(args.nll_save_path)
-
+    
     time = strftime("%Y-%m-%d %H:%M:%S", gmtime())
     # logging.basicConfig(filename='logs/train' + time + '.log', level=logging.DEBUG)
     if args.clean_tensorboard:
