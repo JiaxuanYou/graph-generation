@@ -7,6 +7,7 @@ if __name__ == '__main__':
     args = Args()
     os.environ['CUDA_VISIBLE_DEVICES'] = str(args.cuda)
     print('CUDA', args.cuda)
+    print ('CUDA Available:', torch.cuda.is_available())
     print('File name prefix',args.fname)
     # check if necessary directories exist
     if not os.path.isdir(args.model_save_path):
@@ -139,12 +140,14 @@ if __name__ == '__main__':
     # train_graph_completion(args,dataset_loader,rnn,output)
 
     ### nll evaluation
-    # train_nll(args, dataset_loader, dataset_loader, rnn, output, max_iter = 200, graph_validate_len=graph_validate_len,graph_test_len=graph_test_len)
+    #print (len(dataset_loader))
+    #train_nll(args, dataset_loader, dataset_loader, rnn, output, max_iter = 200, graph_validate_len=graph_validate_len,graph_test_len=graph_test_len)
 
     # Visualize distribution of nlls
-    dataset_nll = Graph_sequence_sampler_pytorch_nll(graphs_train,max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
-    dataset_loader = torch.utils.data.DataLoader(dataset_nll, batch_size=1, num_workers=args.num_workers)
-    print (len(dataset_loader))
+    #dataset_nll = Graph_sequence_sampler_pytorch_nll(graphs_train,max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
+    dataset = Graph_sequence_sampler_pytorch_rand(graphs_train,max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
+    dataset_loader = torch.utils.data.DataLoader(dataset, batch_size=1, num_workers=args.num_workers)
+    #print (len(dataset_loader))
     #quit()
     analyze_nll(args, dataset_loader, dataset_loader, rnn, output, max_iter = 200, graph_validate_len=graph_validate_len,graph_test_len=graph_test_len)
 

@@ -750,12 +750,14 @@ def train_nll(args, dataset_train, dataset_test, rnn, output,graph_validate_len,
         f.write(str(graph_validate_len)+','+str(graph_test_len)+'\n')
         f.write('train,test\n')
         for iter in range(max_iter):
+            print(iter)
             if 'GraphRNN_MLP' in args.note:
                 nll_train = train_mlp_forward_epoch(epoch, args, rnn, output, dataset_train)
                 nll_test = train_mlp_forward_epoch(epoch, args, rnn, output, dataset_test)
             if 'GraphRNN_RNN' in args.note:
                 nll_train = train_rnn_forward_epoch(epoch, args, rnn, output, dataset_train)
                 nll_test = train_rnn_forward_epoch(epoch, args, rnn, output, dataset_test)
+            
             print('train',nll_train,'test',nll_test)
             f.write(str(nll_train)+','+str(nll_test)+'\n')
 
@@ -770,6 +772,7 @@ def rnn_data_nll(args, rnn, output, data_loader):
         rnn.zero_grad()
         output.zero_grad()
         x_unsorted = data['x'].float()
+        print (x_unsorted.shape)
         y_unsorted = data['y'].float()
         y_len_unsorted = data['len']
         y_len_max = max(y_len_unsorted)
@@ -857,11 +860,13 @@ def analyze_nll(args, dataset_train, dataset_test, rnn, output,graph_validate_le
     epoch = args.load_epoch
     print('model loaded!, epoch: {}'.format(args.load_epoch))
 
-    if 'GraphRNN_RNN' in args.note:
-        nlls_train = rnn_data_nll(args, rnn, output, dataset_train)
-        #nll_test = rnn_data_nll(epoch, args, rnn, output, dataset_test)
 
-    print (nlls_train)
+    for i in range(10):
+        print (i)
+        nlls_train = rnn_data_nll(args, rnn, output, dataset_train)
+        print (np.mean(nlls_train))
+    #nll_test = rnn_data_nll(epoch, args, rnn, output, dataset_test)
+
     # Make histogram
     #n, bins, patches = plt.hist(nlls_train, 10, rwidth=0.3, facecolor='g', alpha=0.75)
     #print (bins)
@@ -882,8 +887,8 @@ def analyze_nll(args, dataset_train, dataset_test, rnn, output,graph_validate_le
     #plt.xscale("log")
     #plt.show()
     plt.figure()
-    sns.distplot(nlls_train, kde=True, bins=300)
-    plt.xlim([0, 55])
+    sns.distplot(nlls_train, kde=True)
+    #plt.xlim([0, 55])
     plt.show()
     #plt.savefig("Histogram.png")
 
