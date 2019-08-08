@@ -134,7 +134,7 @@ if __name__ == '__main__':
                            has_output=True, output_size=1).to(device)
 
     ### start training
-    #train(args, dataset_loader, rnn, output)
+    train(args, dataset_loader, rnn, output)
 
     ### graph completion
     # train_graph_completion(args,dataset_loader,rnn,output)
@@ -145,9 +145,9 @@ if __name__ == '__main__':
 
     # Visualize distribution of nlls
     #dataset_nll = Graph_sequence_sampler_pytorch_nll(graphs_train,max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
-    dataset = Graph_sequence_sampler_pytorch_rand(graphs_train,max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
-    dataset_loader = torch.utils.data.DataLoader(dataset, batch_size=1, num_workers=args.num_workers)
+    #dataset = Graph_sequence_sampler_pytorch_rand(graphs_train,max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
+    #dataset_loader = torch.utils.data.DataLoader(dataset, batch_size=1, num_workers=args.num_workers)
     #print (len(dataset_loader))
     #quit()
-    analyze_nll(args, dataset_loader, dataset_loader, rnn, output, max_iter = 200, graph_validate_len=graph_validate_len,graph_test_len=graph_test_len)
+    #analyze_nll(args, dataset_loader, dataset_loader, rnn, output, max_iter = 200, graph_validate_len=graph_validate_len,graph_test_len=graph_test_len)
 

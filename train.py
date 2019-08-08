@@ -772,7 +772,6 @@ def rnn_data_nll(args, rnn, output, data_loader):
         rnn.zero_grad()
         output.zero_grad()
         x_unsorted = data['x'].float()
-        print (x_unsorted.shape)
         y_unsorted = data['y'].float()
         y_len_unsorted = data['len']
         y_len_max = max(y_len_unsorted)
@@ -847,15 +846,22 @@ def rnn_data_nll(args, rnn, output, data_loader):
        
     return nlls
 
-def analyze_nll(args, dataset_train, dataset_test, rnn, output,graph_validate_len,graph_test_len, max_iter = 1000):
+def analyze_nll(args, dataset_train, dataset_test, rnn, output,graph_validate_len,graph_test_len, max_iter = 1000, dataset=None):
     """
         Given a trained model, calculate the negative log likelihoods for each data point in the 
         train and test set and then create a histogram to display the distribution of nlls.
     """
-    fname = args.model_save_path + args.fname + 'lstm_' + str(args.load_epoch) + '.dat'
-    rnn.load_state_dict(torch.load(fname))
-    fname = args.model_save_path + args.fname + 'output_' + str(args.load_epoch) + '.dat'
-    output.load_state_dict(torch.load(fname))
+    if dataset:
+        fname = args.note + '_' + dataset + '_' + str(args.num_layers) + '_' + str(args.hidden_size_rnn) + '_'
+        
+        fname_rnn = args.model_save_path + fname + 'lstm_' + str(args.load_epoch) + '.dat'
+        fname_out = args.model_save_path + fname + 'output_' + str(args.load_epoch) + '.dat'
+    else:
+        fname_rnn = args.model_save_path + args.fname + 'lstm_' + str(args.load_epoch) + '.dat'
+        fname_out = args.model_save_path + args.fname + 'output_' + str(args.load_epoch) + '.dat'
+    
+    rnn.load_state_dict(torch.load(fname_rnn))
+    output.load_state_dict(torch.load(fname_out))
 
     epoch = args.load_epoch
     print('model loaded!, epoch: {}'.format(args.load_epoch))
