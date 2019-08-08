@@ -5,7 +5,7 @@ class Args():
         ### if clean tensorboard
         self.clean_tensorboard = False
         ### Which CUDA GPU device is used for training
-        self.cuda = 1
+        self.cuda = 2
 
         ### Which GraphRNN model variant is used.
         # The simple version of Graph RNN
@@ -18,7 +18,7 @@ class Args():
         # self.note = 'GraphRNN_RNN_nobfs'
 
         ### Which dataset is used to train the model
-        # self.graph_type = 'DD'
+        self.graph_type = 'DD'
         # self.graph_type = 'caveman'
         # self.graph_type = 'caveman_small'
         # self.graph_type = 'caveman_small_single'
@@ -28,7 +28,7 @@ class Args():
         #self.graph_type = 'ladder'
         #self.graph_type = 'ladder_small'
 
-        self.graph_type = 'enzymes'
+        # self.graph_type = 'enzymes'
         #self.graph_type = 'enzymes_small'
         # self.graph_type = 'barabasi'
         # self.graph_type = 'barabasi_small'
@@ -112,8 +112,18 @@ class Args():
     def change_dataset(self, dataset):
         self.graph_type = dataset
         
+        # Re-configure the network if necessary
+        if 'small' in self.graph_type:
+            self.parameter_shrink = 2
+        else:
+            self.parameter_shrink = 1
+        self.hidden_size_rnn = int(128/self.parameter_shrink) # hidden size for main RNN
+        self.embedding_size_rnn = int(64/self.parameter_shrink) # the size for LSTM input
+        self.embedding_size_output = int(64/self.parameter_shrink) # the embedding size for output (VAE/MLP)
+        
         self.fname = self.note + '_' + self.graph_type + '_' + str(self.num_layers) + '_' + str(self.hidden_size_rnn) + '_'
         self.fname_pred = self.note+'_'+self.graph_type+'_'+str(self.num_layers)+'_'+ str(self.hidden_size_rnn)+'_pred_'
         self.fname_train = self.note+'_'+self.graph_type+'_'+str(self.num_layers)+'_'+ str(self.hidden_size_rnn)+'_train_'
         self.fname_test = self.note + '_' + self.graph_type + '_' + str(self.num_layers) + '_' + str(self.hidden_size_rnn) + '_test_'
         self.fname_baseline = self.graph_save_path + self.graph_type + self.generator_baseline+'_'+self.metric_baseline
+        
