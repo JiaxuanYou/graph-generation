@@ -5,7 +5,7 @@ from train import *
 if __name__ == '__main__':
     # All necessary arguments are defined in args.py
     args = Args()
-    #os.environ['CUDA_VISIBLE_DEVICES'] = str(args.cuda)
+    os.environ['CUDA_VISIBLE_DEVICES'] = 0
     print('CUDA', args.cuda)
     print('CUDA Available:', torch.cuda.is_available())
     print('File name prefix',args.fname)
