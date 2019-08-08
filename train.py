@@ -28,7 +28,10 @@ from data import *
 from args import Args
 import create_graphs
 
-device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
+# Kinda hacky but allows for using non cude on local machine
+#args_temp = Args()
+#print (args_temp.cuda)
+#device = torch.device('cuda:{}'.format(args_temp.cuda) if torch.cuda.is_available() else 'cpu')
 
 def train_vae_epoch(epoch, args, rnn, output, data_loader,
                     optimizer_rnn, optimizer_output,

@@ -1,11 +1,11 @@
 from train import *
 
-device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
+#device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
 
 if __name__ == '__main__':
     # All necessary arguments are defined in args.py
     args = Args()
-    os.environ['CUDA_VISIBLE_DEVICES'] = str(args.cuda)
+    #os.environ['CUDA_VISIBLE_DEVICES'] = str(args.cuda)
     print('CUDA', args.cuda)
     print('CUDA Available:', torch.cuda.is_available())
     print('File name prefix',args.fname)

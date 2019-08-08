@@ -17,9 +17,10 @@ from collections import OrderedDict
 import math
 import numpy as np
 import time
+from cuda import *
 
 
-device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
+#device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
 
 def binary_cross_entropy_weight(y_pred, y,has_weight=False, weight_length=1, weight_max=10):
     '''
