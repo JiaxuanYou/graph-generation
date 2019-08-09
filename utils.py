@@ -15,6 +15,7 @@ import pickle
 import re
 
 import data
+from create_graphs import *
 
 def citeseer_ego():
     _, _, G = data.Graph_load(dataset='citeseer')
@@ -511,8 +512,11 @@ if __name__ == '__main__':
     #test_perturbed()
     #graphs = load_graph_list('graphs/' + 'GraphRNN_RNN_community4_4_128_train_0.dat')
     #graphs = load_graph_list('graphs/' + 'GraphRNN_RNN_community4_4_128_pred_2500_1.dat')
-    graphs = load_graph_list('eval_results/mmsb/' + 'community41.dat')
-    
-    for i in range(0, 160, 16):
-        draw_graph_list(graphs[i:i+16], 4, 4, fname='figures/community4_' + str(i))
+    #graphs = load_graph_list('eval_results/mmsb/' + 'community41.dat')
+    graphs = create_name('tree_r_edge_1')
+    #graphs = load_graph_list('graphs/' + 'GraphRNN_RNN_tree_4_128_train_0.dat')
+    draw_graph(graphs[0], prefix='train')
+    draw_graph_list(graphs, 3, 2, fname='figures/trees')
+    #for i in range(0, 160, 16):
+        #draw_graph_list(graphs[i:i+16], 4, 4, fname='figures/community4_' + str(i))
 

@@ -5,6 +5,12 @@ from utils import *
 from data import *
 from args import Args
 
+def create_name(name):
+    arg_temp = Args()
+    arg_temp.change_dataset(name)
+
+    return create(arg_temp)
+
 def create(args):
 ### load datasets
     graphs=[]
@@ -41,6 +47,52 @@ def create(args):
                 
         # More later! 
         
+    elif args.graph_type.startswith('tree_r_edge'):
+        num_edges_removed = int(args.graph_type[-1])
+        # Generate full balanced trees
+        print('here')
+        for i in range(2, 5):
+            for j in range(3, 5):
+                graph = nx.balanced_tree(i, j)
+                # Get the edges so we can randomly 
+                # remove num_edges_removed edges
+                for x in range(num_edges_removed):
+                    edges = graph.edges()
+                    edge = np.random.randint(len(edges))
+                    graph.remove_edge(edges[edge][0], edges[edge][1])
+
+                graphs.append(graph)
+
+        args.max_prev_node = 256
+        return graphs
+    elif args.graph_type.startswith('rary-tree'):
+        # Generate all rary-trees for a given
+        # r and height of tree.
+        r = args.graph_type[-1]
+        h = 4 
+        graphs = []
+        for n in range(1, 2 ** h):
+            graphs.append(nx.full_rary_tree(r, n))
+
+        args.max_prev_node = 256 # This doesnt super matter
+        return graphs
+    elif args.graph_type.startswith('tree_r_node'):
+        # Remove n nodes from the graph
+        n = args.graph_type[-1]
+        graphs = []
+        for i in range(2, 5):
+            for j in range(3, 5):
+                graph = nx.balanced_tree(i, j)
+
+                for i in range(n):
+                    nodes = graph.nodes
+                    node = np.random.randint(len(nodes))
+                    graph.remove_node(nodes[node])
+
+                graphs.append(graph)
+
+        args.max_prev_node = 256
+        return graphs
     elif args.graph_type=='caveman':
         # graphs = []
         # for i in range(5,10):

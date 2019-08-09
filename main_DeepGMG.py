@@ -11,9 +11,9 @@ class Args_DGMG():
         # self.note = 'Baseline_DGMG_fast' # do GCN only after adding each node
 
         ### data config
-        self.graph_type = 'caveman_small'
+        #self.graph_type = 'caveman_small'
         # self.graph_type = 'grid_small'
-        # self.graph_type = 'ladder_small'
+        self.graph_type = 'ladder_small'
         # self.graph_type = 'enzymes_small'
         # self.graph_type = 'barabasi_small'
         # self.graph_type = 'citeseer_small'
@@ -26,12 +26,12 @@ class Args_DGMG():
 
 
         ### training config
-        self.epochs = 2000  # now one epoch means self.batch_ratio x batch_size
-        self.load_epoch = 2000
-        self.epochs_test_start = 100
-        self.epochs_test = 100
-        self.epochs_log = 100
-        self.epochs_save = 100
+        self.epochs = 100 #2000  # now one epoch means self.batch_ratio x batch_size
+        self.load_epoch = 100 #2000
+        self.epochs_test_start = 5 #100
+        self.epochs_test = 5 #100
+        self.epochs_log = 10 #100
+        self.epochs_save = 10 #100
         if 'fast' in self.note:
             self.is_fast = True
         else:
@@ -82,7 +82,7 @@ def train_DGMG_epoch(epoch, args, model, dataset, optimizer, scheduler, is_fast 
 
         # NOTE: when starting loop, we assume a node has already been generated
         node_count = 1
-        node_embedding = [Variable(torch.ones(1,args.node_embedding_size)).cuda()] # list of torch tensors, each size: 1*hidden
+        node_embedding = [Variable(torch.ones(1,args.node_embedding_size)).to(device)] # list of torch tensors, each size: 1*hidden
 
 
         loss = 0
@@ -108,13 +108,13 @@ def train_DGMG_epoch(epoch, args, model, dataset, optimizer, scheduler, is_fast 
                 if is_fast:
                     node_embedding_cat = torch.cat(node_embedding, dim=0)
                 # calc loss
-                loss_addnode_step = F.binary_cross_entropy(p_addnode,Variable(torch.ones((1,1))).cuda())
+                loss_addnode_step = F.binary_cross_entropy(p_addnode,Variable(torch.ones((1,1))).to(device))
                 # loss_addnode_step.backward(retain_graph=True)
                 loss += loss_addnode_step
                 loss_addnode += loss_addnode_step.data
             else:
                 # calc loss
-                loss_addnode_step = F.binary_cross_entropy(p_addnode, Variable(torch.zeros((1, 1))).cuda())
+                loss_addnode_step = F.binary_cross_entropy(p_addnode, Variable(torch.zeros((1, 1))).to(device))
                 # loss_addnode_step.backward(retain_graph=True)
                 loss += loss_addnode_step
                 loss_addnode += loss_addnode_step.data
@@ -133,7 +133,7 @@ def train_DGMG_epoch(epoch, args, model, dataset, optimizer, scheduler, is_fast 
 
                 if edge_count < len(node_neighbor_new):
                     # calc loss
-                    loss_addedge_step = F.binary_cross_entropy(p_addedge, Variable(torch.ones((1, 1))).cuda())
+                    loss_addedge_step = F.binary_cross_entropy(p_addedge, Variable(torch.ones((1, 1))).to(device))
                     # loss_addedge_step.backward(retain_graph=True)
                     loss += loss_addedge_step
                     loss_addedge += loss_addedge_step.data
@@ -147,7 +147,7 @@ def train_DGMG_epoch(epoch, args, model, dataset, optimizer, scheduler, is_fast 
                     a_node = torch.zeros((1,p_node.size(1)))
                     # print('node_neighbor_new',node_neighbor_new, edge_count)
                     a_node[0,node_neighbor_new[edge_count]] = 1
-                    a_node = Variable(a_node).cuda()
+                    a_node = Variable(a_node).to(device)
                     # add edge
                     node_neighbor[-1].append(node_neighbor_new[edge_count])
                     node_neighbor[node_neighbor_new[edge_count]].append(len(node_neighbor)-1)
@@ -159,7 +159,7 @@ def train_DGMG_epoch(epoch, args, model, dataset, optimizer, scheduler, is_fast 
 
                 else:
                     # calc loss
-                    loss_addedge_step = F.binary_cross_entropy(p_addedge, Variable(torch.zeros((1, 1))).cuda())
+                    loss_addedge_step = F.binary_cross_entropy(p_addedge, Variable(torch.zeros((1, 1))).to(device))
                     # loss_addedge_step.backward(retain_graph=True)
                     loss += loss_addedge_step
                     loss_addedge += loss_addedge_step.data
@@ -209,7 +209,7 @@ def train_DGMG_forward_epoch(args, model, dataset, is_fast = False):
 
         # NOTE: when starting loop, we assume a node has already been generated
         node_count = 1
-        node_embedding = [Variable(torch.ones(1,args.node_embedding_size)).cuda()] # list of torch tensors, each size: 1*hidden
+        node_embedding = [Variable(torch.ones(1,args.node_embedding_size)).to(device)] # list of torch tensors, each size: 1*hidden
 
 
         loss = 0
@@ -235,13 +235,13 @@ def train_DGMG_forward_epoch(args, model, dataset, is_fast = False):
                 if is_fast:
                     node_embedding_cat = torch.cat(node_embedding, dim=0)
                 # calc loss
-                loss_addnode_step = F.binary_cross_entropy(p_addnode,Variable(torch.ones((1,1))).cuda())
+                loss_addnode_step = F.binary_cross_entropy(p_addnode,Variable(torch.ones((1,1))).to(device))
                 # loss_addnode_step.backward(retain_graph=True)
                 loss += loss_addnode_step
                 loss_addnode += loss_addnode_step.data
             else:
                 # calc loss
-                loss_addnode_step = F.binary_cross_entropy(p_addnode, Variable(torch.zeros((1, 1))).cuda())
+                loss_addnode_step = F.binary_cross_entropy(p_addnode, Variable(torch.zeros((1, 1))).to(device))
                 # loss_addnode_step.backward(retain_graph=True)
                 loss += loss_addnode_step
                 loss_addnode += loss_addnode_step.data
@@ -260,7 +260,7 @@ def train_DGMG_forward_epoch(args, model, dataset, is_fast = False):
 
                 if edge_count < len(node_neighbor_new):
                     # calc loss
-                    loss_addedge_step = F.binary_cross_entropy(p_addedge, Variable(torch.ones((1, 1))).cuda())
+                    loss_addedge_step = F.binary_cross_entropy(p_addedge, Variable(torch.ones((1, 1))).to(device))
                     # loss_addedge_step.backward(retain_graph=True)
                     loss += loss_addedge_step
                     loss_addedge += loss_addedge_step.data
@@ -274,7 +274,7 @@ def train_DGMG_forward_epoch(args, model, dataset, is_fast = False):
                     a_node = torch.zeros((1,p_node.size(1)))
                     # print('node_neighbor_new',node_neighbor_new, edge_count)
                     a_node[0,node_neighbor_new[edge_count]] = 1
-                    a_node = Variable(a_node).cuda()
+                    a_node = Variable(a_node).to(device)
                     # add edge
                     node_neighbor[-1].append(node_neighbor_new[edge_count])
                     node_neighbor[node_neighbor_new[edge_count]].append(len(node_neighbor)-1)
@@ -286,7 +286,7 @@ def train_DGMG_forward_epoch(args, model, dataset, is_fast = False):
 
                 else:
                     # calc loss
-                    loss_addedge_step = F.binary_cross_entropy(p_addedge, Variable(torch.zeros((1, 1))).cuda())
+                    loss_addedge_step = F.binary_cross_entropy(p_addedge, Variable(torch.zeros((1, 1))).to(device))
                     # loss_addedge_step.backward(retain_graph=True)
                     loss += loss_addedge_step
                     loss_addedge += loss_addedge_step.data
@@ -319,7 +319,7 @@ def test_DGMG_epoch(args, model, is_fast=False):
     for i in range(graph_num):
         # NOTE: when starting loop, we assume a node has already been generated
         node_neighbor = [[]]  # list of lists (first node is zero)
-        node_embedding = [Variable(torch.ones(1,args.node_embedding_size)).cuda()] # list of torch tensors, each size: 1*hidden
+        node_embedding = [Variable(torch.ones(1,args.node_embedding_size)).to(device)] # list of torch tensors, each size: 1*hidden
 
         node_count = 1
         while node_count<=args.max_num_node:
@@ -468,11 +468,11 @@ if __name__ == '__main__':
     print('CUDA', args.cuda)
     print('File name prefix',args.fname)
 
-
+    # Why not use create graphs??
     graphs = []
     for i in range(4, 10):
         graphs.append(nx.ladder_graph(i))
-    model = DGM_graphs(h_size = args.node_embedding_size).cuda()
+    model = DGM_graphs(h_size = args.node_embedding_size).to(device)
 
     if args.graph_type == 'ladder_small':
         graphs = []
