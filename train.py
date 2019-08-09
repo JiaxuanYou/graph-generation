@@ -771,6 +771,7 @@ def rnn_data_nll(args, rnn, output, data_loader):
     output.train()
     # Get the nlls for every graph in the dataset
     nlls = []
+    avg_nlls = []
     for batch_idx, data in enumerate(data_loader):
         rnn.zero_grad()
         output.zero_grad()
@@ -842,12 +843,61 @@ def rnn_data_nll(args, rnn, output, data_loader):
         # We could also use the BCE with reduction flag 'sum'
         feature_dim = y_pred.size(0)*y_pred.size(1)
         # Note that here y.size(0) = 1
+        avg_loss = loss.data[0]
         loss = loss.data[0]*feature_dim/y.size(0)
-                
+            
         # Add the loss to the nll for all the data
         nlls.append(loss.item())
+        avg_nlls.append(avg_loss.item())
        
-    return nlls
+    return nlls, avg_nlls
+
+
+# This function gets the loglikelihoods of the data
+def calc_nll(args, data_loader, rnn, output, max_iter=100, load_epoch=3000, train_dataset=None):
+    """
+        For now the max_iter is not used. However, the idea in the future
+        is to do max_iter loops of calculating the nlls of the data. Since
+        the model is permutation dependent, namely we use a random bfs ordering
+        for each graph when training/testing, we should do many iterations to
+        test the robustness of the model to permutation. This could also be
+        addressed using nll data_loader. 
+    """
+    # Set the epoch we are loading from
+    args.load_epoch = load_epoch
+    if train_dataset:
+        fname = args.note + '_' + train_dataset + '_' + str(args.num_layers) + '_' + str(args.hidden_size_rnn) + '_'
+        fname_rnn = args.model_save_path + fname + 'lstm_' + str(args.load_epoch) + '.dat'
+        fname_out = args.model_save_path + fname + 'output_' + str(args.load_epoch) + '.dat'
+    else:
+        fname_rnn = args.model_save_path + args.fname + 'lstm_' + str(args.load_epoch) + '.dat'
+        fname_out = args.model_save_path + args.fname + 'output_' + str(args.load_epoch) + '.dat'
+    
+    print (fname_rnn)
+    rnn.load_state_dict(torch.load(fname_rnn))
+    output.load_state_dict(torch.load(fname_out))
+
+    epoch = args.load_epoch
+    print('model loaded!, epoch: {}'.format(args.load_epoch))
+
+    # Calculate nll over dataset max_iter times,
+    # to test robustness to permutations of the bfs
+    # ordered adjacency matrix for the same graphs.
+    nlls = []
+    avg_nlls = []
+    for i in range(max_iter):
+        nll, avg_nll = rnn_data_nll(args, rnn, output, data_loader)
+        # Logging info
+        # May want to also include std statistics
+        if (i + 1) % 10 == 0:
+            print ("Iteration:", i + 1)
+            print ("Average Nll over train data:", np.mean(nll))
+            
+        nlls.extend(nll)
+        avg_nlls.extend(avg_nll)
+        
+    return nlls, avg_nlls
+
 
 def analyze_nll(args, dataset_train, dataset_test, rnn, output,graph_validate_len,graph_test_len, max_iter = 1000, dataset=None):
     """
@@ -872,7 +922,7 @@ def analyze_nll(args, dataset_train, dataset_test, rnn, output,graph_validate_le
 
     for i in range(10):
         print (i)
-        nlls_train = rnn_data_nll(args, rnn, output, dataset_train)
+        nlls_train, _ = rnn_data_nll(args, rnn, output, dataset_train)
         print (np.mean(nlls_train))
     #nll_test = rnn_data_nll(epoch, args, rnn, output, dataset_test)
 
