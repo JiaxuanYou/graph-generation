@@ -19,6 +19,7 @@ class Args():
 
         ### Which dataset is used to train the model
         #self.graph_type = 'DD'
+        #self.graph_type = 'DD_1'
         # self.graph_type = 'caveman'
         # self.graph_type = 'caveman_small'
         # self.graph_type = 'caveman_small_single'
@@ -28,9 +29,10 @@ class Args():
         #self.graph_type = 'ladder'
         #self.graph_type = 'ladder_small'
         #self.graph_type = 'tree'
-        self.graph_type = 'tree_r_edge_1'
+        #self.graph_type = 'tree_r_edge_1'
 
         # self.graph_type = 'enzymes'
+        self.graph_type = 'enzymes_1'
         #self.graph_type = 'enzymes_small'
         # self.graph_type = 'barabasi'
         # self.graph_type = 'barabasi_small'
