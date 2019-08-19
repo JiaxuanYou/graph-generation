@@ -60,9 +60,7 @@ def Graph_load_label(min_num_nodes = 20, max_num_nodes = 1000, name = 'ENZYMES',
     max_nodes = 0
     for i in range(graph_num):
         # Only append the graph of the specific label
-        print ('out', data_graph_labels[i])
         if (data_graph_labels[i] == graph_label):
-            print ('in', data_graph_labels[i])
             # find the nodes for each graph
             nodes = node_list[data_graph_indicator==i+1]
             G_sub = G.subgraph(nodes)
@@ -574,7 +572,8 @@ class Graph_sequence_sampler_pytorch(torch.utils.data.Dataset):
                 print('iter {} times'.format(i))
             adj_idx = np.random.randint(len(self.adj_all))
             adj_copy = self.adj_all[adj_idx].copy()
-            # print('Graph size', adj_copy.shape[0])
+            #print('Graph size', adj_copy.shape[0])
+
             x_idx = np.random.permutation(adj_copy.shape[0])
             adj_copy = adj_copy[np.ix_(x_idx, x_idx)]
             adj_copy_matrix = np.asmatrix(adj_copy)
@@ -585,6 +584,7 @@ class Graph_sequence_sampler_pytorch(torch.utils.data.Dataset):
             adj_copy = adj_copy[np.ix_(x_idx, x_idx)]
             # encode adj
             adj_encoded = encode_adj_flexible(adj_copy.copy())
+            #print (len(adj_encoded))
             max_encoded_len = max([len(adj_encoded[i]) for i in range(len(adj_encoded))])
             max_prev_node.append(max_encoded_len)
         max_prev_node = sorted(max_prev_node)[-1*topk:]

@@ -25,6 +25,27 @@ def create(args):
         for i in range(2, 11):
             graphs.append(nx.ladder_graph(i))
         args.max_prev_node = 10
+    elif args.graph_type == 'ladder_extra':
+        graphs = []
+        for i in range(3000):
+            # 50 nodes in all graphs
+            graphs.append(ladder_extra(6, 10))
+
+        # Have to see what max_prev nodes is
+        args.max_prev_node = 42 # Just for 6,10
+        return graphs
+    elif args.graph_type=='layer-tree':
+        graphs = []
+        width = 6
+        height = 10
+        branch = 3
+        for i in range(3000):
+            G = layered_tree(width, height, branch_factor=branch)
+            graphs.append(G)
+
+        # Max prev nodes????
+        args.max_prev_node = 31 # width = 6, branch = 3
+        return graphs
     elif args.graph_type=='tree':
         print ('Creating tree graphs')
         graphs = []

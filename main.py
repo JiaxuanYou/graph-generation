@@ -105,10 +105,13 @@ if __name__ == '__main__':
         args.max_prev_node = args.max_num_node - 1
     else:
         dataset = Graph_sequence_sampler_pytorch(graphs_train,max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
+        if args.max_prev_node is None:
+            args.max_prev_node = dataset.max_prev_node
     sample_strategy = torch.utils.data.sampler.WeightedRandomSampler([1.0 / len(dataset) for i in range(len(dataset))],
                                                                      num_samples=args.batch_size*args.batch_ratio, replacement=True)
     dataset_loader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers,
                                                sampler=sample_strategy)
+
 
     ### model initialization
     ## Graph RNN VAE model
