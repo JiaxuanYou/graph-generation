@@ -26,8 +26,8 @@ class Args():
         #self.graph_type = 'grid'
         # self.graph_type = 'grid_small'
         #self.graph_type = 'ladder'
-        #self.graph_type = 'ladder_small'
-        self.graph_type = 'tree'
+        self.graph_type = 'ladder_small'
+        #self.graph_type = 'tree'
         #self.graph_type = 'tree_r_edge_1'
 
         # self.graph_type = 'enzymes'
@@ -67,11 +67,11 @@ class Args():
         ### training config
         self.num_workers = 4 # num workers to load data, default 4
         self.batch_ratio = 32 # how many batches of samples per epoch, default 32, e.g., 1 epoch = 32 batches
-        self.epochs = 100 #was 3000 # now one epoch means self.batch_ratio x batch_size
-        self.epochs_test_start = 10 # was 100
-        self.epochs_test = 10 # was 100
-        self.epochs_log = 1 # was 100
-        self.epochs_save = 10 # was 100
+        self.epochs = 1000 #was 3000 # now one epoch means self.batch_ratio x batch_size
+        self.epochs_test_start = 100 # was 100
+        self.epochs_test = 100 # was 100
+        self.epochs_log = 25 # was 100
+        self.epochs_save = 200 # was 100
 
         self.lr = 0.003
         self.milestones = [400, 1000]
