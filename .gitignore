@@ -22,7 +22,7 @@ eval_results/
 tensorboard/
 timing/
 nll/
-
+dataset/ZINC
 .idea/
 
 __pycache__

@@ -47,6 +47,19 @@ def create(args):
         # Max prev nodes????
         args.max_prev_node = 31 # width = 6, branch = 3
         return graphs
+    elif args.graph_type.startswith('random'):
+        indx_degree = int(args.graph_type.find('_')) + 1
+        indx_nodes = int(args.graph_type.find('_', indx_degree))
+
+        degree = int(args.graph_type[indx_degree: indx_nodes])
+        nodes = int(args.graph_type[indx_nodes + 1: ])
+
+        graphs = []
+        for i in range(3000):
+            graphs.append(nx.random_regular_graph(degree, nodes))
+
+        # Note we are only using these for testing so shouldn't need this
+        return graphs
     elif args.graph_type=='tree':
         print ('Creating tree graphs')
         graphs = []

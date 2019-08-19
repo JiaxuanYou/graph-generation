@@ -604,7 +604,15 @@ if __name__ == '__main__':
     #for i in range(0, 160, 16):
         #draw_graph_list(graphs[i:i+16], 4, 4, fname='figures/community4_' + str(i))
 
-    #graph = ladder_extra(3, 3)
-    layered_tree(3, 4, branch_factor=2)
+    # test calculating the average node degree
+    graph = layered_tree(6, 10, branch_factor=3)
+    graph = nx.random_regular_graph(6, 60)
+    #print (graph.edges())
+    #graph = nx.grid_2d_graph(10, 6)
+    print (graph.degree())
+    degree_avg = np.mean([degree for _, degree in graph.degree().items()])
+    print (degree_avg)
+
+    #layered_tree(3, 4, branch_factor=2)
 
 
