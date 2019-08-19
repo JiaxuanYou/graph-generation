@@ -30,9 +30,10 @@ def create(args):
         for i in range(3000):
             # 50 nodes in all graphs
             graphs.append(ladder_extra(6, 10))
+            print (len(graphs[i].nodes()))
 
         # Have to see what max_prev nodes is
-        args.max_prev_node = 42 # Just for 6,10
+        args.max_prev_node = 28 # Just for 6,10
         return graphs
     elif args.graph_type=='layer-tree':
         graphs = []

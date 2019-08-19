@@ -21,7 +21,7 @@ def ladder_extra(width, height):
     # First generate the grid (width x height)
     # that we will then modify by adding extra edges
     # Note - nodes are reprented as (row, col) tuples
-    base_ladder = nx.grid_2d_graph(width, height)
+    base_ladder = nx.grid_2d_graph(height, width)
     nodes = base_ladder.nodes()
     # Add edges for each row until the last row
     for row in range(height - 1):
@@ -32,7 +32,7 @@ def ladder_extra(width, height):
             # Choose node for new edge - Note this
             # node cannot be the one directly bellow
             # so the range of values is reduced.
-            connect = np.random.randint(width - 1) #exclisive??
+            connect = np.random.randint(width - 1) 
 
             # if connect is the node below simply make it the last
             # node in the ladder which is not generated in the random #
