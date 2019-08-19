@@ -78,14 +78,14 @@ def create(args):
         return graphs
     elif args.graph_type.startswith('tree_r_node'):
         # Remove n nodes from the graph
-        n = args.graph_type[-1]
+        n = int(args.graph_type[-1])
         graphs = []
         for i in range(2, 5):
             for j in range(3, 5):
                 graph = nx.balanced_tree(i, j)
 
-                for i in range(n):
-                    nodes = graph.nodes
+                for x in range(n):
+                    nodes = graph.nodes()
                     node = np.random.randint(len(nodes))
                     graph.remove_node(nodes[node])
 
@@ -190,11 +190,19 @@ def create(args):
             if G.number_of_nodes()<=20:
                 graphs.append(G)
         args.max_prev_node = 15
+    elif args.graph_type.startswith('enzymes'):
+        graph_label = int(args.graph_type[-1])
+        graphs= Graph_load_label(min_num_nodes=10, name='ENZYMES', graph_label=graph_label)
+        args.max_prev_node = 25
     elif args.graph_type == 'protein':
         graphs = Graph_load_batch(min_num_nodes=20, name='PROTEINS_full')
         args.max_prev_node = 80
     elif args.graph_type == 'DD':
         graphs = Graph_load_batch(min_num_nodes=100, max_num_nodes=500, name='DD',node_attributes=False,graph_labels=True)
+        args.max_prev_node = 230
+    elif args.graph_type.startswith('DD'):
+        graph_label = int(args.graph_type[-1])
+        graphs= Graph_load_label(min_num_nodes=100, max_num_nodes=500, name='DD', node_attributes=False,graph_labels=True, graph_label=graph_label)
         args.max_prev_node = 230
     elif args.graph_type == 'citeseer':
         _, _, G = Graph_load(dataset='citeseer')

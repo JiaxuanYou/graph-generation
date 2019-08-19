@@ -513,7 +513,7 @@ if __name__ == '__main__':
     #graphs = load_graph_list('graphs/' + 'GraphRNN_RNN_community4_4_128_train_0.dat')
     #graphs = load_graph_list('graphs/' + 'GraphRNN_RNN_community4_4_128_pred_2500_1.dat')
     #graphs = load_graph_list('eval_results/mmsb/' + 'community41.dat')
-    graphs = create_name('tree_r_edge_1')
+    graphs = create_name('tree_r_node_1')
     #graphs = load_graph_list('graphs/' + 'GraphRNN_RNN_tree_4_128_train_0.dat')
     draw_graph(graphs[0], prefix='train')
     draw_graph_list(graphs, 3, 2, fname='figures/trees')
