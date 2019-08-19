@@ -15,7 +15,67 @@ import pickle
 import re
 
 import data
-from create_graphs import *
+#from create_graphs import * -- bad circular reference!!!
+
+def ladder_extra(width, height):
+    # First generate the grid (width x height)
+    # that we will then modify by adding extra edges
+    # Note - nodes are reprented as (row, col) tuples
+    base_ladder = nx.grid_2d_graph(width, height)
+    nodes = base_ladder.nodes()
+    # Add edges for each row until the last row
+    for row in range(height - 1):
+        for node in range(0, width):
+
+            curr_node = nodes[node + width * row]
+
+            # Choose node for new edge - Note this
+            # node cannot be the one directly bellow
+            # so the range of values is reduced.
+            connect = np.random.randint(width - 1) #exclisive??
+
+            # if connect is the node below simply make it the last
+            # node in the ladder which is not generated in the random #
+            if connect == curr_node[1]:
+                connect = width - 1
+
+            base_ladder.add_edge(curr_node, (row + 1, connect))
+
+    return base_ladder
+
+def layered_tree(width, height, branch_factor=3):
+    """
+        Creates layered tree that is circular to ensure the
+        graph is connected
+    """
+    G = nx.null_graph()
+
+    # Create the first layer
+    for i in range(width):
+        # Label nodes as tuples of form (layer, index)
+        G.add_node((0, i))
+
+    
+    choices = np.arange(width)
+    for layer in range(height - 1):
+        # Generate the nodes for the next layer
+        for i in range(width):
+            G.add_node((layer + 1, i))
+
+        # Add random edges
+        for u in range(width):
+            connections = np.random.choice(choices, size=branch_factor, replace=False)
+            for v in connections:
+                G.add_edge((layer, u), (layer + 1, v))
+
+    # Create circular connection
+    for u in range(width):
+        connections = np.random.choice(choices, size=branch_factor, replace=False)
+        for v in connections:
+            G.add_edge((height - 1, u), (0, v))
+
+    return G
+
 
 def citeseer_ego():
     _, _, G = data.Graph_load(dataset='citeseer')
@@ -161,9 +221,30 @@ def save_prediction_histogram(y_pred_data, fname_pred, max_num_node, bin_n=20):
         output_pred[:, i] /= np.sum(output_pred[:, i])
     imsave(fname=fname_pred, arr=output_pred, origin='upper', cmap='Greys_r', vmin=0.0, vmax=3.0 / bin_n)
 
+# draw a single graph G
+def draw_graph2(G, prefix = 'test'):
+
+    plt.switch_backend('agg')
+    plt.axis("off")
+
+    pos = nx.spring_layout(G)
+    nx.draw_networkx(G, with_labels=True, node_size=35, pos=pos)
+
+    plt.savefig('figures/graph_view_'+prefix+'.png', dpi=200)
+    plt.close()
+
+    plt.switch_backend('agg')
+    G_deg = nx.degree_histogram(G)
+    G_deg = np.array(G_deg)
+    # plt.plot(range(len(G_deg)), G_deg, 'r', linewidth = 2)
+    plt.loglog(np.arange(len(G_deg))[G_deg>0], G_deg[G_deg>0], 'r', linewidth=2)
+    plt.savefig('figures/degree_view_' + prefix + '.png', dpi=200)
+    plt.close()
+
 
 # draw a single graph G
 def draw_graph(G, prefix = 'test'):
+    '''
     parts = community.best_partition(G)
     values = [parts.get(node) for node in G.nodes()]
     colors = []
@@ -184,11 +265,14 @@ def draw_graph(G, prefix = 'test'):
             colors.append('black')
 
     # spring_pos = nx.spring_layout(G)
+    '''
     plt.switch_backend('agg')
     plt.axis("off")
 
     pos = nx.spring_layout(G)
-    nx.draw_networkx(G, with_labels=True, node_size=35, node_color=colors,pos=pos)
+    pos = nx.spectral_layout(G)
+    nx.draw_networkx(G, with_labels=True, node_size=35, pos=pos)
+    #nx.draw_networkx(G, with_labels=True, node_size=35, node_color=colors,pos=pos)
 
 
     # plt.switch_backend('agg')
@@ -513,10 +597,14 @@ if __name__ == '__main__':
     #graphs = load_graph_list('graphs/' + 'GraphRNN_RNN_community4_4_128_train_0.dat')
     #graphs = load_graph_list('graphs/' + 'GraphRNN_RNN_community4_4_128_pred_2500_1.dat')
     #graphs = load_graph_list('eval_results/mmsb/' + 'community41.dat')
-    graphs = create_name('tree_r_node_1')
+    #graphs = create_name('tree_r_node_1')
     #graphs = load_graph_list('graphs/' + 'GraphRNN_RNN_tree_4_128_train_0.dat')
-    draw_graph(graphs[0], prefix='train')
-    draw_graph_list(graphs, 3, 2, fname='figures/trees')
+    #draw_graph(graphs[0], prefix='train')
+    #draw_graph_list(graphs, 3, 2, fname='figures/trees')
     #for i in range(0, 160, 16):
         #draw_graph_list(graphs[i:i+16], 4, 4, fname='figures/community4_' + str(i))
+
+    #graph = ladder_extra(3, 3)
+    layered_tree(3, 4, branch_factor=2)
+
 
