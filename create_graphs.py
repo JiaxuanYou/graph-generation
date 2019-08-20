@@ -94,8 +94,8 @@ def create(args):
             for h in heights:
                 graphs.append(nx.balanced_tree(i, h))
                 
-        # More later! 
-        
+        args.max_prev_node = 256
+        return graphs
     elif args.graph_type.startswith('tree_r_edge'):
         num_edges_removed = int(args.graph_type[-1])
         # Generate full balanced trees
