@@ -36,7 +36,7 @@ class Args():
         #self.graph_type = 'ladder_extra'
 
         # self.graph_type = 'enzymes'
-        #self.graph_type = 'enzymes_1'
+        # self.graph_type = 'enzymes_1'
         #self.graph_type = 'enzymes_small'
         # self.graph_type = 'barabasi'
         # self.graph_type = 'barabasi_small'

@@ -30,16 +30,15 @@ def create(args):
         for i in range(3000):
             # 50 nodes in all graphs
             graphs.append(ladder_extra(6, 10))
-            print (len(graphs[i].nodes()))
 
         # Have to see what max_prev nodes is
         args.max_prev_node = 28 # Just for 6,10
         return graphs
-    elif args.graph_type.startswith('layer-tree'):
+    elif args.graph_type.startswith('layer_tree'):
         graphs = []
         width = 6
         branch = 3
-        height_indx = args.graph_type.find('_') + 1
+        height_indx = args.graph_type.rfind('_') + 1
         height = int(args.graph_type[height_indx:])
         for i in range(1000):
             G = layered_tree(width, height, branch_factor=branch)
@@ -48,17 +47,16 @@ def create(args):
         # Max prev nodes????
         args.max_prev_node = 31 # width = 6, branch = 3
         return graphs
-    elif args.graph_type.startswith('ladder-tree'):
+    elif args.graph_type.startswith('ladder_tree'):
         graphs = []
         width = 6
         branch = 2
-        height_indx = args.graph_type.find('_') + 1
+        height_indx = args.graph_type.rfind('_') + 1
         height = int(args.graph_type[height_indx:])
         for i in range(1000):
             G = ladder_tree(width, height, branch_factor=branch)
             graphs.append(G)
 
-        # Max prev nodes????
         args.max_prev_node = 28 # width = 6, branch = 2
         return graphs
     elif args.graph_type.startswith('random'):
