@@ -487,7 +487,9 @@ class Graph_sequence_sampler_pytorch_rand(torch.utils.data.Dataset):
         # for small graph the rest are zero padded
         y_batch[0:adj_encoded.shape[0], :] = adj_encoded
         x_batch[1:adj_encoded.shape[0] + 1, :] = adj_encoded
-        return {'x':x_batch,'y':y_batch, 'len':len_batch}
+        # Note that we return the index so that we can properly track 
+        # which graph we are calculating the likelihood for.
+        return {'x':x_batch,'y':y_batch, 'len':len_batch, 'idx':idx}
 
     def calc_max_prev_node(self, iter=20000,topk=10):
         max_prev_node = []
