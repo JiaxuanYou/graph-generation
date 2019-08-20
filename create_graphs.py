@@ -59,7 +59,7 @@ def create(args):
             graphs.append(G)
 
         # Max prev nodes????
-        args.max_prev_node = 31 # width = 6, branch = 3
+        args.max_prev_node = 28 # width = 6, branch = 2
         return graphs
     elif args.graph_type.startswith('random'):
         indx_degree = int(args.graph_type.find('_')) + 1

@@ -28,10 +28,11 @@ class Args():
         #self.graph_type = 'grid'
         # self.graph_type = 'grid_small'
         #self.graph_type = 'ladder'
-        self.graph_type = 'ladder_small'
+        #self.graph_type = 'ladder_small'
         #self.graph_type = 'tree'
         #self.graph_type = 'tree_r_edge_1'
         #self.graph_type = 'layer-tree_40'
+        self.graph_type = 'ladder-tree_10'
         #self.graph_type = 'ladder_extra'
 
         # self.graph_type = 'enzymes'

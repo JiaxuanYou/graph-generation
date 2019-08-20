@@ -160,6 +160,35 @@ def eval_single_list(graphs, dir_input, dataset_name):
     print('clustering: ', mmd_clustering)
     print('orbits: ', mmd_4orbits)
 
+def compare_graph_list(graphs_1, graphs_2):
+    """
+        Compute basic graph statistics.
+
+        Return:
+        - MMD metric between degree distributions
+        - MMD metric between clustering distributions
+        - Degree distributions for graph1 and 2
+        - Clusterering coefficient distributions
+
+    """
+
+    mmd_degree = eval.stats.degree_stats(graphs_1, graphs_2)
+    mmd_clustering = eval.stats.clustering_stats(graphs_1, graphs_2)
+
+    clust_dist1 = list(nx.clustering(graphs_1).values())
+    clust_dist2 = list(nx.clustering(graphs_2).values())
+
+    degree_dist1 = list(graphs_1.degree().values())
+    degree_dist2 = list(graphs_2.degree())
+
+    metrics = {
+                'diff_degree': mmd_degree,
+                'diff_clust': mmd_clustering,
+                'degree_dist': (degree_dist1, degree_dist2)
+                'clust_dist': (clust_dist1, clust_dist2)
+                }
+    return metrics
+
 def evaluation_epoch(dir_input, fname_output, model_name, dataset_name, args, is_clean=True, epoch_start=1000,epoch_end=3001,epoch_step=100):
     with open(fname_output, 'w+') as f:
         f.write('sample_time,epoch,degree_validate,clustering_validate,orbits4_validate,degree_test,clustering_test,orbits4_test\n')
