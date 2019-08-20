@@ -854,7 +854,7 @@ def rnn_data_nll(args, rnn, output, data_loader):
 
 
 # This function gets the loglikelihoods of the data
-def calc_nll(args, data_loader, rnn, output, max_iter=100, load_epoch=3000, train_dataset=None):
+def calc_nll(args, data_loader, rnn, output, max_iter=100, load_epoch=3000, train_dataset=None, log=10):
     """
         For now the max_iter is not used. However, the idea in the future
         is to do max_iter loops of calculating the nlls of the data. Since
@@ -889,7 +889,7 @@ def calc_nll(args, data_loader, rnn, output, max_iter=100, load_epoch=3000, trai
         nll, avg_nll = rnn_data_nll(args, rnn, output, data_loader)
         # Logging info
         # May want to also include std statistics
-        if (i + 1) % 10 == 0:
+        if (i + 1) % log == 0:
             print ("Iteration:", i + 1)
             print ("Average Nll over train data:", np.mean(nll))
             

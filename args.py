@@ -19,7 +19,7 @@ class Args():
 
         ### Which dataset is used to train the model
         #self.graph_type = 'DD'
-        self.graph_type = 'DD_1'
+        # self.graph_type = 'DD_1'
         # self.graph_type = 'caveman'
         # self.graph_type = 'caveman_small'
         # self.graph_type = 'caveman_small_single'
