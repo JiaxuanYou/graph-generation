@@ -104,7 +104,11 @@ if __name__ == '__main__':
         dataset = Graph_sequence_sampler_pytorch_canonical(graphs_train,max_prev_node=args.max_prev_node)
         args.max_prev_node = args.max_num_node - 1
     else:
-        dataset = Graph_sequence_sampler_pytorch(graphs_train,max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
+        if args.train_all:
+            dataset =  Graph_sequence_sampler_pytorch(graphs,max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
+        else:
+            dataset = Graph_sequence_sampler_pytorch(graphs_train,max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
+
         if args.max_prev_node is None:
             args.max_prev_node = dataset.max_prev_node
     sample_strategy = torch.utils.data.sampler.WeightedRandomSampler([1.0 / len(dataset) for i in range(len(dataset))],
@@ -148,9 +152,16 @@ if __name__ == '__main__':
 
     # Visualize distribution of nlls
     #dataset_nll = Graph_sequence_sampler_pytorch_nll(graphs_train,max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
-    #dataset = Graph_sequence_sampler_pytorch_rand(graphs_train,max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
-    #dataset_loader = torch.utils.data.DataLoader(dataset, batch_size=1, num_workers=args.num_workers)
+    '''
+    dataset = Graph_sequence_sampler_pytorch_rand(graphs_train,max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
+    dataset_loader = torch.utils.data.DataLoader(dataset, batch_size=1, num_workers=args.num_workers)
     #print (len(dataset_loader))
     #quit()
-    #analyze_nll(args, dataset_loader, dataset_loader, rnn, output, max_iter = 200, graph_validate_len=graph_validate_len,graph_test_len=graph_test_len)
-
+    lls, avg_lls = calc_nll(args, dataset_loader, rnn, output, max_iter=200, load_epoch=100, train_dataset=None)
+    lls = np.array(lls)
+    print (lls.shape)
+    lls = lls.reshape(200, len(dataset_loader))
+    lls = np.mean(lls, axis=0)
+    print (lls.shape)
+    print (lls)
+    '''
