@@ -35,12 +35,13 @@ def create(args):
         # Have to see what max_prev nodes is
         args.max_prev_node = 28 # Just for 6,10
         return graphs
-    elif args.graph_type=='layer-tree':
+    elif args.graph_type.startswith('layer-tree'):
         graphs = []
         width = 6
-        height = 10
         branch = 3
-        for i in range(3000):
+        height_indx = args.graph_type.find('_') + 1
+        height = int(args.graph_type[height_indx:])
+        for i in range(1000):
             G = layered_tree(width, height, branch_factor=branch)
             graphs.append(G)
 
