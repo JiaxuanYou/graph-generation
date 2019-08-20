@@ -17,6 +17,7 @@ import re
 import data
 #from create_graphs import * -- bad circular reference!!!
 
+
 def ladder_extra(width, height):
     # First generate the grid (width x height)
     # that we will then modify by adding extra edges
@@ -42,6 +43,53 @@ def ladder_extra(width, height):
             base_ladder.add_edge(curr_node, (row + 1, connect))
 
     return base_ladder
+
+
+def ladder_tree(width, height, branch_factor=2):
+    """
+        Similar to layered tree except each layer is 
+        connected horazontally and cicularly like that 
+        of a rung in a cicular ladder
+    """
+    G = nx.null_graph()
+
+    # Create the first layer
+    for i in range(width):
+        # Label nodes as tuples of form (layer, index)
+        G.add_node((0, i))
+
+        # Connect the 'rung' of the ladder
+        if (i > 0):
+            G.add_edge((0, i), (0, i-1))
+
+    # Add cicular edge
+    G.add_edge((0, 0), (0, width-1))
+
+    choices = np.arange(width)
+    for layer in range(height - 1):
+        # Generate the next layer
+        for i in range(width):
+            G.add_node((layer + 1, i))
+            # Connect the 'rung' of the ladder
+            if (i > 0):
+                G.add_edge((layer + 1, i), (layer + 1, i-1))
+        # Add cicular edge
+        G.add_edge((layer + 1, 0), (layer + 1, width-1))
+
+        # Add random edges
+        for u in range(width):
+            connections = np.random.choice(choices, size=branch_factor, replace=False)
+            for v in connections:
+                G.add_edge((layer, u), (layer + 1, v))
+
+    # Create circular connection for entire ladder
+    for u in range(width):
+        connections = np.random.choice(choices, size=branch_factor, replace=False)
+        for v in connections:
+            G.add_edge((height - 1, u), (0, v))
+
+    return G
+
 
 def layered_tree(width, height, branch_factor=3):
     """
@@ -605,10 +653,10 @@ if __name__ == '__main__':
         #draw_graph_list(graphs[i:i+16], 4, 4, fname='figures/community4_' + str(i))
 
     # test calculating the average node degree
-    graph = layered_tree(6, 10, branch_factor=3)
-    graph = nx.random_regular_graph(6, 60)
+    graph = ladder_tree(6, 10, branch_factor=2)
+    #graph = nx.random_regular_graph(6, 60)
     #print (graph.edges())
-    #graph = nx.grid_2d_graph(10, 6)
+    draw_graph2(graph)
     print (graph.degree())
     degree_avg = np.mean([degree for _, degree in graph.degree().items()])
     print (degree_avg)
