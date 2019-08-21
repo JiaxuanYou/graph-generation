@@ -44,6 +44,40 @@ def ladder_extra(width, height):
 
     return base_ladder
 
+def ladder_extra_circular(width, height):
+    G = ladder_extra(width, height)
+    # Simply add an extra connection from the last
+    # layer back to the first to make the graph circular
+    # Create circular connection for entire ladder
+    for node in range(width):
+        # Connect the nodes in the same column
+        G.add_edge((height - 1, node), (0, node))
+
+        # Add random connection
+        connect = np.random.randint(width-1)
+
+        # if connect is the node below simply make it the last
+        # node in the ladder which is not generated in the random #
+        if connect == node:
+            connect = width - 1
+
+        G.add_edge((height - 1, node), (0, connect))
+
+    return G
+
+def ladder_extra_full_circular(width, height):
+    """
+        Creates a ladder_extra_circular graph 
+        and then makes every row in the ladder also
+        circular.
+    """
+    G = ladder_extra_circular(width, height)
+
+    for row in range(height):
+        # Connect the first and the last node
+        G.add_edge((row, 0), (row, width-1))
+
+    return G
 
 def ladder_tree(width, height, branch_factor=2):
     """
@@ -653,7 +687,7 @@ if __name__ == '__main__':
         #draw_graph_list(graphs[i:i+16], 4, 4, fname='figures/community4_' + str(i))
 
     # test calculating the average node degree
-    graph = ladder_tree(6, 10, branch_factor=2)
+    graph = ladder_extra_circular(6, 10)
     #graph = nx.random_regular_graph(6, 60)
     #print (graph.edges())
     draw_graph2(graph)
