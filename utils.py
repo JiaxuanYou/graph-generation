@@ -158,6 +158,36 @@ def layered_tree(width, height, branch_factor=3):
 
     return G
 
+def draw_ladder(graph, height, highlight_grid=True):
+
+    # Plot the edge
+    for edge in graph.edges():
+        node1 = edge[0]
+        node2 = edge[1]
+
+        # Flip the coordinates so the ladder
+        # Goes downward
+        y = [height - node1[0] - 1, height - node2[0] - 1]
+        x = [node1[1], node2[1]]
+
+        # Don't include circular connections from the final layer
+        if highlight_grid:
+            if (y[0] != height -1 or y[1] != 0) \
+                and (y[0] != 0 or y[1] != height -1):
+                # See if it defines the grid structure
+                if (x[0] == x[1]) or y[0] == y[1]:
+                    plt.plot(x, y, 'r-')
+                else:
+                    plt.plot(x, y, 'g-')
+        else:
+            plt.plot(x, y, 'g-')
+
+    # Plot the nodes
+    for node in graph.nodes():
+        plt.plot(node[1], height - node[0] - 1, 'bo')
+
+    plt.show()
+
 
 def citeseer_ego():
     _, _, G = data.Graph_load(dataset='citeseer')
@@ -687,13 +717,14 @@ if __name__ == '__main__':
         #draw_graph_list(graphs[i:i+16], 4, 4, fname='figures/community4_' + str(i))
 
     # test calculating the average node degree
-    graph = ladder_extra_circular(6, 10)
+    graph = ladder_tree(6, 10)
+    draw_ladder(graph, 10)
     #graph = nx.random_regular_graph(6, 60)
     #print (graph.edges())
-    draw_graph2(graph)
-    print (graph.degree())
-    degree_avg = np.mean([degree for _, degree in graph.degree().items()])
-    print (degree_avg)
+    #draw_graph2(graph)
+    #print (graph.degree())
+    #degree_avg = np.mean([degree for _, degree in graph.degree().items()])
+    #print (degree_avg)
 
     #layered_tree(3, 4, branch_factor=2)
 
