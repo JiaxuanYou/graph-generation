@@ -1,7 +1,5 @@
 from train import *
 
-#device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
-
 if __name__ == '__main__':
     # All necessary arguments are defined in args.py
     args = Args()
@@ -72,6 +70,8 @@ if __name__ == '__main__':
     print('total graph num: {}, training set: {}'.format(len(graphs),len(graphs_train)))
     print('max number node: {}'.format(args.max_num_node))
     print('max/min number edge: {}; {}'.format(max_num_edge,min_num_edge))
+    # This is important because it defines how far back the GraphRNN
+    # has to predict
     print('max previous node: {}'.format(args.max_prev_node))
 
     # save ground truth graphs
@@ -82,6 +82,7 @@ if __name__ == '__main__':
 
 
     ### dataset initialization
+    # Not used
     if 'nobfs' in args.note:
         print('nobfs')
         dataset = Graph_sequence_sampler_pytorch_nobfs(graphs_train, max_num_node=args.max_num_node)
