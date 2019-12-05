@@ -60,7 +60,7 @@ def kernel_parallel_unpacked(x, samples2, kernel):
 def kernel_parallel_worker(t):
     return kernel_parallel_unpacked(*t)
 
-def disc(samples1, samples2, kernel, is_parallel=True, *args, **kwargs):
+def disc(samples1, samples2, kernel, is_parallel=False, *args, **kwargs):
     ''' Discrepancy between 2 samples
     '''
     d = 0
