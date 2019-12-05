@@ -15,7 +15,7 @@ import pickle
 import re
 
 import data
-#from create_graphs import * -- bad circular reference!!!
+#from create_graphs import * #-- bad circular reference!!!
 
 
 def ladder_extra(width, height):
@@ -356,7 +356,7 @@ def draw_graph2(G, prefix = 'test'):
 
 # draw a single graph G
 def draw_graph(G, prefix = 'test'):
-    '''
+    
     parts = community.best_partition(G)
     values = [parts.get(node) for node in G.nodes()]
     colors = []
@@ -377,13 +377,13 @@ def draw_graph(G, prefix = 'test'):
             colors.append('black')
 
     # spring_pos = nx.spring_layout(G)
-    '''
+    
     plt.switch_backend('agg')
     plt.axis("off")
 
     pos = nx.spring_layout(G)
-    pos = nx.spectral_layout(G)
-    nx.draw_networkx(G, with_labels=True, node_size=35, pos=pos)
+    #pos = nx.spectral_layout(G)
+    nx.draw_networkx(G, with_labels=False, node_size=5, node_color=colors, pos=pos)
     #nx.draw_networkx(G, with_labels=True, node_size=35, node_color=colors,pos=pos)
 
 
@@ -709,16 +709,17 @@ if __name__ == '__main__':
     #graphs = load_graph_list('graphs/' + 'GraphRNN_RNN_community4_4_128_train_0.dat')
     #graphs = load_graph_list('graphs/' + 'GraphRNN_RNN_community4_4_128_pred_2500_1.dat')
     #graphs = load_graph_list('eval_results/mmsb/' + 'community41.dat')
-    #graphs = create_name('tree_r_node_1')
-    #graphs = load_graph_list('graphs/' + 'GraphRNN_RNN_tree_4_128_train_0.dat')
-    #draw_graph(graphs[0], prefix='train')
+    #graphs = create_name('DD')
+    graphs = load_graph_list('graphs/' + 'GraphRNN_RNN_DD_4_128_train_0.dat')
+    draw_graph(graphs[0], prefix='train')
     #draw_graph_list(graphs, 3, 2, fname='figures/trees')
     #for i in range(0, 160, 16):
         #draw_graph_list(graphs[i:i+16], 4, 4, fname='figures/community4_' + str(i))
 
     # test calculating the average node degree
-    graph = ladder_tree(6, 10)
-    draw_ladder(graph, 10)
+    #graph = ladder_tree(6, 10)
+
+    #draw_ladder(graph, 10)
     #graph = nx.random_regular_graph(6, 60)
     #print (graph.edges())
     #draw_graph2(graph)
