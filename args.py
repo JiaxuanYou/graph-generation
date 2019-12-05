@@ -32,7 +32,9 @@ class Args():
         #self.graph_type = 'tree'
         #self.graph_type = 'tree_r_edge_1'
         #self.graph_type = 'layer-tree_40'
-        #self.graph_type = 'ladder-tree_10'
+
+        #self.graph_type = 'ladder_tree_10'
+        self.graph_type = 'ladder_extra_full_circular'
         #self.graph_type = 'ladder_extra'
 
         # self.graph_type = 'enzymes'

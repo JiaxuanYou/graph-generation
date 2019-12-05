@@ -27,9 +27,27 @@ def create(args):
         args.max_prev_node = 10
     elif args.graph_type == 'ladder_extra':
         graphs = []
-        for i in range(3000):
+        for i in range(1000):
             # 50 nodes in all graphs
             graphs.append(ladder_extra(6, 10))
+
+        # Have to see what max_prev nodes is
+        args.max_prev_node = 28 # Just for 6,10
+        return graphs
+    elif args.graph_type == 'ladder_extra_circular':
+        graphs = []
+        for i in range(1000):
+            # 50 nodes in all graphs
+            graphs.append(ladder_extra_circular(6, 10))
+
+        # Have to see what max_prev nodes is!!
+        args.max_prev_node = 28 # Just for 6,10
+        return graphs
+    elif args.graph_type == 'ladder_extra_full_circular':
+        graphs = []
+        for i in range(1000):
+            # 50 nodes in all graphs
+            graphs.append(ladder_extra_full_circular(6, 10))
 
         # Have to see what max_prev nodes is
         args.max_prev_node = 28 # Just for 6,10
@@ -67,7 +85,7 @@ def create(args):
         nodes = int(args.graph_type[indx_nodes + 1: ])
 
         graphs = []
-        for i in range(3000):
+        for i in range(1000):
             graphs.append(nx.random_regular_graph(degree, nodes))
 
         # Note we are only using these for testing so shouldn't need this

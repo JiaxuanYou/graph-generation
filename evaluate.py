@@ -165,27 +165,52 @@ def compare_graph_list(graphs_1, graphs_2):
         Compute basic graph statistics.
 
         Return:
-        - MMD metric between degree distributions
-        - MMD metric between clustering distributions
-        - Degree distributions for graph1 and 2
+        - Avg Degree
+        - Avg Clustering coefficient
+        - Avg Degree connectivity
+        - Degree distributions 
         - Clusterering coefficient distributions
+        - Degree connectivity distributions
 
     """
+    
+    
+    # Look at the avg clustering coefficient distribution
+    # for the graphs
+    clust_dist1 = []
+    for i in range(len(graphs_1)):
+        clust_dist1.append(nx.average_clustering(graphs_1[i]))
+        
+    clust_dist2 = []
+    for i in range(len(graphs_2)):
+        clust_dist2.append(nx.average_clustering(graphs_2[i]))
 
-    mmd_degree = eval.stats.degree_stats(graphs_1, graphs_2)
-    mmd_clustering = eval.stats.clustering_stats(graphs_1, graphs_2)
-
-    clust_dist1 = list(nx.clustering(graphs_1).values())
-    clust_dist2 = list(nx.clustering(graphs_2).values())
-
-    degree_dist1 = list(graphs_1.degree().values())
-    degree_dist2 = list(graphs_2.degree())
+    # Calculate avg node degree distribution for the graphs
+    degree_dist1 = []
+    for i in range(len(graphs_1)):
+        degree_dist1.append(np.mean([degree for _, degree in graphs_1[i].degree().items()]))
+    
+    degree_dist2 = []
+    for i in range(len(graphs_2)):
+        degree_dist2.append(np.mean([degree for _, degree in graphs_2[i].degree().items()]))
+        
+    connect_dist1 = []
+    for i in range(len(graphs_1)):
+        connect_dist1.append(np.mean([degree for _, degree in nx.average_degree_connectivity(graphs_1[i]).items()]))
+       
+    connect_dist2 = []
+    for i in range(len(graphs_2)):
+        connect_dist2.append(np.mean([degree for _, degree in nx.average_degree_connectivity(graphs_2[i]).items()]))
+        
+    avg_degree = (np.mean(degree_dist1), np.mean(degree_dist2))
+    avg_cluster = (np.mean(clust_dist1), np.mean(clust_dist2))
 
     metrics = {
-                'diff_degree': mmd_degree,
-                'diff_clust': mmd_clustering,
-                'degree_dist': (degree_dist1, degree_dist2)
-                'clust_dist': (clust_dist1, clust_dist2)
+                'avg_degree': avg_degree,
+                'avg_clust': avg_cluster,
+                'degree_dist': (degree_dist1, degree_dist2),
+                'clust_dist': (clust_dist1, clust_dist2),
+                'connect_dist': (connect_dist1, connect_dist2)
                 }
     return metrics
 

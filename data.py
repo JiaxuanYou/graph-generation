@@ -443,6 +443,7 @@ class Graph_sequence_sampler_pytorch_rand(torch.utils.data.Dataset):
     def __init__(self, G_list, max_num_node=None, max_prev_node=None, iteration=20000):
         self.adj_all = []
         self.len_all = []
+        self.graphs = G_list
         for G in G_list:
             self.adj_all.append(np.asarray(nx.to_numpy_matrix(G)))
             self.len_all.append(G.number_of_nodes())
@@ -489,7 +490,9 @@ class Graph_sequence_sampler_pytorch_rand(torch.utils.data.Dataset):
         x_batch[1:adj_encoded.shape[0] + 1, :] = adj_encoded
         # Note that we return the index so that we can properly track 
         # which graph we are calculating the likelihood for.
-        return {'x':x_batch,'y':y_batch, 'len':len_batch, 'idx':idx}
+        return {'x':x_batch,'y':y_batch, 
+                'len':len_batch, 'idx':idx} 
+                #'G':self.adj_all[idx]}
 
     def calc_max_prev_node(self, iter=20000,topk=10):
         max_prev_node = []
