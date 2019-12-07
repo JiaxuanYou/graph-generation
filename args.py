@@ -20,7 +20,7 @@ class Args():
 
         ### Which dataset is used to train the model
         #self.graph_type = 'DD'
-        # self.graph_type = 'DD_1'
+        self.graph_type = 'DD_1'
         # self.graph_type = 'caveman'
         # self.graph_type = 'caveman_small'
         # self.graph_type = 'caveman_small_single'
@@ -33,7 +33,7 @@ class Args():
         #self.graph_type = 'tree_r_edge_1'
         #self.graph_type = 'layer-tree_40'
 
-        self.graph_type = 'ladder_tree_10'
+        #self.graph_type = 'ladder_tree_10'
         #self.graph_type = 'ladder_extra_full_circular'
         #self.graph_type = 'ladder_extra'
 
@@ -78,7 +78,7 @@ class Args():
         self.epochs = 3000 #was 3000 # now one epoch means self.batch_ratio x batch_size
         self.epochs_test_start = 100 # was 100
         self.epochs_test = 100 # was 100
-        self.epochs_log = 100 # was 100
+        self.epochs_log = 10 # was 100
         self.epochs_save = 100 # was 100
 
         self.lr = 0.003
