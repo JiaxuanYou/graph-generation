@@ -16,6 +16,18 @@ parser.add_argument('--load_epoch', type=int,
                     help='The epoch for which to load the pre-trained model')
 parser.add_argument('--max_iter', type=int, default=100,
                     help='The number of permuations to consider for each graph')
+parser.add_argument('--anom_test', action='store_true', 
+                    help='Whether or not we calculate the train and test lls' )
+parser.set_defaults(anom_test=False)
+
+
+"""
+    
+    Example of run:
+
+    
+"""
+
 
 # User inputed args
 user_args = parser.parse_args()
@@ -76,13 +88,13 @@ print('model loaded!, epoch: {}'.format(user_args.load_epoch))
 # the scores for the anomalous graph as we have already computed
 # them for the train and test
 if not user_args.anom_test:
-    train_dataset = Graph_sequence_sampler_pytorch_rand(train_layer_tree,max_prev_node=args_layer_tree.max_prev_node,max_num_node=args_layer_tree.max_num_node)
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=1, num_workers=args_layer_tree.num_workers)
+    train_dataset = Graph_sequence_sampler_pytorch_rand(train_norm,max_prev_node=args_norm.max_prev_node,max_num_node=args_norm.max_num_node)
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=1, num_workers=args_norm.num_workers)
 
-    test_dataset = Graph_sequence_sampler_pytorch_rand(test_layer_tree, max_prev_node=args_layer_tree.max_prev_node,max_num_node=args_layer_tree.max_num_node)
-    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, num_workers=args_layer_tree.num_workers)
+    test_dataset = Graph_sequence_sampler_pytorch_rand(test_norm, max_prev_node=args_norm.max_prev_node,max_num_node=args_norm.max_num_node)
+    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, num_workers=args_norm.num_workers)
 
-    train_nlls, train_avg_nlls = calc_nll(args_prot1, train_loader, rnn, output, log=1) #, max_iter=user_args.max_iter, load_epoch=user_args.load_epoch, log=1)
+    train_nlls, train_avg_nlls = calc_nll(args_norm, train_loader, rnn, output, log=1) #, max_iter=user_args.max_iter, load_epoch=user_args.load_epoch, log=1)
 
     # Compute the avg_nll for each graph averaged over the max_iter permuations
     train_avg_graph_nlls = np.array(train_avg_nlls)
@@ -91,7 +103,7 @@ if not user_args.anom_test:
 
     # Analysis of the test data set nlls.
     # We really gotta train over more data!
-    test_nlls, test_avg_nlls = calc_nll(args_prot1, test_loader, rnn, output, log=1) #, load_epoch=user_args.load_epoch, max_iter=user_args.max_iter, log=1)
+    test_nlls, test_avg_nlls = calc_nll(args_norm, test_loader, rnn, output, log=1) #, load_epoch=user_args.load_epoch, max_iter=user_args.max_iter, log=1)
 
     test_avg_graph_nlls = np.array(test_avg_nlls)
     test_avg_graph_nlls = test_avg_graph_nlls.reshape((len(user_args.max_iter, len(test_loader))))
