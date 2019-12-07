@@ -14,7 +14,7 @@ parser.add_argument('--dataset_anom', dest='dataset_anom',type=str,
                     help='The anomalous dataset')
 parser.add_argument('--load_epoch', type=int, 
                     help='The epoch for which to load the pre-trained model')
-parser.add_argument('--max_iter', type=int, default=100,
+parser.add_argument('--max_iter', type=int, default=5,
                     help='The number of permuations to consider for each graph')
 parser.add_argument('--anom_test', action='store_true', 
                     help='Whether or not we calculate the train and test lls' )
@@ -94,7 +94,7 @@ if not user_args.anom_test:
     test_dataset = Graph_sequence_sampler_pytorch_rand(test_norm, max_prev_node=args_norm.max_prev_node,max_num_node=args_norm.max_num_node)
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, num_workers=args_norm.num_workers)
 
-    train_nlls, train_avg_nlls = calc_nll(args_norm, train_loader, rnn, output, log=1) #, max_iter=user_args.max_iter, load_epoch=user_args.load_epoch, log=1)
+    train_nlls, train_avg_nlls = calc_nll(args_norm, train_loader, rnn, output, max_iter=user_args.max_iter, log=1) #, max_iter=user_args.max_iter, load_epoch=user_args.load_epoch, log=1)
 
     # Compute the avg_nll for each graph averaged over the max_iter permuations
     train_avg_graph_nlls = np.array(train_avg_nlls)
@@ -103,7 +103,7 @@ if not user_args.anom_test:
 
     # Analysis of the test data set nlls.
     # We really gotta train over more data!
-    test_nlls, test_avg_nlls = calc_nll(args_norm, test_loader, rnn, output, log=1) #, load_epoch=user_args.load_epoch, max_iter=user_args.max_iter, log=1)
+    test_nlls, test_avg_nlls = calc_nll(args_norm, test_loader, rnn, output, max_iter=user_args.max_iter, log=1) #, load_epoch=user_args.load_epoch, max_iter=user_args.max_iter, log=1)
 
     test_avg_graph_nlls = np.array(test_avg_nlls)
     test_avg_graph_nlls = test_avg_graph_nlls.reshape((len(user_args.max_iter, len(test_loader))))
@@ -124,7 +124,7 @@ anom_loader = torch.utils.data.DataLoader(anom_dataset, batch_size=1, num_worker
 # the trained on enzymes.
 # NOTE we pass in the args_norm because the model we are
 # using are trained on the normal class dataset
-anom_nlls, anom_avg_nlls = calc_nll(args_norm, anom_loader, rnn, output, log=1) #, max_iter=user_args.max_iter, load_epoch=user_args.load_epoch, train_dataset=user_args.dataset_norm, log=1)
+anom_nlls, anom_avg_nlls = calc_nll(args_norm, anom_loader, rnn, output, max_iter=user_args.max_iter, log=1) #, max_iter=user_args.max_iter, load_epoch=user_args.load_epoch, train_dataset=user_args.dataset_norm, log=1)
 
 anom_avg_graph_nlls = np.array(prot2_avg_nlls)
 anom_avg_graph_nlls = anom_avg_graph_nlls.reshape((user_args.max_iter, len(anom_loader)))
