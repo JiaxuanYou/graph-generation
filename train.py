@@ -234,7 +234,9 @@ def train(args, dataset_train, rnn, output):
     np.save(args.timing_save_path+args.fname,time_all)
 
 
-
+# Given a data_loader full of graphs, runs through the 
+# data loader once to calculate the nll for every graph
+# in the dataset
 def rnn_data_nll(args, rnn, output, data_loader):
     rnn.train()
     output.train()
@@ -325,13 +327,9 @@ def rnn_data_nll(args, rnn, output, data_loader):
 # This function gets the loglikelihoods of the data
 def calc_nll(args, data_loader, rnn, output, max_iter=100, load_epoch=3000, train_dataset=None, log=10):
     """
-        For now the max_iter is not used. However, the idea in the future
-        is to do max_iter loops of calculating the nlls of the data. Since
-        the model is permutation dependent, namely we use a random bfs ordering
-        for each graph when training/testing, we should do many iterations to
-        test the robustness of the model to permutation. This could also be
-        addressed using nll data_loader. 
+        C 
     """
+    '''
     # Set the epoch we are loading from
     args.load_epoch = load_epoch
     if train_dataset:
@@ -348,6 +346,7 @@ def calc_nll(args, data_loader, rnn, output, max_iter=100, load_epoch=3000, trai
 
     epoch = args.load_epoch
     print('model loaded!, epoch: {}'.format(args.load_epoch))
+    '''
 
     # Calculate nll over dataset max_iter times,
     # to test robustness to permutations of the bfs
@@ -367,7 +366,7 @@ def calc_nll(args, data_loader, rnn, output, max_iter=100, load_epoch=3000, trai
         
     return nlls, avg_nlls
 
-
+# Not used!
 def analyze_nll(args, dataset_train, dataset_test, rnn, output,graph_validate_len,graph_test_len, max_iter = 1000, dataset=None):
     """
         Given a trained model, calculate the negative log likelihoods for each data point in the 
