@@ -33,13 +33,13 @@ class Args():
         #self.graph_type = 'tree_r_edge_1'
         #self.graph_type = 'layer-tree_40'
 
-        #self.graph_type = 'ladder_tree_10'
-        self.graph_type = 'ladder_extra_full_circular'
+        self.graph_type = 'ladder_tree_10'
+        #self.graph_type = 'ladder_extra_full_circular'
         #self.graph_type = 'ladder_extra'
 
         # self.graph_type = 'enzymes'
         # self.graph_type = 'enzymes_1'
-        self.graph_type = 'enzymes_small'
+        #self.graph_type = 'enzymes_small'
         # self.graph_type = 'barabasi'
         # self.graph_type = 'barabasi_small'
         # self.graph_type = 'citeseer'
