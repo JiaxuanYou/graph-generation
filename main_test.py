@@ -129,5 +129,5 @@ anom_nlls, anom_avg_nlls = calc_nll(args_norm, anom_loader, rnn, output, max_ite
 anom_avg_graph_nlls = np.array(anom_avg_nlls)
 anom_avg_graph_nlls = anom_avg_graph_nlls.reshape((user_args.max_iter, len(anom_loader)))
 anom_avg_graph_nlls = np.mean(anom_avg_graph_nlls, axis=0)
-np.save(nll_dir + user_args.dataset_anom + '_avg_graph_nlls.npy', train_avg_graph_nlls)
+np.save(nll_dir + user_args.dataset_anom + '_avg_graph_nlls.npy', anom_avg_graph_nlls)
 
