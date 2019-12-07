@@ -106,7 +106,7 @@ if not user_args.anom_test:
     test_nlls, test_avg_nlls = calc_nll(args_norm, test_loader, rnn, output, max_iter=user_args.max_iter, log=1) #, load_epoch=user_args.load_epoch, max_iter=user_args.max_iter, log=1)
 
     test_avg_graph_nlls = np.array(test_avg_nlls)
-    test_avg_graph_nlls = test_avg_graph_nlls.reshape((len(user_args.max_iter, len(test_loader))))
+    test_avg_graph_nlls = test_avg_graph_nlls.reshape((user_args.max_iter, len(test_loader)))
     test_avg_graph_nlls = np.mean(test_avg_graph_nlls, axis=0)
 
     np.save(nll_dir + 'train_avg_graph_nlls.npy', train_avg_graph_nlls)
@@ -126,7 +126,7 @@ anom_loader = torch.utils.data.DataLoader(anom_dataset, batch_size=1, num_worker
 # using are trained on the normal class dataset
 anom_nlls, anom_avg_nlls = calc_nll(args_norm, anom_loader, rnn, output, max_iter=user_args.max_iter, log=1) #, max_iter=user_args.max_iter, load_epoch=user_args.load_epoch, train_dataset=user_args.dataset_norm, log=1)
 
-anom_avg_graph_nlls = np.array(prot2_avg_nlls)
+anom_avg_graph_nlls = np.array(anom_avg_nlls)
 anom_avg_graph_nlls = anom_avg_graph_nlls.reshape((user_args.max_iter, len(anom_loader)))
 anom_avg_graph_nlls = np.mean(anom_avg_graph_nlls, axis=0)
 np.save(nll_dir + user_args.dataset_anom + '_avg_graph_nlls.npy', train_avg_graph_nlls)
