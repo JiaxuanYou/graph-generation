@@ -20,7 +20,29 @@ class Args():
 
         ### Which dataset is used to train the model
         #self.graph_type = 'DD'
-        self.graph_type = 'DD_1'
+        #self.graph_type = 'DD_1'
+
+        #self.graph_type = 'AIDS'
+        #self.graph_type = 'AIDS_1'
+
+        #self.graph_type = 'Fingerprint'
+        #self.graph_type = 'Fingerprint_1'
+
+        #self.graph_type = 'Collab'
+        #self.graph_type = 'Collab'
+
+        #self.graph_type = 'IMDB-MULTI'
+        #self.graph_type = 'IMDB-MULTI_0'
+
+        #self.graph_type = 'Letter-high'
+        #self.graph_type = 'Letter-high_0'
+
+        #self.graph_type = 'Letter-med'
+        #self.graph_type = 'Letter-med'
+
+        #self.graph_type = 'Letter-low'
+        self.graph_type = 'Letter-low_1' # N
+
         # self.graph_type = 'caveman'
         # self.graph_type = 'caveman_small'
         # self.graph_type = 'caveman_small_single'
@@ -37,7 +59,7 @@ class Args():
         #self.graph_type = 'ladder_extra_full_circular'
         #self.graph_type = 'ladder_extra'
 
-        # self.graph_type = 'enzymes'
+        #self.graph_type = 'enzymes'
         # self.graph_type = 'enzymes_1'
         #self.graph_type = 'enzymes_small'
         # self.graph_type = 'barabasi'

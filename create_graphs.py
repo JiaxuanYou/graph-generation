@@ -246,7 +246,7 @@ def create(args):
 
     # real graphs
     elif args.graph_type == 'enzymes':
-        graphs= Graph_load_batch(min_num_nodes=10, name='ENZYMES')
+        graphs= Graph_load_batch(min_num_nodes=10, name='ENZYMES', node_attributes=True,node_labels=True)
         args.max_prev_node = 25
     elif args.graph_type == 'enzymes_small':
         graphs_raw = Graph_load_batch(min_num_nodes=10, name='ENZYMES')
@@ -257,18 +257,93 @@ def create(args):
         args.max_prev_node = 15
     elif args.graph_type.startswith('enzymes'):
         graph_label = int(args.graph_type[-1])
-        graphs= Graph_load_label(min_num_nodes=10, name='ENZYMES', graph_label=graph_label)
+        graphs= Graph_load_label(min_num_nodes=10, name='ENZYMES', node_attributes=True,node_labels=True, graph_label=graph_label)
         args.max_prev_node = 25
+
     elif args.graph_type == 'protein':
         graphs = Graph_load_batch(min_num_nodes=20, name='PROTEINS_full')
         args.max_prev_node = 80
+
     elif args.graph_type == 'DD':
-        graphs = Graph_load_batch(min_num_nodes=100, max_num_nodes=500, name='DD',node_attributes=False,graph_labels=True)
+        graphs = Graph_load_batch(min_num_nodes=100, max_num_nodes=500, name='DD',node_attributes=False, node_labels=True)
         args.max_prev_node = 230
     elif args.graph_type.startswith('DD'):
         graph_label = int(args.graph_type[-1])
-        graphs= Graph_load_label(min_num_nodes=100, max_num_nodes=500, name='DD', node_attributes=False,graph_labels=True, graph_label=graph_label)
+        graphs= Graph_load_label(min_num_nodes=100, max_num_nodes=500, name='DD', node_attributes=False,node_labels=True, graph_label=graph_label)
         args.max_prev_node = 230
+
+    elif args.graph_type == 'AIDS':
+        # Gotta calc this!
+        graphs = Graph_load_batch(min_num_nodes=2, max_num_nodes=100, name='AIDS',node_attributes=False,node_labels=True)
+        args.max_prev_node = 16
+    elif args.graph_type.startswith('AIDS'):
+        graph_label = int(args.graph_type[-1])
+        graphs= Graph_load_label(min_num_nodes=2, max_num_nodes=100, name='AIDS', node_attributes=False,node_labels=True, graph_label=graph_label)
+        args.max_prev_node = 16
+
+    elif args.graph_type == 'Fingerprint':
+        # Gotta calc this!
+        graphs = Graph_load_batch(min_num_nodes=2, max_num_nodes=26, name='Fingerprint',node_attributes=True, node_labels=False)
+        args.max_prev_node = 6
+    elif args.graph_type.startswith('Fingerprint'):
+        graph_label = int(args.graph_type[-1])
+        graphs= Graph_load_label(min_num_nodes=2, max_num_nodes=26, name='Fingerprint', node_attributes=True,node_labels=False, graph_label=graph_label)
+        args.max_prev_node = 6
+
+    elif args.graph_type == 'Collab':
+        # Gotta calc this!
+        graphs = Graph_load_batch(min_num_nodes=32, max_num_nodes=492, name='Collab',node_attributes=False, node_labels=False)
+        args.max_prev_node = 480
+    elif args.graph_type.startswith('Collab'):
+        graph_label = int(args.graph_type[-1])
+        graphs= Graph_load_label(min_num_nodes=32, max_num_nodes=492, name='Collab', node_attributes=False,node_labels=False, graph_label=graph_label)
+        args.max_prev_node = 480
+
+    elif args.graph_type == 'IMDB-MULTI':
+        # Gotta calc this!
+        graphs = Graph_load_batch(min_num_nodes=7, max_num_nodes=89, name='IMDB-MULTI',node_attributes=False, node_labels=False)
+        args.max_prev_node = 86
+    elif args.graph_type.startswith('IMDB-MULTI'):
+        graph_label = int(args.graph_type[-1])
+        graphs= Graph_load_label(min_num_nodes=7, max_num_nodes=89, name='IMDB-MULTI', node_attributes=False,node_labels=False, graph_label=graph_label)
+        args.max_prev_node = 86
+
+    elif args.graph_type == 'REDDIT-MULTI-12K': # Not done yet
+        # Gotta calc this!
+        graphs = Graph_load_batch(min_num_nodes=2, max_num_nodes=1000000, name='REDDIT-MULTI-12K',node_attributes=False, node_labels=False)
+        args.max_prev_node = 16
+    elif args.graph_type.startswith('REDDIT-MULTI-12K'):
+        graph_label = int(args.graph_type[-1])
+        graphs= Graph_load_label(min_num_nodes=1, max_num_nodes=26, name='REDDIT-MULTI-12K', node_attributes=False,node_labels=False, graph_label=graph_label)
+        args.max_prev_node = 16
+
+    elif args.graph_type == 'Letter-high':
+        # Gotta calc this!
+        graphs = Graph_load_batch(min_num_nodes=2, max_num_nodes=9, name='Letter-high',node_attributes=True, node_labels=False)
+        args.max_prev_node = 6
+    elif args.graph_type.startswith('Letter-high'):
+        graph_label = int(args.graph_type[-1])
+        graphs= Graph_load_label(min_num_nodes=2, max_num_nodes=9, name='Letter-high', node_attributes=True,node_labels=False, graph_label=graph_label)
+        args.max_prev_node = 6
+
+    elif args.graph_type == 'Letter-med':
+        # Gotta calc this!
+        graphs = Graph_load_batch(min_num_nodes=2, max_num_nodes=9, name='Letter-med',node_attributes=True, node_labels=False)
+        args.max_prev_node = 5
+    elif args.graph_type.startswith('Letter-med'):
+        graph_label = int(args.graph_type[-1])
+        graphs= Graph_load_label(min_num_nodes=2, max_num_nodes=9, name='Letter-med', node_attributes=True,node_labels=False, graph_label=graph_label)
+        args.max_prev_node = 5
+
+    elif args.graph_type == 'Letter-low':
+        # Gotta calc this!
+        graphs = Graph_load_batch(min_num_nodes=2, max_num_nodes=8, name='Letter-low',node_attributes=True, node_labels=False)
+        args.max_prev_node = 5
+    elif args.graph_type.startswith('Letter-low'):
+        graph_label = int(args.graph_type[-1])
+        graphs= Graph_load_label(min_num_nodes=2, max_num_nodes=8, name='Letter-low', node_attributes=True,node_labels=False, graph_label=graph_label)
+        args.max_prev_node = 5
+
     elif args.graph_type == 'citeseer':
         _, _, G = Graph_load(dataset='citeseer')
         G = max(nx.connected_component_subgraphs(G), key=len)
