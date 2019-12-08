@@ -49,13 +49,16 @@ def anomally_detection_score(nlls, labels, threshold):
     """
     pred_labels = np.zeros(nlls.shape[0])
 
-    for i in range(nlls):
+    for i in range(nlls.shape[0]):
         # Label 1 is anomalous
         if nlls[i] > threshold:
-            pred_labels[0] = 1
+            pred_labels[i] = 1
+        
 
     # Compute the accuracy
-    accuracy = np.sum(np.abs(pred_labels - labels)) / labels.shape[0]
+    print (np.sum(np.abs(pred_labels - labels)))
+    # Gives the accuracy as 1 - num_incorrect / numa
+    accuracy = 1 - np.sum(np.abs(pred_labels - labels)) / labels.shape[0]
     return accuracy
 
     
