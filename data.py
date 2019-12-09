@@ -24,7 +24,7 @@ def Graph_load_label(min_num_nodes = 20, max_num_nodes = 1000, name = 'ENZYMES',
     load many graphs, e.g. enzymes only of a specific graph label
     :return: a list of graphs
     '''
-    print('Loading graph dataset: '+str(name))
+    print('Loading graph dataset: '+str(name) + " With label " + str(graph_label))
     G = nx.Graph()
     # load data
     path = 'dataset/'+name+'/'

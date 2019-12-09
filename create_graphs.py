@@ -272,7 +272,7 @@ def create(args):
         graphs= Graph_load_label(min_num_nodes=100, max_num_nodes=500, name='DD', node_attributes=False,node_labels=True, graph_label=graph_label)
         args.max_prev_node = 230
 
-    elif args.graph_type == 'AIDS':
+    elif args.graph_type == 'AIDS': # Definitely check! Maybe train on inactive and test on active so train on 1!
         # Gotta calc this!
         graphs = Graph_load_batch(min_num_nodes=2, max_num_nodes=100, name='AIDS',node_attributes=False,node_labels=True)
         args.max_prev_node = 16
@@ -281,7 +281,7 @@ def create(args):
         graphs= Graph_load_label(min_num_nodes=2, max_num_nodes=100, name='AIDS', node_attributes=False,node_labels=True, graph_label=graph_label)
         args.max_prev_node = 16
 
-    elif args.graph_type == 'Fingerprint':
+    elif args.graph_type == 'Fingerprint': # Not so great to train on because the graph classes include several graph labels
         # Gotta calc this!
         graphs = Graph_load_batch(min_num_nodes=2, max_num_nodes=26, name='Fingerprint',node_attributes=True, node_labels=False)
         args.max_prev_node = 6
@@ -290,7 +290,7 @@ def create(args):
         graphs= Graph_load_label(min_num_nodes=2, max_num_nodes=26, name='Fingerprint', node_attributes=True,node_labels=False, graph_label=graph_label)
         args.max_prev_node = 6
 
-    elif args.graph_type == 'Collab':
+    elif args.graph_type == 'Collab': # Interesting to try but may be quite slow
         # Gotta calc this!
         graphs = Graph_load_batch(min_num_nodes=32, max_num_nodes=492, name='Collab',node_attributes=False, node_labels=False)
         args.max_prev_node = 480
@@ -299,7 +299,7 @@ def create(args):
         graphs= Graph_load_label(min_num_nodes=32, max_num_nodes=492, name='Collab', node_attributes=False,node_labels=False, graph_label=graph_label)
         args.max_prev_node = 480
 
-    elif args.graph_type == 'IMDB-MULTI':
+    elif args.graph_type == 'IMDB-MULTI': #Definitely try!!
         # Gotta calc this!
         graphs = Graph_load_batch(min_num_nodes=7, max_num_nodes=89, name='IMDB-MULTI',node_attributes=False, node_labels=False)
         args.max_prev_node = 86
@@ -308,16 +308,16 @@ def create(args):
         graphs= Graph_load_label(min_num_nodes=7, max_num_nodes=89, name='IMDB-MULTI', node_attributes=False,node_labels=False, graph_label=graph_label)
         args.max_prev_node = 86
 
-    elif args.graph_type == 'REDDIT-MULTI-12K': # Not done yet
-        # Gotta calc this!
-        graphs = Graph_load_batch(min_num_nodes=2, max_num_nodes=1000000, name='REDDIT-MULTI-12K',node_attributes=False, node_labels=False)
-        args.max_prev_node = 16
+    elif args.graph_type == 'REDDIT-MULTI-12K': # Not done yet may be too large to really try, Maybe want to limit max
+        # Gotta calc this! # Try max = 500
+        graphs = Graph_load_batch(min_num_nodes=2, max_num_nodes=500, name='REDDIT-MULTI-12K',node_attributes=False, node_labels=False)
+        args.max_prev_node = 3061
     elif args.graph_type.startswith('REDDIT-MULTI-12K'):
         graph_label = int(args.graph_type[-1])
-        graphs= Graph_load_label(min_num_nodes=1, max_num_nodes=26, name='REDDIT-MULTI-12K', node_attributes=False,node_labels=False, graph_label=graph_label)
-        args.max_prev_node = 16
+        graphs= Graph_load_label(min_num_nodes=2, max_num_nodes=3782, name='REDDIT-MULTI-12K', node_attributes=False,node_labels=False, graph_label=graph_label)
+        args.max_prev_node = 3061
 
-    elif args.graph_type == 'Letter-high':
+    elif args.graph_type == 'Letter-high': # Could be quite interesting to look at. For example train on low distortion and test on med/high and diff letters
         # Gotta calc this!
         graphs = Graph_load_batch(min_num_nodes=2, max_num_nodes=9, name='Letter-high',node_attributes=True, node_labels=False)
         args.max_prev_node = 6
@@ -326,7 +326,7 @@ def create(args):
         graphs= Graph_load_label(min_num_nodes=2, max_num_nodes=9, name='Letter-high', node_attributes=True,node_labels=False, graph_label=graph_label)
         args.max_prev_node = 6
 
-    elif args.graph_type == 'Letter-med':
+    elif args.graph_type == 'Letter-med': 
         # Gotta calc this!
         graphs = Graph_load_batch(min_num_nodes=2, max_num_nodes=9, name='Letter-med',node_attributes=True, node_labels=False)
         args.max_prev_node = 5
@@ -335,7 +335,7 @@ def create(args):
         graphs= Graph_load_label(min_num_nodes=2, max_num_nodes=9, name='Letter-med', node_attributes=True,node_labels=False, graph_label=graph_label)
         args.max_prev_node = 5
 
-    elif args.graph_type == 'Letter-low':
+    elif args.graph_type == 'Letter-low': # For a specific letter may want to try for example the letter N
         # Gotta calc this!
         graphs = Graph_load_batch(min_num_nodes=2, max_num_nodes=8, name='Letter-low',node_attributes=True, node_labels=False)
         args.max_prev_node = 5

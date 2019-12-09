@@ -23,16 +23,16 @@ class Args():
         #self.graph_type = 'DD_1'
 
         #self.graph_type = 'AIDS'
-        #self.graph_type = 'AIDS_1'
+        self.graph_type = 'AIDS_1'
 
         #self.graph_type = 'Fingerprint'
         #self.graph_type = 'Fingerprint_1'
 
         #self.graph_type = 'Collab'
-        #self.graph_type = 'Collab'
+        #self.graph_type = 'Collab_1'
 
         #self.graph_type = 'IMDB-MULTI'
-        #self.graph_type = 'IMDB-MULTI_0'
+        #self.graph_type = 'IMDB-MULTI_1'
 
         #self.graph_type = 'Letter-high'
         #self.graph_type = 'Letter-high_0'
@@ -41,7 +41,10 @@ class Args():
         #self.graph_type = 'Letter-med'
 
         #self.graph_type = 'Letter-low'
-        self.graph_type = 'Letter-low_1' # N
+        #self.graph_type = 'Letter-low_1' # N
+
+        #self.graph_type = 'REDDIT-MULTI-12K'
+        #self.graph_type = 'REDDIT-MULTI-12K_1'
 
         # self.graph_type = 'caveman'
         # self.graph_type = 'caveman_small'
