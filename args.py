@@ -5,7 +5,7 @@ class Args():
         ### if clean tensorboard
         self.clean_tensorboard = False
         ### Which CUDA GPU device is used for training
-        self.cuda = 2
+        #self.cuda = 2 / unused
         self.train_all = False
 
         ### Which GraphRNN model variant is used.
@@ -23,13 +23,13 @@ class Args():
         #self.graph_type = 'DD_1'
 
         #self.graph_type = 'AIDS'
-        self.graph_type = 'AIDS_1'
+        #self.graph_type = 'AIDS_1'
 
         #self.graph_type = 'Fingerprint'
         #self.graph_type = 'Fingerprint_1'
 
-        #self.graph_type = 'Collab'
-        #self.graph_type = 'Collab_1'
+        #self.graph_type = 'COLLAB'
+        #self.graph_type = 'COLLAB_1'
 
         #self.graph_type = 'IMDB-MULTI'
         #self.graph_type = 'IMDB-MULTI_1'
@@ -63,7 +63,7 @@ class Args():
         #self.graph_type = 'ladder_extra'
 
         #self.graph_type = 'enzymes'
-        # self.graph_type = 'enzymes_1'
+        self.graph_type = 'enzymes_1'
         #self.graph_type = 'enzymes_small'
         # self.graph_type = 'barabasi'
         # self.graph_type = 'barabasi_small'

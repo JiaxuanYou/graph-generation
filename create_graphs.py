@@ -290,13 +290,13 @@ def create(args):
         graphs= Graph_load_label(min_num_nodes=2, max_num_nodes=26, name='Fingerprint', node_attributes=True,node_labels=False, graph_label=graph_label)
         args.max_prev_node = 6
 
-    elif args.graph_type == 'Collab': # Interesting to try but may be quite slow
+    elif args.graph_type == 'COLLAB': # Interesting to try but may be quite slow
         # Gotta calc this!
-        graphs = Graph_load_batch(min_num_nodes=32, max_num_nodes=492, name='Collab',node_attributes=False, node_labels=False)
+        graphs = Graph_load_batch(min_num_nodes=32, max_num_nodes=492, name='COLLAB',node_attributes=False, node_labels=False)
         args.max_prev_node = 480
-    elif args.graph_type.startswith('Collab'):
+    elif args.graph_type.startswith('COLLAB'):
         graph_label = int(args.graph_type[-1])
-        graphs= Graph_load_label(min_num_nodes=32, max_num_nodes=492, name='Collab', node_attributes=False,node_labels=False, graph_label=graph_label)
+        graphs= Graph_load_label(min_num_nodes=32, max_num_nodes=492, name='COLLAB', node_attributes=False,node_labels=False, graph_label=graph_label)
         args.max_prev_node = 480
 
     elif args.graph_type == 'IMDB-MULTI': #Definitely try!!
