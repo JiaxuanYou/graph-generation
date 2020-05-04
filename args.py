@@ -14,6 +14,13 @@ class Args():
         # The dependent Bernoulli sequence version of GraphRNN
         self.note = 'GraphRNN_RNN'
 
+        # Which dataset to use for graph classification
+        self.graph_class_dataset = 'type1-v-random'
+
+        # The relative weighting assigned to the generative modeling
+        # objective in the graph classification combined loss
+        self.gen_weight = 1 # Play with this!
+
         ## for comparison, removing the BFS compoenent
         # self.note = 'GraphRNN_MLP_nobfs'
         # self.note = 'GraphRNN_RNN_nobfs'
@@ -53,7 +60,7 @@ class Args():
         #self.graph_type = 'grid'
         # self.graph_type = 'grid_small'
         #self.graph_type = 'ladder'
-        #self.graph_type = 'ladder_small'
+        self.graph_type = 'ladder_small'
         #self.graph_type = 'tree'
         #self.graph_type = 'tree_r_edge_1'
         #self.graph_type = 'layer-tree_40'
@@ -63,7 +70,7 @@ class Args():
         #self.graph_type = 'ladder_extra'
 
         #self.graph_type = 'enzymes'
-        self.graph_type = 'enzymes_1'
+        #self.graph_type = 'enzymes_1'
         #self.graph_type = 'enzymes_small'
         # self.graph_type = 'barabasi'
         # self.graph_type = 'barabasi_small'
@@ -103,7 +110,7 @@ class Args():
         self.epochs = 3000 #was 3000 # now one epoch means self.batch_ratio x batch_size
         self.epochs_test_start = 100 # was 100
         self.epochs_test = 100 # was 100
-        self.epochs_log = 10 # was 100
+        self.epochs_log = 1 # was 100
         self.epochs_save = 100 # was 100
 
         self.lr = 0.003

@@ -10,12 +10,20 @@ from torch import optim
 from torch.optim.lr_scheduler import MultiStepLR
 # import node2vec.src.main as nv
 from sklearn.decomposition import PCA
+from sklearn.metrics import accuracy_score
 import community
 import pickle
 import re
 
 import data
 #from create_graphs import * #-- bad circular reference!!!
+
+def num_correct(predicted_logits, ground_truth):
+    # Turn the predicted_logits into class predictions
+    softmax_predictions = F.softmax(predicted_logits, dim=1)
+    predicted_labels = torch.argmax(predicted_logits, dim=1)
+
+    return accuracy_score(ground_truth, predicted_labels, normalize=False)
 
 
 def ladder_extra(width, height):

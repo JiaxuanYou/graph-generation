@@ -34,6 +34,228 @@ import create_graphs
 #print (args_temp.cuda)
 #device = torch.device('cuda:{}'.format(args_temp.cuda) if torch.cuda.is_available() else 'cpu')
 
+def train_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader,
+                    optimizer_rnn, optimizer_output,
+                    scheduler_rnn, scheduler_output):
+    """
+        Train the GraphRNN model for the task of graph classification
+
+    """
+    classification_loss = nn.CrossEntropyLoss() 
+    rnn.train()
+    output.train()
+    loss_sum = 0
+    total_correct = 0
+    total_predicted = 0
+
+    for batch_idx, data in enumerate(data_loader):
+        rnn.zero_grad()
+        output.zero_grad()
+        x_unsorted = data['x'].float()
+        y_unsorted = data['y'].float()
+        y_len_unsorted = data['len']
+        classification_labels = data['label'].long() 
+
+        y_len_max = max(y_len_unsorted)
+        x_unsorted = x_unsorted[:, 0:y_len_max, :]
+        # y_unsorted = [batch size, max number of nodes, max previous]
+        y_unsorted = y_unsorted[:, 0:y_len_max, :] 
+
+        # initialize lstm hidden state according to batch size
+        rnn.hidden = rnn.init_hidden(batch_size=x_unsorted.size(0))
+        # output.hidden = output.init_hidden(batch_size=x_unsorted.size(0)*x_unsorted.size(1))
+
+        # sort input
+        y_len,sort_index = torch.sort(y_len_unsorted,0,descending=True)
+        y_len = y_len.numpy().tolist()
+        x = torch.index_select(x_unsorted,0,sort_index)
+        y = torch.index_select(y_unsorted,0,sort_index)
+
+        # input, output for output rnn module
+        # a smart use of pytorch builtin function: pack variable--b1_l1,b2_l1,...,b1_l2,b2_l2,...
+        y_reshape = pack_padded_sequence(y,y_len,batch_first=True).data
+        # reverse y_reshape, so that their lengths are sorted, add dimension
+        idx = [i for i in range(y_reshape.size(0)-1, -1, -1)]
+        idx = torch.LongTensor(idx)
+        y_reshape = y_reshape.index_select(0, idx)
+        y_reshape = y_reshape.view(y_reshape.size(0),y_reshape.size(1),1)
+
+        output_x = torch.cat((torch.ones(y_reshape.size(0),1,1),y_reshape[:,0:-1,0:1]),dim=1)
+        output_y = y_reshape
+        # batch size for output module: sum(y_len)
+        output_y_len = []
+        output_y_len_bin = np.bincount(np.array(y_len))
+        for i in range(len(output_y_len_bin)-1,0,-1):
+            count_temp = np.sum(output_y_len_bin[i:]) # count how many y_len is above i
+            output_y_len.extend([min(i,y.size(2))]*count_temp) # put them in output_y_len; max value should not exceed y.size(2)
+        # pack into variable
+        x = Variable(x).to(device)
+        y = Variable(y).to(device)
+        classification_labels = Variable(classification_labels).to(device)
+
+        output_x = Variable(output_x).to(device)
+        output_y = Variable(output_y).to(device)
+        
+        # Note that classification holds the predictions
+        # for the graph classification task!
+        h, classification = rnn(x, pack=True, input_len=y_len)
+        h = pack_padded_sequence(h,y_len,batch_first=True).data # get packed hidden vector
+        # reverse h
+        idx = [i for i in range(h.size(0) - 1, -1, -1)]
+        idx = Variable(torch.LongTensor(idx)).to(device)
+
+        h = h.index_select(0, idx)
+        hidden_null = Variable(torch.zeros(args.num_layers-1, h.size(0), h.size(1))).to(device)
+        output.hidden = torch.cat((h.view(1,h.size(0),h.size(1)),hidden_null),dim=0) # num_layers, batch_size, hidden_size
+        y_pred = output(output_x, pack=True, input_len=output_y_len)
+        y_pred = F.sigmoid(y_pred)
+
+        # clean
+        y_pred = pack_padded_sequence(y_pred, output_y_len, batch_first=True)
+        y_pred = pad_packed_sequence(y_pred, batch_first=True)[0]
+        output_y = pack_padded_sequence(output_y,output_y_len,batch_first=True)
+        output_y = pad_packed_sequence(output_y,batch_first=True)[0]
+
+
+        classifier_loss = classification_loss(classification, classification_labels)   
+        # use cross entropy loss
+        # Let us try to combine both the generative and classification losses!!
+        generative_loss = binary_cross_entropy_weight(y_pred, output_y)
+
+        loss = classifier_loss + args.gen_weight * generative_loss
+        
+        # Combine the generative loss and the classification loss!
+        # Note that in the semi-supervised setting, we could have 
+        # the classification loss only be over a smaller masked
+        # threshold of the training graphs. i.e. we could have a large
+        # number of graphs to actually train on where only some of them
+        # are actually labeled. Would give more data for the generative 
+        # model.
+        loss.backward()
+        # update deterministic and lstm
+        optimizer_output.step()
+        optimizer_rnn.step()
+        scheduler_output.step()
+        scheduler_rnn.step()
+
+        loss_sum += loss.item()
+        # Should likely do like f1 score
+        total_correct += num_correct(classification, classification_labels)
+        total_predicted += classification_labels.shape[0]
+
+    # Get avg. batch loss
+    avg_loss =  loss_sum / (batch_idx + 1)
+    accuracy = float(total_correct) / total_predicted
+    if epoch % args.epochs_log==0: # only output first batch's statistics
+            print('Epoch: {}/{}, train loss: {:.6f}, train accuracy: {}, num_layer: {}, hidden: {}'.format(
+                epoch, args.epochs,avg_loss, accuracy, args.num_layers, args.hidden_size_rnn))
+        
+    return avg_loss, accuracy
+
+def test_rnn_epoch(epoch, args, rnn, output, test_batch_size=16):
+    """
+        Test the graph-level rnn's ability to generate meaningful
+        embeddings for graph classifciation. While we use the whole
+        graphRNN for training (also including the generative modeling
+        loss), here we technically only need the output from the 
+        graph level RNN.
+    """
+    classification_loss = nn.CrossEntropyLoss() 
+    rnn.eval()
+    output.eval()
+    loss_sum = 0
+    total_correct = 0
+    total_predicted = 0
+
+    for batch_idx, data in enumerate(data_loader):
+        rnn.zero_grad()
+        output.zero_grad()
+        x_unsorted = data['x'].float()
+        y_len_unsorted = data['len']
+        classification_labels = data['label'].long() 
+
+        y_len_max = max(y_len_unsorted)
+        x_unsorted = x_unsorted[:, 0:y_len_max, :]
+
+        # initialize lstm hidden state according to batch size
+        rnn.hidden = rnn.init_hidden(batch_size=x_unsorted.size(0))
+        # output.hidden = output.init_hidden(batch_size=x_unsorted.size(0)*x_unsorted.size(1))
+
+        # sort input
+        y_len,sort_index = torch.sort(y_len_unsorted,0,descending=True)
+        y_len = y_len.numpy().tolist()
+        x = torch.index_select(x_unsorted,0,sort_index)
+
+        # pack into variable
+        x = Variable(x).to(device)
+        classification_labels = Variable(classification_labels).to(device)
+        
+        # Classification holds the predictions for the graph classification task!
+        h, classification = rnn(x, pack=True, input_len=y_len)
+
+        classifier_loss = classification_loss(classification, classification_labels)
+        loss_sum += classifier_loss.item()
+
+        total_correct += num_correct(classification, classification_labels)
+        total_predicted += classification_labels.shape[0]
+
+    avg_loss = loss_sum / (batch_idx + 1)
+    accuracy = float(total_correct) / total_predicted
+
+    return avg_loss, accuracy
+
+
+########### train function for LSTM + VAE
+def train_graph_class(args, dataset_train, dataset_test, rnn, output):
+    # check if load existing model
+    if args.load:
+        fname = args.model_save_path + args.fname + 'lstm_' + str(args.load_epoch) + '.dat'
+        rnn.load_state_dict(torch.load(fname))
+        fname = args.model_save_path + args.fname + 'output_' + str(args.load_epoch) + '.dat'
+        output.load_state_dict(torch.load(fname))
+
+        args.lr = 0.00001
+        epoch = args.load_epoch
+        print('model loaded!, lr: {}'.format(args.lr))
+    else:
+        epoch = 1
+
+    # initialize optimizer
+    optimizer_rnn = optim.Adam(list(rnn.parameters()), lr=args.lr)
+    optimizer_output = optim.Adam(list(output.parameters()), lr=args.lr)
+
+    scheduler_rnn = MultiStepLR(optimizer_rnn, milestones=args.milestones, gamma=args.lr_rate)
+    scheduler_output = MultiStepLR(optimizer_output, milestones=args.milestones, gamma=args.lr_rate)
+
+    # start main loop
+    time_all = np.zeros(args.epochs)
+    while epoch<=args.epochs:
+        time_start = tm.time()
+        
+        train_rnn_graph_class_epoch(epoch, args, rnn, output, dataset_train,
+                    optimizer_rnn, optimizer_output,
+                    scheduler_rnn, scheduler_output)
+            
+        time_end = tm.time()
+        time_all[epoch - 1] = time_end - time_start
+
+        # test the models performance on graph classification!
+        if epoch % args.epochs_test == 0 and epoch>=args.epochs_test_start:
+            test_loss, test_accuracy = test_rnn_epoch(epoch, args, rnn, output, dataset_test, test_batch_size=args.test_batch_size)
+
+            print('Test done - Test loss: {:.5f}, Test accuracy: {}'.format(test_loss, test_accuracy))
+
+        # save model checkpoint
+        if args.save:
+            if epoch % args.epochs_save == 0:
+                fname = args.model_save_path + args.fname + 'lstm_' + str(epoch) + '.dat'
+                torch.save(rnn.state_dict(), fname)
+                fname = args.model_save_path + args.fname + 'output_' + str(epoch) + '.dat'
+                torch.save(output.state_dict(), fname)
+        epoch += 1
+    np.save(args.timing_save_path+args.fname,time_all)
+
+
 # Trains the model. Not super important to understand the details of
 def train_rnn_epoch(epoch, args, rnn, output, data_loader,
                     optimizer_rnn, optimizer_output,
@@ -49,7 +271,9 @@ def train_rnn_epoch(epoch, args, rnn, output, data_loader,
         y_len_unsorted = data['len']
         y_len_max = max(y_len_unsorted)
         x_unsorted = x_unsorted[:, 0:y_len_max, :]
-        y_unsorted = y_unsorted[:, 0:y_len_max, :]
+        # y_unsorted = [batch size, max number of nodes, max previous]
+        y_unsorted = y_unsorted[:, 0:y_len_max, :] 
+
         # initialize lstm hidden state according to batch size
         rnn.hidden = rnn.init_hidden(batch_size=x_unsorted.size(0))
         # output.hidden = output.init_hidden(batch_size=x_unsorted.size(0)*x_unsorted.size(1))
@@ -94,6 +318,7 @@ def train_rnn_epoch(epoch, args, rnn, output, data_loader,
         # reverse h
         idx = [i for i in range(h.size(0) - 1, -1, -1)]
         idx = Variable(torch.LongTensor(idx)).to(device)
+
         h = h.index_select(0, idx)
         hidden_null = Variable(torch.zeros(args.num_layers-1, h.size(0), h.size(1))).to(device)
         output.hidden = torch.cat((h.view(1,h.size(0),h.size(1)),hidden_null),dim=0) # num_layers, batch_size, hidden_size
@@ -198,7 +423,12 @@ def train(args, dataset_train, rnn, output):
                             optimizer_rnn, optimizer_output,
                             scheduler_rnn, scheduler_output)
         elif 'GraphRNN_RNN' in args.note:
-            train_rnn_epoch(epoch, args, rnn, output, dataset_train,
+            if args.graph_classification:
+                train_rnn_graph_class_epoch(epoch, args, rnn, output, dataset_train,
+                            optimizer_rnn, optimizer_output,
+                            scheduler_rnn, scheduler_output)
+            else:
+                train_rnn_epoch(epoch, args, rnn, output, dataset_train,
                             optimizer_rnn, optimizer_output,
                             scheduler_rnn, scheduler_output)
         time_end = tm.time()
@@ -304,6 +534,7 @@ def rnn_data_nll(args, rnn, output, data_loader):
         output_y = pack_padded_sequence(output_y,output_y_len,batch_first=True)
         output_y = pad_packed_sequence(output_y,batch_first=True)[0]
         
+        # How could we get the last hidden state to somehow do graph level prediction?
         loss = binary_cross_entropy_weight(y_pred, output_y)
 
         # Because the BCELoss by default takes the mean over the

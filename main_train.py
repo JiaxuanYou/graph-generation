@@ -28,7 +28,7 @@ if __name__ == '__main__':
             shutil.rmtree("tensorboard")
     configure("tensorboard/run"+time, flush_secs=5)
 
-    graphs = create_graphs.create(args)
+    graphs = create_graphs.create(args) # Need to get the number of classes from create_graphs!!!
     
     # split datasets
     random.seed(123)
@@ -56,6 +56,7 @@ if __name__ == '__main__':
 
     # This is used in the GraphRNN
     args.max_num_node = max([graphs[i].number_of_nodes() for i in range(len(graphs))])
+    print (args.max_num_node)
     max_num_edge = max([graphs[i].number_of_edges() for i in range(len(graphs))])
     min_num_edge = min([graphs[i].number_of_edges() for i in range(len(graphs))])
 
@@ -111,7 +112,14 @@ if __name__ == '__main__':
                         has_output=False).to(device)
         output = MLP_plain(h_size=args.hidden_size_rnn, embedding_size=args.embedding_size_output, y_size=args.max_prev_node).to(device)
     elif 'GraphRNN_RNN' in args.note:
-        rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_rnn,
+        if args.graph_classification:
+            # Need to fix this to include the proper number of graph classes.
+            # Shoulw maybe clone the rep again and update to include graph classification!!
+            rnn = GRU_Graph_Class(input_size=args.max_prev_node, embedding_size=args.embedding_size_rnn,
+                        hidden_size=args.hidden_size_rnn, num_layers=args.num_layers, has_input=True,
+                        has_output=True, output_size=args.hidden_size_rnn_output, classes=2).to(device)
+        else:
+            rnn = GRU_plain(input_size=args.max_prev_node, embedding_size=args.embedding_size_rnn,
                         hidden_size=args.hidden_size_rnn, num_layers=args.num_layers, has_input=True,
                         has_output=True, output_size=args.hidden_size_rnn_output).to(device)
         output = GRU_plain(input_size=1, embedding_size=args.embedding_size_rnn_output,

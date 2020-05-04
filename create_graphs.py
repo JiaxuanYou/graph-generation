@@ -11,6 +11,42 @@ def create_name(name):
 
     return create(arg_temp)
 
+
+def create_graph_class(args):
+### load datasets
+    graphs=[]
+    # Provide Graph Labels
+    labels=[]
+    nums_classes = 2
+    
+    if args.graph_class_dataset == 'type1-v-random':
+        # Create a simple binary classification
+        # dataset where the model tries to distinguish
+        # between type1 graphs (layer trees) and 
+        # random n-regular graphs. 
+        # Create the type1 graph
+        width = 6
+        branch = 3
+        height = 10
+        for i in range(100):
+            G = layered_tree(width, height, branch_factor=branch)
+            graphs.append(G)
+            labels.append(0)
+
+        # Create the random 6-regular graphs
+        degree = 6
+        nodes = 60
+        for i in range(100):
+            graphs.append(nx.random_regular_graph(degree, nodes))
+            labels.append(1)
+
+        args.max_prev_node = 43 # Could just set to none and let it calculate given it is a random dataset but nahhhh for now
+        nums_classes = 2
+        
+    return graphs,labels, nums_classes
+
+
+
 def create(args):
 ### load datasets
     graphs=[]
