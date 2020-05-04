@@ -21,6 +21,8 @@ class Args():
         # objective in the graph classification combined loss
         self.gen_weight = 1 # Play with this!
 
+        self.dropout = True
+
         ## for comparison, removing the BFS compoenent
         # self.note = 'GraphRNN_MLP_nobfs'
         # self.note = 'GraphRNN_RNN_nobfs'

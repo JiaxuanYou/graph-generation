@@ -72,8 +72,12 @@ if __name__ == '__main__':
     # We should do the max_prev_node for the random graphs!
     # Need to include the graph labels!!!
     # Note use the updated graph sampler with random number generation fixed!
-    dataset_train = Graph_sequence_sampler_pytorch_rand_graph_class(graphs_train, labels_train,max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
-    dataset_test = Graph_sequence_sampler_pytorch_rand_graph_class(graphs_test, labels_test,max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
+    #dataset_train = Graph_sequence_sampler_pytorch_rand_graph_class(graphs_train, labels_train,max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
+    #dataset_test = Graph_sequence_sampler_pytorch_rand_graph_class(graphs_test, labels_test,max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
+
+    dataset_train = Graph_sequence_sampler_pytorch_graph_class(graphs_train, labels_train,max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
+    dataset_test = Graph_sequence_sampler_pytorch_graph_class(graphs_test, labels_test,max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
+
 
     if args.max_prev_node is None:
         args.max_prev_node = dataset_train.max_prev_node
@@ -94,7 +98,7 @@ if __name__ == '__main__':
     
     rnn = GRU_Graph_Class(input_size=args.max_prev_node, embedding_size=args.embedding_size_rnn,
                 hidden_size=args.hidden_size_rnn, num_layers=args.num_layers, has_input=True,
-                has_output=True, output_size=args.hidden_size_rnn_output, classes=num_classes).to(device)
+                has_output=True, output_size=args.hidden_size_rnn_output, classes=num_classes, dropout=args.dropout).to(device)
 
     output = GRU_plain(input_size=1, embedding_size=args.embedding_size_rnn_output,
                        hidden_size=args.hidden_size_rnn_output, num_layers=args.num_layers, has_input=True,
