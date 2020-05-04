@@ -15,7 +15,8 @@ class Args():
         self.note = 'GraphRNN_RNN'
 
         # Which dataset to use for graph classification
-        self.graph_class_dataset = 'type1-v-random'
+        #self.graph_class_dataset = 'type1-v-random'
+        self.graph_class_dataset = 'type1-v-type2a'
 
         # The relative weighting assigned to the generative modeling
         # objective in the graph classification combined loss
