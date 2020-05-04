@@ -100,6 +100,7 @@ def train_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader,
         # for the graph classification task!
         h, classification = rnn(x, pack=True, input_len=y_len)
         h = pack_padded_sequence(h,y_len,batch_first=True).data # get packed hidden vector
+        
         # reverse h
         idx = [i for i in range(h.size(0) - 1, -1, -1)]
         idx = Variable(torch.LongTensor(idx)).to(device)

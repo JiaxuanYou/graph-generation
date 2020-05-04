@@ -52,13 +52,13 @@ def create_graph_class(args):
         width = 6
         branch = 3
         height = 10
-        for i in range(100):
+        for i in range(1000):
             G = layered_tree(width, height, branch_factor=branch)
             graphs.append(G)
             labels.append(0)
 
 
-        for i in range(100):
+        for i in range(1000):
             # 50 nodes in all graphs
             graphs.append(ladder_extra(6, 10))
             labels.append(1)
