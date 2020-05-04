@@ -65,7 +65,7 @@ def create_graph_class(args):
 
         # Have to see what max_prev nodes is
         args.max_prev_node = 31 # Just for 6,10
-        return graphs
+        nums_classes = 2
         
     return graphs,labels, nums_classes
 

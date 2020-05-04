@@ -334,7 +334,7 @@ class GRU_Graph_Class(nn.Module):
         
         # Compute the graph classifcation layer output
         # Based on the final hidden layer (representing the graph level embedding)
-        final_hidden = self.hidden[-1,:,:]
+        final_hidden = self.hidden[-1,:,:] # May want to for example consider avg of hidden states???
         if self.dropout:
             final_hidden = self.dropout(final_hidden)
 
