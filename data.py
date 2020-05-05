@@ -70,7 +70,7 @@ def Graph_load_batch_graph_class(min_num_nodes = 20, max_num_nodes = 1000, name 
         # print('label', G_sub.graph)
         if G_sub.number_of_nodes()>=min_num_nodes and G_sub.number_of_nodes()<=max_num_nodes:
             graphs.append(G_sub)
-            labels.append(int(data_graph_labels[i]))
+            labels.append(int(data_graph_labels[i]) - 1) # Need to make these 0/1 labels
             if G_sub.number_of_nodes() > max_nodes:
                 max_nodes = G_sub.number_of_nodes()
             # print(G_sub.number_of_nodes(), 'i', i)
