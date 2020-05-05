@@ -18,24 +18,31 @@ from model import *
 from utils import *
 
 # load ENZYMES and PROTEIN and DD dataset and AIDS and more!
-def Graph_load_batch_graph_class(min_num_nodes = 20, max_num_nodes = 1000, name = 'ENZYMES',node_attributes = True, node_labels=True,graph_labels=True):
+def Graph_load_batch_graph_class(min_num_nodes = 20, max_num_nodes = 1000, name = 'ENZYMES',
+        node_attributes = True, node_labels=True,graph_labels=True, num_node_labels=4, node_label_shift=True):
     '''
-    load many graphs, e.g. enzymes
-    :return: a list of graphs
+        load many graphs, e.g. enzymes
+        :parameters: node_label_shift indicates that node labels are 1 indexed not 0
+        :return: a list of graphs
     '''
     print('Loading graph dataset: '+str(name))
     G = nx.Graph()
     # load data
     path = 'dataset/'+name+'/'
     data_adj = np.loadtxt(path+name+'_A.txt', delimiter=',').astype(int)
-    if node_attributes:
-        data_node_att = np.loadtxt(path+name+'_node_attributes.txt', delimiter=',')
+
     if node_labels:
         data_node_label = np.loadtxt(path+name+'_node_labels.txt', delimiter=',').astype(int)
+        data_node_label = data_node_label - 1
+        one_hot_node_labels = (np.arange(num_node_labels) == data_node_label[:,None]).astype(np.float32)
+    if node_attributes:
+        # If have not attributes we should also consider these!
+        # But let us try using these later!!
+        data_node_att = np.loadtxt(path+name+'_node_attributes.txt', delimiter=',')
+
     data_graph_indicator = np.loadtxt(path+name+'_graph_indicator.txt', delimiter=',').astype(int)
     if graph_labels:
         data_graph_labels = np.loadtxt(path+name+'_graph_labels.txt', delimiter=',').astype(int)
-
 
     data_tuple = list(map(tuple, data_adj))
 
@@ -49,7 +56,10 @@ def Graph_load_batch_graph_class(min_num_nodes = 20, max_num_nodes = 1000, name 
             if node_attributes:
                 G.add_node(i+1, feature = data_node_att[i])
             if node_labels:
+                # Add the one hot labels
                 G.add_node(i+1, label = data_node_label[i])
+                G.add_node(i+1, one_hot_label = one_hot_node_labels[i])
+
     G.remove_nodes_from(list(nx.isolates(G)))
 
 
@@ -593,13 +603,32 @@ class Graph_sequence_sampler_pytorch_rand_graph_class(torch.utils.data.Dataset):
 # Old implementation with issues in the random number generation!!!!
 # Should look how this maybe effects performance!! Later
 class Graph_sequence_sampler_pytorch_graph_class(torch.utils.data.Dataset):
-    def __init__(self, G_list, labels, max_num_node=None, max_prev_node=None, iteration=20000):
+    def __init__(self, G_list, labels, max_num_node=None, max_prev_node=None, iteration=20000, node_features=True):
         self.adj_all = []
+        self.adj_features = []
         self.len_all = []
         self.labels = labels
+        self.node_features = node_features
         for G in G_list:
-            self.adj_all.append(np.asarray(nx.to_numpy_matrix(G)))
+            # Want to also get the corresponding node features for G
+            # We should order this!
+            node_order = list(G.nodes())
+            if self.node_features:
+                attributes = nx.get_node_attributes(G, 'one_hot_label')
+                feature_dim = attributes[node_order[0]].shape[0]
+                # Create a node features matrix!
+                # Basically the encoded adj cuts out the first node!
+                # Since the first row is 0s meaning that no previous connections.
+                # and second is the second node's connection on the lower triangular.
+                # so we really want to start with 0s and then feature of the second node
+                features = np.zeros((G.number_of_nodes(), feature_dim))
+                for i, node in enumerate(node_order):
+                    features[i] = attributes[node]
+                self.adj_features.append(features)
+        
+            self.adj_all.append(np.asarray(nx.to_numpy_matrix(G, nodelist = node_order)))
             self.len_all.append(G.number_of_nodes())
+        
         if max_num_node is None:
             self.n = max(self.len_all)
             print ('max_num_node:', self.n)
@@ -626,8 +655,14 @@ class Graph_sequence_sampler_pytorch_graph_class(torch.utils.data.Dataset):
         adj_copy = self.adj_all[idx].copy()
         label = self.labels[idx]
 
-        x_batch = np.zeros((self.n, self.max_prev_node))  # here zeros are padded for small graph
-        x_batch[0,:] = 1 # the first input token is all ones
+        if self.node_features:
+            adj_feature = self.adj_features[idx]
+            x_batch = np.zeros((self.n, self.max_prev_node + adj_feature.shape[1]))
+            x_batch[0, :self.max_prev_node] = 1 # the first input token is all ones in the adjacency part
+        else:
+            x_batch = np.zeros((self.n, self.max_prev_node))  # here zeros are padded for small graph
+            x_batch[0,:] = 1 # the first input token is all ones meaning start!
+
         y_batch = np.zeros((self.n, self.max_prev_node))  # here zeros are padded for small graph
         # generate input x, y pairs
         len_batch = adj_copy.shape[0]
@@ -641,11 +676,27 @@ class Graph_sequence_sampler_pytorch_graph_class(torch.utils.data.Dataset):
         #print ("For indx: ", idx, "we have start idx:", start_idx)
         x_idx = np.array(bfs_seq(G, start_idx))
         adj_copy = adj_copy[np.ix_(x_idx, x_idx)]
+        # Adj encoded represents the lower traingular part of the adj of shape (n-1) * (n-1)
         adj_encoded = encode_adj(adj_copy.copy(), max_prev_node=self.max_prev_node)
         # get x and y and adj
         # for small graph the rest are zero padded
         y_batch[0:adj_encoded.shape[0], :] = adj_encoded
-        x_batch[1:adj_encoded.shape[0] + 1, :] = adj_encoded
+        x_batch[1:adj_encoded.shape[0] + 1, : self.max_prev_node] = adj_encoded
+        if self.node_features:
+            # Add the node features to the x_batch 
+            # Should align with proper node! Though we need to check
+            # Because really I think that it should be that we give the
+            # node features of the next node we predict with the current graph
+            # embedding that excludes it
+            # Maybe try leading the node features by 1, namely the first adj
+            # matrix row gets 2nd node feature as we use the first adj row to 
+            # help us predict the second nodes connections so we want that nodes
+            # features 
+            # Need to think though about how we want to align node features with 
+            # the lower triangular adj matrix!
+            assert(adj_feature[1:, :].shape[0] == adj_encoded.shape[0])
+            x_batch[0:adj_encoded.shape[0], self.max_prev_node:] = adj_feature[1:, :]
+        
         return {'x':x_batch,'y':y_batch, 'label':label, 'len':len_batch}
 
     def calc_max_prev_node(self, iter=20000,topk=10):

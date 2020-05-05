@@ -25,6 +25,7 @@ class Args():
         self.classification_weight = 1
 
         self.dropout = False # may fuck us
+        self.node_features = True
 
         ## for comparison, removing the BFS compoenent
         # self.note = 'GraphRNN_MLP_nobfs'
@@ -115,7 +116,7 @@ class Args():
         self.epochs = 3000 #was 3000 # now one epoch means self.batch_ratio x batch_size
         self.epochs_test_start = 100 # was 100
         self.epochs_test = 100 # was 100
-        self.epochs_log = 10 # was 100
+        self.epochs_log = 1 # was 100
         self.epochs_save = 100 # was 100
 
         self.lr = 0.003

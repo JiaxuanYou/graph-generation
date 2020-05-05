@@ -18,6 +18,8 @@ def create_graph_class(args):
     # Provide Graph Labels
     labels=[]
     nums_classes = 2
+    # This is default to none
+    num_features = 0
     
     if args.graph_class_dataset == 'type1-v-random':
         # Create a simple binary classification
@@ -68,11 +70,15 @@ def create_graph_class(args):
         nums_classes = 2
 
     elif args.graph_class_dataset == 'DD':
-        graphs, labels = Graph_load_batch_graph_class(min_num_nodes=100, max_num_nodes=500, name='DD',node_attributes=False, node_labels=True)
+        num_features = 89
+        
+        graphs, labels = Graph_load_batch_graph_class(min_num_nodes=100, max_num_nodes=500, name='DD',
+                    node_attributes=False, node_labels=True, num_node_labels=num_features, node_label_shift=True)
         nums_classes = 2
+        
         args.max_prev_node = 230
         
-    return graphs,labels, nums_classes
+    return graphs,labels, nums_classes, num_features
 
 
 

@@ -28,7 +28,7 @@ if __name__ == '__main__':
             shutil.rmtree("tensorboard")
     configure("tensorboard/run"+time, flush_secs=5)
 
-    graphs, labels, num_classes = create_graphs.create_graph_class(args) # Need to get the number of classes from create_graphs!!!
+    graphs, labels, num_classes, num_node_features = create_graphs.create_graph_class(args) # Need to get the number of classes from create_graphs!!!
     
     # split datasets
     random.seed(8)
@@ -75,8 +75,20 @@ if __name__ == '__main__':
     #dataset_train = Graph_sequence_sampler_pytorch_rand_graph_class(graphs_train, labels_train,max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
     #dataset_test = Graph_sequence_sampler_pytorch_rand_graph_class(graphs_test, labels_test,max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
 
-    dataset_train = Graph_sequence_sampler_pytorch_graph_class(graphs_train, labels_train,max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
-    dataset_test = Graph_sequence_sampler_pytorch_graph_class(graphs_test, labels_test,max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
+    if args.node_features:
+        dataset_train = Graph_sequence_sampler_pytorch_graph_class(graphs_train, 
+                                                        labels_train,max_prev_node=args.max_prev_node,
+                                                        max_num_node=args.max_num_node, node_features=True)
+        dataset_test = Graph_sequence_sampler_pytorch_graph_class(graphs_test, 
+                                                        labels_test,max_prev_node=args.max_prev_node,
+                                                        max_num_node=args.max_num_node, node_features=True)
+    else:
+        dataset_train = Graph_sequence_sampler_pytorch_graph_class(graphs_train, 
+                                                        labels_train,max_prev_node=args.max_prev_node,
+                                                        max_num_node=args.max_num_node, node_features=False)
+        dataset_test = Graph_sequence_sampler_pytorch_graph_class(graphs_test, 
+                                                        labels_test,max_prev_node=args.max_prev_node,
+                                                        max_num_node=args.max_num_node, node_features=False)
 
 
     if args.max_prev_node is None:
@@ -95,8 +107,11 @@ if __name__ == '__main__':
                                                #sampler=sample_strategy)
 
 
+    graph_rnn_input_dim = args.max_prev_node
+    if args.node_features:
+        graph_rnn_input_dim += num_node_features
     
-    rnn = GRU_Graph_Class(input_size=args.max_prev_node, embedding_size=args.embedding_size_rnn,
+    rnn = GRU_Graph_Class(input_size=graph_rnn_input_dim, embedding_size=args.embedding_size_rnn,
                 hidden_size=args.hidden_size_rnn, num_layers=args.num_layers, has_input=True,
                 has_output=True, output_size=args.hidden_size_rnn_output, classes=num_classes, dropout=args.dropout).to(device)
 
