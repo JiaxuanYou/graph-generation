@@ -21,6 +21,7 @@ class Args():
         # The relative weighting assigned to the generative modeling
         # objective in the graph classification combined loss
         self.gen_weight = 1 # Play with this!
+        self.classification_weight = 1
 
         self.dropout = True
 

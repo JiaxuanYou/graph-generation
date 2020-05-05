@@ -331,15 +331,16 @@ class GRU_Graph_Class(nn.Module):
             output_raw, lengths = pad_packed_sequence(output_raw, batch_first=True)
             
         # Let us try using an averaged version of the hidden states rather than
-        # the final hidden state just for shits and gigs. 
-        graph_embedd = torch.sum(output_raw, dim=1) / lengths.unsqueeze(1).float()
+        # the final hidden state just for shits and gigs.
+        #lengths = Variable(lengths).to(device) 
+        #graph_embedd = torch.sum(output_raw, dim=1) / lengths.unsqueeze(1).float()
 
         if self.has_output:
             output_raw = self.output(output_raw)
         
         # Compute the graph classifcation layer output
         # Based on the final hidden layer (representing the graph level embedding)
-        #graph_embedd = self.hidden[-1,:,:] # May want to for example consider avg of hidden states???
+        graph_embedd = self.hidden[-1,:,:] # May want to for example consider avg of hidden states???
         if self.dropout:
             graph_embedd = self.dropout(graph_embedd)
 

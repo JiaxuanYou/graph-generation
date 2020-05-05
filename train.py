@@ -54,7 +54,7 @@ def train_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader,
         x_unsorted = data['x'].float()
         y_unsorted = data['y'].float()
         y_len_unsorted = data['len']
-        classification_labels = data['label'].long() 
+        classification_labels_unsorted = data['label'].long() 
 
         y_len_max = max(y_len_unsorted)
         x_unsorted = x_unsorted[:, 0:y_len_max, :]
@@ -66,10 +66,12 @@ def train_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader,
         # output.hidden = output.init_hidden(batch_size=x_unsorted.size(0)*x_unsorted.size(1))
 
         # sort input
+        # Look into this!!!!!
         y_len,sort_index = torch.sort(y_len_unsorted,0,descending=True)
         y_len = y_len.numpy().tolist()
         x = torch.index_select(x_unsorted,0,sort_index)
         y = torch.index_select(y_unsorted,0,sort_index)
+        classification_labels = torch.index_select(classification_labels_unsorted, 0, sort_index)
 
         # input, output for output rnn module
         # a smart use of pytorch builtin function: pack variable--b1_l1,b2_l1,...,b1_l2,b2_l2,...
@@ -100,7 +102,7 @@ def train_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader,
         # for the graph classification task!
         h, classification = rnn(x, pack=True, input_len=y_len)
         h = pack_padded_sequence(h,y_len,batch_first=True).data # get packed hidden vector
-        
+
         # reverse h
         idx = [i for i in range(h.size(0) - 1, -1, -1)]
         idx = Variable(torch.LongTensor(idx)).to(device)
@@ -123,7 +125,7 @@ def train_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader,
         # Let us try to combine both the generative and classification losses!!
         generative_loss = binary_cross_entropy_weight(y_pred, output_y)
 
-        loss = classifier_loss + args.gen_weight * generative_loss
+        loss = args.classification_weight * classifier_loss + args.gen_weight * generative_loss
         
         # Combine the generative loss and the classification loss!
         # Note that in the semi-supervised setting, we could have 
