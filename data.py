@@ -656,7 +656,7 @@ class Graph_sequence_sampler_pytorch_graph_class(torch.utils.data.Dataset):
         label = self.labels[idx]
 
         if self.node_features:
-            adj_feature = self.adj_features[idx]
+            adj_feature = self.adj_features[idx].copy() # Not sure if we need this?
             x_batch = np.zeros((self.n, self.max_prev_node + adj_feature.shape[1]))
             x_batch[0, :self.max_prev_node] = 1 # the first input token is all ones in the adjacency part
         else:
@@ -670,12 +670,24 @@ class Graph_sequence_sampler_pytorch_graph_class(torch.utils.data.Dataset):
         adj_copy = adj_copy[np.ix_(x_idx, x_idx)]
         adj_copy_matrix = np.asmatrix(adj_copy)
         G = nx.from_numpy_matrix(adj_copy_matrix)
+
+        # Make sure the features match the random permutation
+        # of the adj matrix
+        adj_feature1 = adj_feature[x_idx]
+
         # then do bfs in the permuted G
         start_idx = np.random.randint(adj_copy.shape[0])
         # Test used for random number generator seeding across epochs issue
         #print ("For indx: ", idx, "we have start idx:", start_idx)
         x_idx = np.array(bfs_seq(G, start_idx))
         adj_copy = adj_copy[np.ix_(x_idx, x_idx)]
+
+        # Now again align features with adjacency
+        adj_feature = adj_feature1[x_idx]
+        if (adj_feature.shape[0] != adj_feature1.shape[0]):
+            print ("Updated", adj_feature.shape[0])
+            print ("Old", adj_feature1.shape[0])
+
         # Adj encoded represents the lower traingular part of the adj of shape (n-1) * (n-1)
         adj_encoded = encode_adj(adj_copy.copy(), max_prev_node=self.max_prev_node)
         # get x and y and adj
