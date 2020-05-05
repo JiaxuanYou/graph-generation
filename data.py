@@ -17,6 +17,67 @@ import time
 from model import *
 from utils import *
 
+# load ENZYMES and PROTEIN and DD dataset and AIDS and more!
+def Graph_load_batch_graph_class(min_num_nodes = 20, max_num_nodes = 1000, name = 'ENZYMES',node_attributes = True, node_labels=True,graph_labels=True):
+    '''
+    load many graphs, e.g. enzymes
+    :return: a list of graphs
+    '''
+    print('Loading graph dataset: '+str(name))
+    G = nx.Graph()
+    # load data
+    path = 'dataset/'+name+'/'
+    data_adj = np.loadtxt(path+name+'_A.txt', delimiter=',').astype(int)
+    if node_attributes:
+        data_node_att = np.loadtxt(path+name+'_node_attributes.txt', delimiter=',')
+    if node_labels:
+        data_node_label = np.loadtxt(path+name+'_node_labels.txt', delimiter=',').astype(int)
+    data_graph_indicator = np.loadtxt(path+name+'_graph_indicator.txt', delimiter=',').astype(int)
+    if graph_labels:
+        data_graph_labels = np.loadtxt(path+name+'_graph_labels.txt', delimiter=',').astype(int)
+
+
+    data_tuple = list(map(tuple, data_adj))
+
+    # add edges and add the nodes
+    G.add_edges_from(data_tuple)
+    # add node attributes and labels
+    if node_attributes or node_labels:
+        # Calculate the number of nodes
+        num_nodes = data_node_att.shape[0] if node_attributes else data_node_label.shape[0]
+        for i in range(num_nodes):
+            if node_attributes:
+                G.add_node(i+1, feature = data_node_att[i])
+            if node_labels:
+                G.add_node(i+1, label = data_node_label[i])
+    G.remove_nodes_from(list(nx.isolates(G)))
+
+
+    # split into graphs
+    graph_num = data_graph_indicator.max()
+    node_list = np.arange(data_graph_indicator.shape[0])+1
+    graphs = []
+    labels = []
+    max_nodes = 0
+    for i in range(graph_num):
+        # find the nodes for each graph
+        nodes = node_list[data_graph_indicator==i+1]
+        G_sub = G.subgraph(nodes)
+        if graph_labels:
+            G_sub.graph['label'] = data_graph_labels[i]
+        # print('nodes', G_sub.number_of_nodes())
+        # print('edges', G_sub.number_of_edges())
+        # print('label', G_sub.graph)
+        if G_sub.number_of_nodes()>=min_num_nodes and G_sub.number_of_nodes()<=max_num_nodes:
+            graphs.append(G_sub)
+            labels.append(data_graph_labels[i])
+            if G_sub.number_of_nodes() > max_nodes:
+                max_nodes = G_sub.number_of_nodes()
+            # print(G_sub.number_of_nodes(), 'i', i)
+    # print('Graph dataset name: {}, total graph num: {}'.format(name, len(graphs)))
+    # logging.warning('Graphs loaded, total num: {}'.format(len(graphs)))
+    print('Loaded')
+    return graphs, labels
 
 # load ENZYMES and PROTEIN and DD dataset and more!
 def Graph_load_label(min_num_nodes = 20, max_num_nodes = 1000, name = 'ENZYMES',node_attributes = True, node_labels=True,graph_labels=True, graph_label=1):
