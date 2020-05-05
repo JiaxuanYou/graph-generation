@@ -155,7 +155,7 @@ def train_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader,
         
     return avg_loss, accuracy
 
-def test_rnn_epoch(epoch, args, rnn, output, test_batch_size=16):
+def test_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader):
     """
         Test the graph-level rnn's ability to generate meaningful
         embeddings for graph classifciation. While we use the whole
@@ -175,7 +175,7 @@ def test_rnn_epoch(epoch, args, rnn, output, test_batch_size=16):
         output.zero_grad()
         x_unsorted = data['x'].float()
         y_len_unsorted = data['len']
-        classification_labels = data['label'].long() 
+        classification_labels_unsorted = data['label'].long() 
 
         y_len_max = max(y_len_unsorted)
         x_unsorted = x_unsorted[:, 0:y_len_max, :]
@@ -188,6 +188,7 @@ def test_rnn_epoch(epoch, args, rnn, output, test_batch_size=16):
         y_len,sort_index = torch.sort(y_len_unsorted,0,descending=True)
         y_len = y_len.numpy().tolist()
         x = torch.index_select(x_unsorted,0,sort_index)
+        classification_labels = torch.index_select(classification_labels_unsorted, 0, sort_index)
 
         # pack into variable
         x = Variable(x).to(device)
@@ -208,7 +209,6 @@ def test_rnn_epoch(epoch, args, rnn, output, test_batch_size=16):
     return avg_loss, accuracy
 
 
-########### train function for LSTM + VAE
 def train_graph_class(args, dataset_train, dataset_test, rnn, output):
     # check if load existing model
     if args.load:
@@ -244,7 +244,7 @@ def train_graph_class(args, dataset_train, dataset_test, rnn, output):
 
         # test the models performance on graph classification!
         if epoch % args.epochs_test == 0 and epoch>=args.epochs_test_start:
-            test_loss, test_accuracy = test_rnn_epoch(epoch, args, rnn, output, dataset_test, test_batch_size=args.test_batch_size)
+            test_loss, test_accuracy = test_rnn_graph_class_epoch(epoch, args, rnn, output, dataset_test)
 
             print('Test done - Test loss: {:.5f}, Test accuracy: {}'.format(test_loss, test_accuracy))
 
