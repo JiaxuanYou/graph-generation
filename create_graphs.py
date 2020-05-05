@@ -69,9 +69,6 @@ def create_graph_class(args):
 
     elif args.graph_class_dataset == 'DD':
         graphs, labels = Graph_load_batch_graph_class(min_num_nodes=100, max_num_nodes=500, name='DD',node_attributes=False, node_labels=True)
-        print (len(graphs))
-        print (len(labels))
-        quit()
         nums_classes = 2
         args.max_prev_node = 230
         
