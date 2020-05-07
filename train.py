@@ -175,7 +175,6 @@ def test_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader, trails=100
     # of permutation invariance.
     running_accuracy = 0
     for i in range(trails):
-        print ("trail", i)
         trail_correct = 0
         trail_predicted = 0
         trail_loss = 0
