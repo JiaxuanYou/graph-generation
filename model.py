@@ -272,7 +272,7 @@ class LSTM_plain(nn.Module):
 # plain GRU model
 class GRU_Graph_Class(nn.Module):
     def __init__(self, input_size, embedding_size, hidden_size, num_layers, has_input=True, 
-        has_output=False, output_size=None, classes=None, dropout=False):
+        has_output=False, output_size=None, classes=None, dropout=False, MLP=False):
         super(GRU_Graph_Class, self).__init__()
         self.num_layers = num_layers
         self.hidden_size = hidden_size
@@ -281,12 +281,14 @@ class GRU_Graph_Class(nn.Module):
         self.dropout = dropout
 
         if has_input:
+            # May want to do some sort of normalization here!!
             self.input = nn.Linear(input_size, embedding_size)
             self.rnn = nn.GRU(input_size=embedding_size, hidden_size=hidden_size, num_layers=num_layers,
                               batch_first=True)
         else:
             self.rnn = nn.GRU(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, batch_first=True)
         if has_output:
+            # Mayb want to do some stuff! Not too much though
             self.output = nn.Sequential(
                 nn.Linear(hidden_size, embedding_size),
                 nn.ReLU(),
@@ -300,7 +302,15 @@ class GRU_Graph_Class(nn.Module):
         # Create the linear model used for graph classification at the end!
         # In the future may want a slightly deeper model? But also want the
         # representation to be in the embedding!! Not the final model
-        self.classification = nn.Linear(hidden_size, classes)
+        if MLP:
+            self.classification = nn.Sequential(
+                    nn.Linear(hidden_size, hidden_size // 2),
+                    nn.ReLU(),
+                    nn.Linear(hidden_size // 2, classes)
+                )
+        else:
+            self.classification = nn.Linear(hidden_size, classes)
+        
         # Create dropout layer to maybe prevent overfitting in the linear
         # classificaiotn layer!
         self.dropout = nn.Dropout(dropout)

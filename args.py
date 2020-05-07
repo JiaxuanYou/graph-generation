@@ -24,7 +24,9 @@ class Args():
         self.gen_weight = 1 # Play with this!
         self.classification_weight = 1
 
+        self.MLP = False
         self.dropout = False # Dropout does not work well sadly
+        
         self.node_features = True
         self.current_node_feats = False
 
@@ -121,7 +123,7 @@ class Args():
         self.epochs_save = 100 # was 100
 
         self.lr = 0.003
-        self.milestones = [100, 200]
+        self.milestones = [100, 400] # was 400, 1000
         self.lr_rate = 0.3
 
         self.sample_time = 2 # sample time in each time step, when validating
