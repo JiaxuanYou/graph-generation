@@ -334,9 +334,10 @@ class GRU_Graph_Class(nn.Module):
     def forward(self, input_raw, pack=False, input_len=None):
         if self.has_input:
             input = self.input(input_raw)
+            print (input.shape)
             if self.has_bn:
                 input = self.bn(input)
-                
+
             input = self.relu(input)
         else:
             input = input_raw
