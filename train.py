@@ -7,7 +7,7 @@ from torch.autograd import Variable
 import matplotlib.pyplot as plt
 import torch.nn.functional as F
 from torch import optim
-from torch.optim.lr_scheduler import MultiStepLR
+from torch.optim.lr_scheduler import MultiStepLR, CosineAnnealingLR
 from sklearn.decomposition import PCA
 import logging
 from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
@@ -243,8 +243,13 @@ def train_graph_class(args, dataset_train, dataset_test, rnn, output):
     optimizer_rnn = optim.Adam(list(rnn.parameters()), lr=args.lr)
     optimizer_output = optim.Adam(list(output.parameters()), lr=args.lr)
 
-    scheduler_rnn = MultiStepLR(optimizer_rnn, milestones=args.milestones, gamma=args.lr_rate)
-    scheduler_output = MultiStepLR(optimizer_output, milestones=args.milestones, gamma=args.lr_rate)
+    # Play with this!!!
+    if args.scheduler == 'step':
+        scheduler_rnn = MultiStepLR(optimizer_rnn, milestones=args.milestones, gamma=args.lr_rate)
+        scheduler_output = MultiStepLR(optimizer_output, milestones=args.milestones, gamma=args.lr_rate)
+    elif args.scheduler == 'cos':
+        scheduler_rnn = CosineAnnealingLR(optimizer_rnn, T_max=args.epochs)
+        scheduler_output = CosineAnnealingLR(optimizer_output, T_max=args.epochs)
 
     # start main loop
     time_all = np.zeros(args.epochs)

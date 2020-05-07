@@ -116,7 +116,7 @@ class Args():
         ### training config
         self.num_workers = 4 # num workers to load data, default 4
         self.batch_ratio = 32 # how many batches of samples per epoch, default 32, e.g., 1 epoch = 32 batches
-        self.epochs = 3000 #was 3000 # now one epoch means self.batch_ratio x batch_size
+        self.epochs = 500 #was 3000 # now one epoch means self.batch_ratio x batch_size
         self.epochs_test_start = 1 # was 100
         self.epochs_test = 1 # was 100
         self.epochs_log = 1 # was 100
@@ -125,6 +125,8 @@ class Args():
         self.lr = 0.003
         self.milestones = [100, 400] # was 400, 1000
         self.lr_rate = 0.3
+
+        self.scheduler = 'cos'
 
         self.sample_time = 2 # sample time in each time step, when validating
 
