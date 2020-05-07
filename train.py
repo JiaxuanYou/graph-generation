@@ -155,7 +155,7 @@ def train_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader,
         
     return avg_loss, accuracy
 
-def test_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader, trails=10):
+def test_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader, trails=100):
     """
         Test the graph-level rnn's ability to generate meaningful
         embeddings for graph classifciation. While we use the whole
@@ -167,15 +167,15 @@ def test_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader, trails=10)
     rnn.eval()
     output.eval()
     loss_sum = 0
-    running_accuracy = 0
 
-    # Want to avg. each graphs predictions over
-    # multiple random permutations
-    predictions = None
-    true_labels = None
+
+    # Calculate avg. accuracy over trails 
+    # different random graph permutations.
+    # This helps to hopefully deal with issues
+    # of permutation invariance.
+    running_accuracy = 0
     for i in range(trails):
         print ("trail", i)
-        trail_predictions = None
         trail_correct = 0
         trail_predicted = 0
         trail_loss = 0
@@ -209,17 +209,6 @@ def test_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader, trails=10)
             classifier_loss = classification_loss(classification, classification_labels)
             trail_loss += classifier_loss.item()
 
-            # Want to keep track of the predictions for each graph
-            if (batch_idx == 0):
-                trail_predictions = classification.cpu().detach().numpy()
-                # Only keep the ground truth labels once
-                if i == 0:
-                    true_labels = classification_labels.cpu().detach().numpy()
-            else:
-                trail_predictions = np.concatenate((trail_predictions, classification.cpu().detach().numpy()), axis=0)
-                if i == 0:
-                    true_labels = np.concatenate((true_labels ,classification_labels.cpu().detach().numpy()), axis=0)
-
             trail_correct += num_correct(classification, classification_labels)
             trail_predicted += classification_labels.shape[0]
 
@@ -241,11 +230,7 @@ def test_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader, trails=10)
     avg_loss = loss_sum / float(trails)
     avg_accuracy = float(running_accuracy) / trails
 
-    # Get avg predictions to compute the accuracy
-    predictions = predictions / float(trails)
-    accuracy = num_correct(torch.tensor(predictions), torch.tensor(true_labels)) / float(predictions.shape[0])
-
-    return avg_loss, avg_accuracy, accuracy
+    return avg_loss, avg_accuracy
 
 
 def train_graph_class(args, dataset_train, dataset_test, rnn, output):
@@ -283,9 +268,9 @@ def train_graph_class(args, dataset_train, dataset_test, rnn, output):
 
         # test the models performance on graph classification!
         if epoch % args.epochs_test == 0 and epoch>=args.epochs_test_start:
-            avg_test_loss, avg_test_acc, test_accuracy = test_rnn_graph_class_epoch(epoch, args, rnn, output, dataset_test)
+            avg_test_loss, avg_test_acc = test_rnn_graph_class_epoch(epoch, args, rnn, output, dataset_test)
 
-            print('Test done - Avg Test loss: {:.5f}, Avg Test accuracy: {}, Trail_Avg Test accuracy: {}'.format(avg_test_loss, avg_test_acc, test_accuracy))
+            print('Test done - Avg Test loss: {:.5f}, Avg Test accuracy: {}'.format(avg_test_loss, avg_test_acc))
 
         # save model checkpoint
         if args.save:
