@@ -285,7 +285,7 @@ def train_graph_class(args, dataset_train, dataset_test, rnn, output):
         if epoch % args.epochs_test == 0 and epoch>=args.epochs_test_start:
             avg_test_loss, avg_test_acc, test_accuracy = test_rnn_graph_class_epoch(epoch, args, rnn, output, dataset_test)
 
-            print('Test done - Avg Test loss: {:.5f}, Avg Test accuracy: {}, Trail_Avg Test accuracy'.format(avg_test_loss, avg_test_acc, test_accuracy))
+            print('Test done - Avg Test loss: {:.5f}, Avg Test accuracy: {}, Trail_Avg Test accuracy: {}'.format(avg_test_loss, avg_test_acc, test_accuracy))
 
         # save model checkpoint
         if args.save:
