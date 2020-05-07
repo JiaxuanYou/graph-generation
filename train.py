@@ -155,7 +155,7 @@ def train_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader,
         
     return avg_loss, accuracy
 
-def test_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader, trails=100):
+def test_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader, trails=20):
     """
         Test the graph-level rnn's ability to generate meaningful
         embeddings for graph classifciation. While we use the whole
@@ -217,12 +217,6 @@ def test_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader, trails=100
 
         trail_loss = trail_loss / (batch_idx + 1)
         loss_sum += trail_loss
-
-        # Keep running sum of the predictions across trails
-        if i == 0:
-            predictions = trail_predictions
-        else:
-            predictions += trail_predictions
 
 
 
