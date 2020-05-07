@@ -272,17 +272,21 @@ class LSTM_plain(nn.Module):
 # plain GRU model
 class GRU_Graph_Class(nn.Module):
     def __init__(self, input_size, embedding_size, hidden_size, num_layers, has_input=True, 
-        has_output=False, output_size=None, classes=None, dropout=False, MLP=False):
+        has_output=False, output_size=None, classes=None, dropout=False, MLP=False, BN=True):
         super(GRU_Graph_Class, self).__init__()
         self.num_layers = num_layers
         self.hidden_size = hidden_size
         self.has_input = has_input
         self.has_output = has_output
         self.dropout = dropout
-
+        self.has_bn = BN
         if has_input:
             # May want to do some sort of normalization here!!
             self.input = nn.Linear(input_size, embedding_size)
+            # Batch norm layer
+            self.bn = nn.BatchNorm1d(embedding_size)
+
+            # Maybe want to batch norm here to make all features alike!!
             self.rnn = nn.GRU(input_size=embedding_size, hidden_size=hidden_size, num_layers=num_layers,
                               batch_first=True)
         else:
@@ -330,6 +334,9 @@ class GRU_Graph_Class(nn.Module):
     def forward(self, input_raw, pack=False, input_len=None):
         if self.has_input:
             input = self.input(input_raw)
+            if self.has_bn:
+                input = self.bn(input)
+                
             input = self.relu(input)
         else:
             input = input_raw

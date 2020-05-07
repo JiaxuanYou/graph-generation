@@ -26,6 +26,7 @@ class Args():
 
         self.MLP = False
         self.dropout = False # Dropout does not work well sadly
+        self.bn = True
         
         self.node_features = True
         self.current_node_feats = False
