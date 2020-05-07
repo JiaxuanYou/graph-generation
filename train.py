@@ -243,7 +243,7 @@ def test_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader, trails=10)
 
     # Get avg predictions to compute the accuracy
     predictions = predictions / float(trails)
-    accuracy = num_correct(predictions, true_labels) / float(predictions.shape[0])
+    accuracy = num_correct(torch.tensor(predictions), torch.tensor(true_labels)) / float(predictions.shape[0])
 
     return avg_loss, avg_accuracy, accuracy
 
