@@ -24,8 +24,9 @@ class Args():
         self.gen_weight = 1 # Play with this!
         self.classification_weight = 1
 
-        self.dropout = False # may fuck us
+        self.dropout = False # Dropout does not work well sadly
         self.node_features = True
+        self.current_node_feats = False
 
         ## for comparison, removing the BFS compoenent
         # self.note = 'GraphRNN_MLP_nobfs'
@@ -114,13 +115,13 @@ class Args():
         self.num_workers = 4 # num workers to load data, default 4
         self.batch_ratio = 32 # how many batches of samples per epoch, default 32, e.g., 1 epoch = 32 batches
         self.epochs = 3000 #was 3000 # now one epoch means self.batch_ratio x batch_size
-        self.epochs_test_start = 100 # was 100
-        self.epochs_test = 100 # was 100
+        self.epochs_test_start = 1 # was 100
+        self.epochs_test = 1 # was 100
         self.epochs_log = 1 # was 100
         self.epochs_save = 100 # was 100
 
         self.lr = 0.003
-        self.milestones = [400, 1000]
+        self.milestones = [100, 200]
         self.lr_rate = 0.3
 
         self.sample_time = 2 # sample time in each time step, when validating

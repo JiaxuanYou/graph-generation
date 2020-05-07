@@ -603,17 +603,26 @@ class Graph_sequence_sampler_pytorch_rand_graph_class(torch.utils.data.Dataset):
 # Old implementation with issues in the random number generation!!!!
 # Should look how this maybe effects performance!! Later
 class Graph_sequence_sampler_pytorch_graph_class(torch.utils.data.Dataset):
-    def __init__(self, G_list, labels, max_num_node=None, max_prev_node=None, iteration=20000, node_features=True):
+    def __init__(self, G_list, labels, max_num_node=None, max_prev_node=None, 
+                        iteration=20000, node_features=True, current_node_feats=False):
+        """
+            Parameters:
+            current_node_feats - True means we append the node features to the adj row of the node,
+            false means we append the next nodes features to each adj row (i.e. the next node to be
+            predicted so that graph state encodes the state of the graph and what node is going to be added).
+        """
         self.adj_all = []
         self.adj_features = []
         self.len_all = []
         self.labels = labels
         self.node_features = node_features
+        self.current_node_feats = current_node_feats
         for G in G_list:
             # Want to also get the corresponding node features for G
             # We should order this!
             node_order = list(G.nodes())
             if self.node_features:
+                # Should also make this not just the one_hot features!
                 attributes = nx.get_node_attributes(G, 'one_hot_label')
                 feature_dim = attributes[node_order[0]].shape[0]
                 # Create a node features matrix!
@@ -704,7 +713,12 @@ class Graph_sequence_sampler_pytorch_graph_class(torch.utils.data.Dataset):
             # Need to think though about how we want to align node features with 
             # the lower triangular adj matrix!
             assert(adj_feature[1:, :].shape[0] == adj_encoded.shape[0])
-            x_batch[0:adj_encoded.shape[0], self.max_prev_node:] = adj_feature[1:, :]
+            if self.current_node_feats:
+                # Match the features with each nodes adj row
+                x_batch[0:adj_encoded.shape[0] + 1, self.max_prev_node:] = adj_feature[0:, :]
+            else:
+                # Match the features of the node with the previous nodes adj row
+                x_batch[0:adj_encoded.shape[0], self.max_prev_node:] = adj_feature[1:, :]
         
         return {'x':x_batch,'y':y_batch, 'label':label, 'len':len_batch}
 

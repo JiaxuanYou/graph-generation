@@ -75,20 +75,14 @@ if __name__ == '__main__':
     #dataset_train = Graph_sequence_sampler_pytorch_rand_graph_class(graphs_train, labels_train,max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
     #dataset_test = Graph_sequence_sampler_pytorch_rand_graph_class(graphs_test, labels_test,max_prev_node=args.max_prev_node,max_num_node=args.max_num_node)
 
-    if args.node_features:
-        dataset_train = Graph_sequence_sampler_pytorch_graph_class(graphs_train, 
-                                                        labels_train,max_prev_node=args.max_prev_node,
-                                                        max_num_node=args.max_num_node, node_features=True)
-        dataset_test = Graph_sequence_sampler_pytorch_graph_class(graphs_test, 
-                                                        labels_test,max_prev_node=args.max_prev_node,
-                                                        max_num_node=args.max_num_node, node_features=True)
-    else:
-        dataset_train = Graph_sequence_sampler_pytorch_graph_class(graphs_train, 
-                                                        labels_train,max_prev_node=args.max_prev_node,
-                                                        max_num_node=args.max_num_node, node_features=False)
-        dataset_test = Graph_sequence_sampler_pytorch_graph_class(graphs_test, 
-                                                        labels_test,max_prev_node=args.max_prev_node,
-                                                        max_num_node=args.max_num_node, node_features=False)
+    dataset_train = Graph_sequence_sampler_pytorch_graph_class(graphs_train, 
+                                                    labels_train,max_prev_node=args.max_prev_node,
+                                                    max_num_node=args.max_num_node, node_features=args.node_features, 
+                                                    current_node_feats=args.current_node_feats)
+    dataset_test = Graph_sequence_sampler_pytorch_graph_class(graphs_test, 
+                                                    labels_test,max_prev_node=args.max_prev_node,
+                                                    max_num_node=args.max_num_node, node_features=args.node_features, 
+                                                    current_node_feats=args.current_node_feats)
 
 
     if args.max_prev_node is None:
@@ -103,7 +97,7 @@ if __name__ == '__main__':
     #sample_strategy = torch.utils.data.sampler.WeightedRandomSampler([1.0 / len(dataset_test) for i in range(len(dataset_test))],
     #                                                                 num_samples=args.batch_size*args.batch_ratio, replacement=True)
     # Should shuffle, but do not need to randomly sample! We actually do want to go over all of the graph
-    dataset_loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=True)
+    dataset_loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=False)
                                                #sampler=sample_strategy)
 
 

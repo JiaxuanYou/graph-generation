@@ -155,7 +155,7 @@ def train_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader,
         
     return avg_loss, accuracy
 
-def test_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader):
+def test_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader, trails=10):
     """
         Test the graph-level rnn's ability to generate meaningful
         embeddings for graph classifciation. While we use the whole
@@ -167,46 +167,85 @@ def test_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader):
     rnn.eval()
     output.eval()
     loss_sum = 0
-    total_correct = 0
-    total_predicted = 0
+    running_accuracy = 0
 
-    for batch_idx, data in enumerate(data_loader):
-        rnn.zero_grad()
-        output.zero_grad()
-        x_unsorted = data['x'].float()
-        y_len_unsorted = data['len']
-        classification_labels_unsorted = data['label'].long() 
+    # Want to avg. each graphs predictions over
+    # multiple random permutations
+    predictions = None
+    true_labels = None
+    for i in range(trails):
+        print ("trail", i)
+        trail_predictions = None
+        trail_correct = 0
+        trail_predicted = 0
+        trail_loss = 0
+        for batch_idx, data in enumerate(data_loader):
+            rnn.zero_grad()
+            output.zero_grad()
+            x_unsorted = data['x'].float()
+            y_len_unsorted = data['len']
+            classification_labels_unsorted = data['label'].long() 
 
-        y_len_max = max(y_len_unsorted)
-        x_unsorted = x_unsorted[:, 0:y_len_max, :]
+            y_len_max = max(y_len_unsorted)
+            x_unsorted = x_unsorted[:, 0:y_len_max, :]
 
-        # initialize lstm hidden state according to batch size
-        rnn.hidden = rnn.init_hidden(batch_size=x_unsorted.size(0))
-        # output.hidden = output.init_hidden(batch_size=x_unsorted.size(0)*x_unsorted.size(1))
+            # initialize lstm hidden state according to batch size
+            rnn.hidden = rnn.init_hidden(batch_size=x_unsorted.size(0))
+            # output.hidden = output.init_hidden(batch_size=x_unsorted.size(0)*x_unsorted.size(1))
 
-        # sort input
-        y_len,sort_index = torch.sort(y_len_unsorted,0,descending=True)
-        y_len = y_len.numpy().tolist()
-        x = torch.index_select(x_unsorted,0,sort_index)
-        classification_labels = torch.index_select(classification_labels_unsorted, 0, sort_index)
+            # sort input
+            y_len,sort_index = torch.sort(y_len_unsorted,0,descending=True)
+            y_len = y_len.numpy().tolist()
+            x = torch.index_select(x_unsorted,0,sort_index)
+            classification_labels = torch.index_select(classification_labels_unsorted, 0, sort_index)
 
-        # pack into variable
-        x = Variable(x).to(device)
-        classification_labels = Variable(classification_labels).to(device)
-        
-        # Classification holds the predictions for the graph classification task!
-        h, classification = rnn(x, pack=True, input_len=y_len)
+            # pack into variable
+            x = Variable(x).to(device)
+            classification_labels = Variable(classification_labels).to(device)
+            
+            # Classification holds the predictions for the graph classification task!
+            h, classification = rnn(x, pack=True, input_len=y_len)
 
-        classifier_loss = classification_loss(classification, classification_labels)
-        loss_sum += classifier_loss.item()
+            classifier_loss = classification_loss(classification, classification_labels)
+            trail_loss += classifier_loss.item()
 
-        total_correct += num_correct(classification, classification_labels)
-        total_predicted += classification_labels.shape[0]
+            # Want to keep track of the predictions for each graph
+            if (batch_idx == 0):
+                trail_predictions = classification.cpu().detach().numpy()
+                # Only keep the ground truth labels once
+                if i == 0:
+                    true_labels = classification_labels.cpu().detach().numpy()
+            else:
+                trail_predictions = np.concatenate((trail_predictions, classification.cpu().detach().numpy()), axis=0)
+                if i == 0:
+                    true_labels = np.concatenate((true_labels ,classification_labels.cpu().detach().numpy()), axis=0)
 
-    avg_loss = loss_sum / (batch_idx + 1)
-    accuracy = float(total_correct) / total_predicted
+            trail_correct += num_correct(classification, classification_labels)
+            trail_predicted += classification_labels.shape[0]
 
-    return avg_loss, accuracy
+        # Keep running accuracy metrics
+        trail_acc = float(trail_correct) / trail_predicted
+        running_accuracy += trail_acc
+
+        trail_loss = trail_loss / (batch_idx + 1)
+        loss_sum += trail_loss
+
+        # Keep running sum of the predictions across trails
+        if i == 0:
+            predictions = trail_predictions
+        else:
+            predictions += trail_predictions
+
+
+
+    avg_loss = loss_sum / float(trails)
+    avg_accuracy = float(running_accuracy) / trails
+
+    # Get avg predictions to compute the accuracy
+    predictions = predictions / float(trails)
+    accuracy = num_correct(predictions, true_labels) / float(predictions.shape[0])
+
+    return avg_loss, avg_accuracy, accuracy
 
 
 def train_graph_class(args, dataset_train, dataset_test, rnn, output):
@@ -244,9 +283,9 @@ def train_graph_class(args, dataset_train, dataset_test, rnn, output):
 
         # test the models performance on graph classification!
         if epoch % args.epochs_test == 0 and epoch>=args.epochs_test_start:
-            test_loss, test_accuracy = test_rnn_graph_class_epoch(epoch, args, rnn, output, dataset_test)
+            avg_test_loss, avg_test_acc, test_accuracy = test_rnn_graph_class_epoch(epoch, args, rnn, output, dataset_test)
 
-            print('Test done - Test loss: {:.5f}, Test accuracy: {}'.format(test_loss, test_accuracy))
+            print('Test done - Avg Test loss: {:.5f}, Avg Test accuracy: {}, Trail_Avg Test accuracy'.format(avg_test_loss, avg_test_acc, test_accuracy))
 
         # save model checkpoint
         if args.save:
