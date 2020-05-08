@@ -334,7 +334,6 @@ class GRU_Graph_Class(nn.Module):
     def forward(self, input_raw, pack=False, input_len=None):
         if self.has_input:
             input = self.input(input_raw)
-            print (input.shape)
             if self.has_bn:
                 # We do some permutation to bn just the feature dim
                 input = input.permute(0, 2, 1)
