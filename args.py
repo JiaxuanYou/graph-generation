@@ -26,9 +26,16 @@ class Args():
 
         self.MLP = False
         self.dropout = False # Dropout does not work well sadly
-        self.bn = True
+        self.bn = False
+        # If we should have a seperate linear layer 
+        # just for the node features!
+        self.feature_pre = True
         
         self.node_features = True
+        # Specifies whether we have node features match
+        # the adjacency row, or whether we lead by one node!
+        # False: means we lead by one
+        # True: match node features
         self.current_node_feats = False
 
         ## for comparison, removing the BFS compoenent

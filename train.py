@@ -54,24 +54,29 @@ def train_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader,
         x_unsorted = data['x'].float()
         y_unsorted = data['y'].float()
         y_len_unsorted = data['len']
+        # Note this may be None!!
+        features_unsorted = data['feat'].float()
         classification_labels_unsorted = data['label'].long() 
 
         y_len_max = max(y_len_unsorted)
         x_unsorted = x_unsorted[:, 0:y_len_max, :]
         # y_unsorted = [batch size, max number of nodes, max previous]
-        y_unsorted = y_unsorted[:, 0:y_len_max, :] 
+        y_unsorted = y_unsorted[:, 0:y_len_max, :]
+        features_unsorted = features_unsorted[:, 0:y_len_max, :]
 
         # initialize lstm hidden state according to batch size
         rnn.hidden = rnn.init_hidden(batch_size=x_unsorted.size(0))
         # output.hidden = output.init_hidden(batch_size=x_unsorted.size(0)*x_unsorted.size(1))
 
-        # sort input
-        # Look into this!!!!!
+        # sort input graphs!
         y_len,sort_index = torch.sort(y_len_unsorted,0,descending=True)
         y_len = y_len.numpy().tolist()
         x = torch.index_select(x_unsorted,0,sort_index)
         y = torch.index_select(y_unsorted,0,sort_index)
         classification_labels = torch.index_select(classification_labels_unsorted, 0, sort_index)
+        # Sort the node features
+        if args.node_features:
+            features = torch.index_select(features_unsorted,0,sort_index)
 
         # input, output for output rnn module
         # a smart use of pytorch builtin function: pack variable--b1_l1,b2_l1,...,b1_l2,b2_l2,...
@@ -100,7 +105,7 @@ def train_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader,
         
         # Note that classification holds the predictions
         # for the graph classification task!
-        h, classification = rnn(x, pack=True, input_len=y_len)
+        h, classification = rnn(x, features_raw=features,pack=True, input_len=y_len)
         h = pack_padded_sequence(h,y_len,batch_first=True).data # get packed hidden vector
 
         # reverse h

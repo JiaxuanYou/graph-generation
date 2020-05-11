@@ -664,13 +664,29 @@ class Graph_sequence_sampler_pytorch_graph_class(torch.utils.data.Dataset):
         adj_copy = self.adj_all[idx].copy()
         label = self.labels[idx]
 
+        # Seperately holds the features
+        feat_batch = None
+        if self.node_features:
+            adj_feature = self.adj_features[idx].copy()
+            feat_batch = np.zeros((self.n, adj_feature.shape[1]))
+
+        x_batch = np.zeros((self.n, self.max_prev_node))  # here zeros are padded for small graph
+        x_batch[0,:] = 1 # the first input token is all ones meaning start!
+        '''
         if self.node_features:
             adj_feature = self.adj_features[idx].copy() # Not sure if we need this?
-            x_batch = np.zeros((self.n, self.max_prev_node + adj_feature.shape[1]))
-            x_batch[0, :self.max_prev_node] = 1 # the first input token is all ones in the adjacency part
+            # Return x_batch and features as seperate matrices
+            if self.seperate_features:
+                x_batch = np.zeros((self.n, self.max_prev_node))
+                x_batch[0, :] = 1
+                feat_batch = np.zeros((self.n, adj_features.shape[1]))
+            else:            
+                x_batch = np.zeros((self.n, self.max_prev_node + adj_feature.shape[1]))
+                x_batch[0, :self.max_prev_node] = 1 # the first input token is all ones in the adjacency part
         else:
             x_batch = np.zeros((self.n, self.max_prev_node))  # here zeros are padded for small graph
             x_batch[0,:] = 1 # the first input token is all ones meaning start!
+        '''
 
         y_batch = np.zeros((self.n, self.max_prev_node))  # here zeros are padded for small graph
         # generate input x, y pairs
@@ -701,26 +717,37 @@ class Graph_sequence_sampler_pytorch_graph_class(torch.utils.data.Dataset):
         y_batch[0:adj_encoded.shape[0], :] = adj_encoded
         x_batch[1:adj_encoded.shape[0] + 1, : self.max_prev_node] = adj_encoded
         if self.node_features:
+            if self.current_node_feats:
+                feat_batch[0: adj_encoded.shape[0] + 1] = adj_feature[0:, :]
+            else:
+                feat_batch[0: adj_encoded.shape[0]] = adj_feature[1:, :]
+            """
+            features = None
+            feat_end_idx = 0
+            if self.current_node_feats:
+                features = adj_feature[0:, :]
+                feat_end_idx += 1
+            else:
+                features = adj_feature[1:, :]
+
+            # Here we seperate the node features and x_batch
+            if self.seperate_features:
+                feat_batch[0: adj_encoded.shape[0] + feat_end_idx] = features 
+            else:
+                x_batch[0:adj_features.shape[0] + feat_end_idx, self.max_prev_node:] = features 
+
+            '''
             # Add the node features to the x_batch 
-            # Should align with proper node! Though we need to check
-            # Because really I think that it should be that we give the
-            # node features of the next node we predict with the current graph
-            # embedding that excludes it
-            # Maybe try leading the node features by 1, namely the first adj
-            # matrix row gets 2nd node feature as we use the first adj row to 
-            # help us predict the second nodes connections so we want that nodes
-            # features 
-            # Need to think though about how we want to align node features with 
-            # the lower triangular adj matrix!
-            assert(adj_feature[1:, :].shape[0] == adj_encoded.shape[0])
             if self.current_node_feats:
                 # Match the features with each nodes adj row
                 x_batch[0:adj_encoded.shape[0] + 1, self.max_prev_node:] = adj_feature[0:, :]
             else:
                 # Match the features of the node with the previous nodes adj row
                 x_batch[0:adj_encoded.shape[0], self.max_prev_node:] = adj_feature[1:, :]
+            '''
+            """
         
-        return {'x':x_batch,'y':y_batch, 'label':label, 'len':len_batch}
+        return {'x':x_batch,'y':y_batch, 'label':label, 'len':len_batch, 'feat':feat_batch}
 
     def calc_max_prev_node(self, iter=20000,topk=10):
         max_prev_node = []

@@ -105,10 +105,14 @@ if __name__ == '__main__':
     if args.node_features:
         graph_rnn_input_dim += num_node_features
     
+    # Note that if we are using a network to process the features
+    # then we want to embedd the features to the same dimension as 
+    # the adjacency matrix features (max_prev_node)
     rnn = GRU_Graph_Class(input_size=graph_rnn_input_dim, embedding_size=args.embedding_size_rnn,
                 hidden_size=args.hidden_size_rnn, num_layers=args.num_layers, has_input=True,
                 has_output=True, output_size=args.hidden_size_rnn_output, 
-                classes=num_classes, dropout=args.dropout, MLP=args.MLP, BN=args.bn).to(device)
+                classes=num_classes, dropout=args.dropout, MLP=args.MLP, BN=args.bn, 
+                feature_pre=args.feature_pre, feature_size = num_node_features, feature_embedding_size=args.max_prev_node).to(device)
 
     output = GRU_plain(input_size=1, embedding_size=args.embedding_size_rnn_output,
                        hidden_size=args.hidden_size_rnn_output, num_layers=args.num_layers, has_input=True,

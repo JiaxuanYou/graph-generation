@@ -272,7 +272,8 @@ class LSTM_plain(nn.Module):
 # plain GRU model
 class GRU_Graph_Class(nn.Module):
     def __init__(self, input_size, embedding_size, hidden_size, num_layers, has_input=True, 
-        has_output=False, output_size=None, classes=None, dropout=False, MLP=False, BN=True):
+        has_output=False, output_size=None, classes=None, dropout=False, MLP=False, BN=True, 
+        feature_pre=False, feature_size = None, feature_embedding_size=None):
         super(GRU_Graph_Class, self).__init__()
         self.num_layers = num_layers
         self.hidden_size = hidden_size
@@ -280,6 +281,18 @@ class GRU_Graph_Class(nn.Module):
         self.has_output = has_output
         self.dropout = dropout
         self.has_bn = BN
+        self.feature_pre = feature_pre
+
+        if feature_pre:
+            # Have a network to transform the features before combining them
+            # with the adjaceny matrix data! Note we should likely consider
+            # having like a two layer setting! Let us just try this shit for now
+            self.feature_pre_layer = nn.Sequential(
+                nn.Linear(feature_size, feature_embedding_size),
+                nn.ReLU(),
+                nn.Linear(feature_embedding_size, feature_embedding_size)
+            )
+
         if has_input:
             # May want to do some sort of normalization here!!
             self.input = nn.Linear(input_size, embedding_size)
@@ -291,8 +304,10 @@ class GRU_Graph_Class(nn.Module):
                               batch_first=True)
         else:
             self.rnn = nn.GRU(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, batch_first=True)
+            self.bn = nn.BatchNorm1d(input_size)
+
         if has_output:
-            # Mayb want to do some stuff! Not too much though
+            # Maybe want to do some stuff! Not too much though
             self.output = nn.Sequential(
                 nn.Linear(hidden_size, embedding_size),
                 nn.ReLU(),
@@ -331,9 +346,20 @@ class GRU_Graph_Class(nn.Module):
     def init_hidden(self, batch_size):
         return Variable(torch.zeros(self.num_layers, batch_size, self.hidden_size)).to(device)
 
-    def forward(self, input_raw, pack=False, input_len=None):
+    def forward(self, input_raw, features_raw=None, pack=False, input_len=None):
+        # Deal with the features!
+        input = input_raw
+        if features_raw is not None:
+            if self.feature_pre:
+                features = self.feature_pre_layer(features_raw)
+            else:
+                features = features_raw
+
+            # Now we have to concatenate them to the input!
+            input = torch.cat((input, features), dim=-1)
+
         if self.has_input:
-            input = self.input(input_raw)
+            input = self.input(input)
             if self.has_bn:
                 # We do some permutation to bn just the feature dim
                 input = input.permute(0, 2, 1)
@@ -341,8 +367,7 @@ class GRU_Graph_Class(nn.Module):
                 input = input.permute(0, 2, 1)
 
             input = self.relu(input)
-        else:
-            input = input_raw
+        
         if pack:
             input = pack_padded_sequence(input, input_len, batch_first=True)
         output_raw, self.hidden = self.rnn(input, self.hidden)
