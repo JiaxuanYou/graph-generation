@@ -191,9 +191,11 @@ def test_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader, trails=50)
             x_unsorted = data['x'].float()
             y_len_unsorted = data['len']
             classification_labels_unsorted = data['label'].long() 
+            features_unsorted = data['feat'].float()
 
             y_len_max = max(y_len_unsorted)
             x_unsorted = x_unsorted[:, 0:y_len_max, :]
+            features_unsorted = features_unsorted[:, 0:y_len_max, :]
 
             # initialize lstm hidden state according to batch size
             rnn.hidden = rnn.init_hidden(batch_size=x_unsorted.size(0))
@@ -204,13 +206,18 @@ def test_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader, trails=50)
             y_len = y_len.numpy().tolist()
             x = torch.index_select(x_unsorted,0,sort_index)
             classification_labels = torch.index_select(classification_labels_unsorted, 0, sort_index)
+            # Sort the node features
+            if args.node_features:
+                features = torch.index_select(features_unsorted,0,sort_index)
 
             # pack into variable
             x = Variable(x).to(device)
             classification_labels = Variable(classification_labels).to(device)
+            if args.node_features:
+                features = Variable(features).to(device)
             
             # Classification holds the predictions for the graph classification task!
-            h, classification = rnn(x, pack=True, input_len=y_len)
+            h, classification = rnn(x, features_raw=features, pack=True, input_len=y_len)
 
             classifier_loss = classification_loss(classification, classification_labels)
             trail_loss += classifier_loss.item()
