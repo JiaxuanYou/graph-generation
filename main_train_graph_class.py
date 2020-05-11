@@ -103,7 +103,12 @@ if __name__ == '__main__':
 
     graph_rnn_input_dim = args.max_prev_node
     if args.node_features:
-        graph_rnn_input_dim += num_node_features
+        # The feature network generates embeddings
+        # the size of the adjacency matrix rows (max_prev_node)
+        if args.feature_pre:
+            graph_rnn_input_dim += graph_rnn_input_dim
+        else:
+            graph_rnn_input_dim += num_node_features
     
     # Note that if we are using a network to process the features
     # then we want to embedd the features to the same dimension as 
