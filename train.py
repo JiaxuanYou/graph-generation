@@ -99,6 +99,8 @@ def train_rnn_graph_class_epoch(epoch, args, rnn, output, data_loader,
         x = Variable(x).to(device)
         y = Variable(y).to(device)
         classification_labels = Variable(classification_labels).to(device)
+        if args.node_features:
+            features = Variable(features).to(device)
 
         output_x = Variable(output_x).to(device)
         output_y = Variable(output_y).to(device)
