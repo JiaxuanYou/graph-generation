@@ -71,13 +71,11 @@ def clustering_stats(graph_ref_list, graph_pred_list, bins=100, is_parallel=True
     prev = datetime.now()
     if is_parallel:
         with concurrent.futures.ProcessPoolExecutor() as executor:
-            for clustering_hist in executor.map(clustering_worker, 
-                    [(G, bins) for G in graph_ref_list]):
-                sample_ref.append(clustering_hist)
+            sample_ref = [clustering_hist  for clustering_hist in executor.map(clustering_worker, 
+                    [(G, bins) for G in graph_ref_list])]
         with concurrent.futures.ProcessPoolExecutor() as executor:
-            for clustering_hist in executor.map(clustering_worker, 
-                    [(G, bins) for G in graph_pred_list_remove_empty]):
-                sample_pred.append(clustering_hist)
+            sample_pred = [clustering_hist for clustering_hist in executor.map(clustering_worker, 
+                                                                               [(G, bins) for G in graph_pred_list_remove_empty])]
         # check non-zero elements in hist
         #total = 0
         #for i in range(len(sample_pred)):
